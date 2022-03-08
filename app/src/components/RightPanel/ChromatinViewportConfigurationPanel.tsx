@@ -255,7 +255,6 @@ export function ChromatinViewportConfigurationPanel(props: {
                 </Callout>
             )}
             <Slider label="SSAO Radius" min={0.0} max={1.0} step={0.01} value={configuration.ssao.radius} showValue onChange={setSSAORadius} />
-            <Slider label="SSAO Blur Size" min={2} max={32} step={1} value={configuration.ssao.blurSize} showValue onChange={setSSAOBlurSize} />
         </Stack>
 
         {/* List of 3D data */}
@@ -310,20 +309,6 @@ export function ChromatinViewportConfigurationPanel(props: {
                     value={toNumber(configuration.data[0].radius)}
                     showValue={false}
                     onChange={(value) => setRadiusAll(value)}
-                />
-            )}
-            {configuration && configuration.data.length > 0 && (
-                <Dropdown
-                    placeholder=""
-                    label="Representation"
-                    options={[
-                        { key: 0, text: 'Continuous Tube' },
-                        { key: 1, text: 'Spheres' },
-                    ]}
-                    selectedKey={
-                        configuration.data[0].representation
-                    }
-                    onChange={setRepresentationAll}
                 />
             )}
             <ChoiceGroup
