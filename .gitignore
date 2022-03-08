@@ -1,6 +1,7 @@
 node_modules
 dist
 playground/data
+.DS_Store
 
 
 # Add if you are working with new file types
@@ -9,3 +10,7 @@ playground/data
 *.gff
 *.bed
 *.txt
+*.bam
+*.bw
+*.zip
+*.h5
