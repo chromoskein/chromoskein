@@ -1,0 +1,11 @@
+node_modules
+dist
+playground/data
+
+
+# Add if you are working with new file types
+*.pdb
+*.csv
+*.gff
+*.bed
+*.txt

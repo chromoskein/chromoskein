@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<head>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0px;
+            padding: 0px;
+            /* overflow: hidden; */
+        }
+
+        head,
+        body {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border: 0px;
+
+        }
+        .canvasWrap {
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-column-gap: 0px;
+            grid-template-areas:
+                "viewport1 viewport2"
+                "viewport3 viewport4";
+            overflow: hidden;
+        }
+
+        .canvasWrap > div {
+            max-width: 50vw;
+            max-height: 50vh;
+        }
+
+        .viewport {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        div#viewport1 {
+            grid-area: viewport1;
+        }
+
+        div#viewport2 {
+            grid-area: viewport2;
+        }
+
+        div#viewport3 {
+            grid-area: viewport3;
+        }
+
+        div#viewport4 {
+            grid-area: viewport4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="canvasWrap">
+        <div id="viewport1"><canvas id="canvasViewport1" class="viewport"></div>
+        <div id="viewport2"><canvas id="canvasViewport2" class="viewport"></div>
+        <div id="viewport3"><canvas id="canvasViewport3" class="viewport"></div>
+        <div id="viewport4"><canvas id="canvasViewport4" class="viewport"></div>
+    </div>
+
+    <script src="parsepdb.js"></script>
+    <script src="simplify.js"></script>
+    <script src="../dist/chromatin_3d_viewport.js"></script>
+    <script>
+        let slider = document.getElementById("bin");
+        let chromatinPart = null;
+        let viewports = [];
+        let sphereCull = null;
+        let currentBin = 0;
+
+        window.addEventListener("load", function () {
+            (async () => {
+                var stop = false;
+
+                if (!navigator.gpu) {
+                    alert("WebGPU is not supported/enabled in your browser");
+                    return;
+                }
+
+                // Get a GPU device to render with
+                var adapter = await navigator.gpu.requestAdapter({
+                    powerPreference: "high-performance"
+                });
+
+                var device = await adapter.requestDevice();
+                device.onuncapturederror = function (e) {
+                    stop = true;
+                    console.log(e);
+                };
+                console.log(device);
+
+                // 1. Initialize the library
+                let graphics = new chromatin_3d_viewport.GraphicsLibrary(adapter, device);
+
+                // 2. Find and remember canvas objects
+                let canvases = Array.from(document.getElementsByClassName("viewport"));
+
+                // 3. Create viewports and assign them to canvas objects
+                const dataID = 0;
+                let currentSelectedBin = 0;
+                for (const c of canvases) {
+                    let v = graphics.createChromatinViewport(c);
+
+                    v.ssaoKernelSize = 2;
+                    v.ssaoKernelRadius = 10;
+                    v.ssaoBlurSize = 2;
+
+                    viewports.push(v);
+                };
+                let rawFile = new XMLHttpRequest();
+                rawFile.onreadystatechange = () => {
+                    if (rawFile.readyState == 4 && rawFile.status == 200) {
+                        const pdbData = parsePdb(rawFile.responseText);
+                        let data = pdbData.atoms.map(d => { return { x: d.x, y: d.y, z: d.z } });
+
+                        // let viewport = viewports[0];
+                        // data = simplify(data, 4.0);
+                        // console.log('simplified length', data.length);
+                        // chromatinPart = viewport.addPart(
+                        //     data,
+                        //     true, 1, chromatin_3d_viewport.ChromatinRepresentation.ContinuousTube, true
+                        // );
+                        // chromatinPart.structure.radius = 0.005;
+
+                        for(let i = 0; i < 4; i++) {
+                            let viewport = viewports[i];
+                            viewport.camera = viewports[0].camera;
+
+                            data = simplify(data.map(e => { return { x: e.x, y: e.y, z: e.z }}), i * 1.5);
+                            console.log('simplified length', data.length);
+                            chromatinPart = viewport.addPart(
+                                data,
+                                true, 1, chromatin_3d_viewport.ChromatinRepresentation.ContinuousTube, true
+                            );
+                            chromatinPart.structure.radius = 0.005;
+                        }
+                    }
+                }
+                rawFile.open("GET", './wholegenome_test1.pdb');
+                rawFile.send();
+
+                const doFrame = (frametime) => {
+                    viewports.forEach(v => v.render(frametime));
+
+                    if (!stop) {
+                        requestAnimationFrame(doFrame);
+                    }
+                };
+                requestAnimationFrame(doFrame);
+            })();
+        });
+    </script>
+</body>
+
+</html>

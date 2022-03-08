@@ -1,0 +1,213 @@
+@import '@fluentui/react/dist/sass/References';
+
+ul, li {
+  list-style-type: none;
+}
+
+.App {
+    display: flex;
+    flex-direction: column;
+}
+
+.topPanel {
+    flex-grow: 0;
+    flex-basis: 44px;
+    border-bottom: 1px solid $ms-color-gray140;
+}
+
+.mainArea {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+.flexlayout__layout {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .flexlayout__splitter {
+    background-color: #1a1a1a;
+  }
+  @media (hover: hover) {
+    .flexlayout__splitter:hover {
+      background-color: #333333;
+    }
+  }
+  .flexlayout__splitter_border {
+    z-index: 10;
+  }
+  .flexlayout__splitter_drag {
+    z-index: 1000;
+    border-radius: 5px;
+    background-color: #404040;
+  }
+  .flexlayout__outline_rect {
+    position: absolute;
+    cursor: move;
+    box-sizing: border-box;
+    border: 2px solid #cfe8ff;
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    z-index: 1000;
+  }
+  .flexlayout__outline_rect_edge {
+    cursor: move;
+    border: 2px solid #b7d1b5;
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    z-index: 1000;
+    box-sizing: border-box;
+  }
+  .flexlayout__edge_rect {
+    position: absolute;
+    z-index: 1000;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+    background-color: gray;
+  }
+  .flexlayout__drag_rect {
+    position: absolute;
+    cursor: move;
+    color: white;
+    background-color: #121212;
+    border: 2px solid #333333;
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    z-index: 1000;
+    box-sizing: border-box;
+    opacity: 0.9;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 10px;
+    word-wrap: break-word;
+    font-size: medium;
+    font-family: Roboto, Arial, sans-serif;
+  }
+
+.flexlayout__tabset {
+    overflow: hidden;
+    background: none;
+  }
+  .flexlayout__tabset_header {
+
+  }
+  .flexlayout__tabset_header_content {
+    flex-grow: 1;
+  }
+  .flexlayout__tabset_tabbar_outer {
+    box-sizing: border-box;
+    position: absolute;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    display: flex;
+    background: none;
+  }
+  .flexlayout__tabset_tabbar_outer_top {
+    /* border-bottom: 1px solid #262626; */
+  }
+  .flexlayout__tabset_tabbar_outer_bottom {
+    /* border-top: 1px solid #262626; */
+  }
+  .flexlayout__tabset_tabbar_inner {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+  }
+  .flexlayout__tabset_tabbar_inner_tab_container {
+    display: flex;
+    box-sizing: border-box;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 10000px;
+  }
+  .flexlayout__tabset_tabbar_inner_tab_container_top {
+
+  }
+  .flexlayout__tabset_tabbar_inner_tab_container_bottom {
+
+  }
+  .flexlayout__tabset-selected {
+    // background-color: #111c25;
+  }
+  .flexlayout__tabset-maximized {
+  }
+  .flexlayout__tab {
+    overflow: hidden;
+    position: absolute;
+    box-sizing: border-box;
+  }
+  .flexlayout__tab_button {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    cursor: pointer;
+    padding: 0px 8px 0px 8px;
+    margin-right: 8px;
+    background-color: #2f2f2f;
+  }
+  .flexlayout__tabset-selected .flexlayout__tab_button--selected {
+    color: white; 
+    background-color: #6db1e8;
+  }
+  @media (hover: hover) {
+    .flexlayout__tab_button:hover {
+    }
+  }
+  .flexlayout__tab_button--unselected {
+    color: gray;
+  }
+  .flexlayout__tab_button_top {
+  }
+  .flexlayout__tab_button_bottom {
+  }
+  .flexlayout__tab_button_leading {
+    display: inline-block;
+  }
+  .flexlayout__tab_button_content {
+    font-size: $ms-font-size-14;
+    font-weight: $ms-font-weight-semibold;
+    display: inline-block;
+  }
+  .flexlayout__tab_button_textbox {
+    border: none;
+    /* color: green;
+    background-color: #262626; */
+  }
+  .flexlayout__tab_button_textbox:focus {
+    outline: none;
+  }
+
+  .flexlayout__tab_button_trailing {
+    margin-left: 8px;
+  }
+
+  .flexlayout__tab_button--selected .flexlayout__tab_button_trailing {
+    color: white;
+  }
+
+  .flexlayout__tab_button_trailing, .flexlayout__tab_button_trailing i {
+    width: 8px;
+    height: 8px;
+    font-size: 8px;    
+  }
+
+  .flexlayout__splitter {
+    background-color: $ms-color-gray140;
+  }
+
+.toolOptionsPanel {
+  width: 100%;
+  height: 44px;
+  background-color: $ms-color-gray190;
+  border-bottom: 1px solid $ms-color-gray150;
+  justify-content: center;
+}

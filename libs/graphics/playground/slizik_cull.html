@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+
+<head>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0px;
+            padding: 0px;
+            /* overflow: hidden; */
+        }
+
+        head,
+        body {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border: 0px;
+        }
+
+        .canvasWrap {
+            width: 100%;
+            height: 100%;
+        }
+
+        #bin {
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <input type="range" min="0" max="30000" step="1" value="0" class="slider" id="bin">
+    <div class="canvasWrap"><canvas id="viewport"></canvas></div>
+
+    <script src="parsepdb.js"></script>
+    <script src="../dist/chromatin_3d_viewport.js"></script>
+    <script>
+        let slider = document.getElementById("bin");
+        let chromatinPart = null;
+        let viewport = null;
+        let sphereCull = null;
+        let currentBin = 0;
+
+        window.addEventListener("load", function () {
+            (async () => {
+                var stop = false;
+
+                if (!navigator.gpu) {
+                    alert("WebGPU is not supported/enabled in your browser");
+                    return;
+                }
+
+                // Get a GPU device to render with
+                var adapter = await navigator.gpu.requestAdapter({
+                    powerPreference: "high-performance"
+                });
+
+                var device = await adapter.requestDevice();
+                device.onuncapturederror = function (e) {
+                    stop = true;
+                    console.log(e);
+                };
+
+                // 1. Initialize the library
+                let graphics = new chromatin_3d_viewport.GraphicsLibrary(adapter, device);
+
+                // 2. Find and remember canvas objects
+                let canvas = document.getElementById("viewport");
+
+                // 3. Create viewports and assign them to canvas objects
+                const dataID = 0;
+                let currentSelectedBin = 0;
+                viewport = graphics.createChromatinViewport(canvas);
+                viewport.ssaoKernelSize = 2;
+                viewport.ssaoKernelRadius = 0.1;
+                viewport.ssaoBlurSize = 2;
+
+                sphereCull = new chromatin_3d_viewport.CullSphere({ x: 0.0, y: 0.0, z: 0.0 }, 0.10);
+                // viewport.addCullObject(sphereCull);
+                viewport.updateCullObjects();
+
+                let rawFile = new XMLHttpRequest();
+                rawFile.onreadystatechange = () => {
+                    if (rawFile.readyState == 4 && rawFile.status == 200) {
+                        const pdbData = parsePdb(rawFile.responseText);
+                        const data = pdbData.atoms.map(d => { return { x: d.x, y: d.y, z: d.z } });
+
+                        chromatinPart = viewport.addPart(
+                            data,
+                            true, 1, chromatin_3d_viewport.ChromatinRepresentation.ContinuousTube, true
+                        );
+                        chromatinPart.structure.radius = 0.006;
+                        // const p = chromatinPart.getBinsPositions()[0];
+
+                        for (let i = 4500; i < 4550; i++) {
+                            const cullCenter = chromatinPart.getBinsPositions()[i];
+                            chromatinPart.setBinColor(i, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                            console.log(cullCenter);
+                            viewport.addCullObject(new chromatin_3d_viewport.CullSphere({ x: cullCenter[0], y: cullCenter[1], z: cullCenter[2] }, 0.05));
+                        }
+
+                        // sphereCull.center = { x: p[0], y: p[1], z: p[2] };
+                        viewport.updateCullObjects();
+                    }
+                }
+                rawFile.open("GET", './wholegenome_test1.pdb');
+                rawFile.send();
+
+                const doFrame = (frametime) => {
+                    viewport.render(frametime);
+
+                    if (!stop) {
+                        requestAnimationFrame(doFrame);
+                    }
+                };
+                requestAnimationFrame(doFrame);
+
+
+            })();
+        });
+
+        const onKeyPress = (e) => {
+            if (!chromatinPart || !viewport || !sphereCull) return;
+
+            // Left Arrow
+            if (e.key === "ArrowLeft" && currentBin >= 0) {
+                console.log('back');
+                currentBin -= 1;
+
+                const p = chromatinPart.getBinsPositions()[currentBin];
+                sphereCull.center = { x: p[0], y: p[1], z: p[2] };
+                chromatinPart.setBinColor(currentBin + 1, { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
+                chromatinPart.setBinColor(currentBin, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                viewport.updateCullObjects();
+            }
+            // Right Arrow
+            else if (e.key === "ArrowRight") {
+                console.log('forward');
+                currentBin += 1;
+
+                const p = chromatinPart.getBinsPositions()[currentBin];
+                sphereCull.center = { x: p[0], y: p[1], z: p[2] };
+                chromatinPart.setBinColor(currentBin - 1, { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
+                chromatinPart.setBinColor(currentBin, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                viewport.updateCullObjects();
+            }
+        }
+
+        slider.oninput = () => {
+            if (!chromatinPart || !viewport || !sphereCull) return;
+
+            currentBin = slider.value;
+
+            const p = chromatinPart.getBinsPositions()[currentBin];
+            sphereCull.center = { x: p[0], y: p[1], z: p[2] };
+            viewport.updateCullObjects();
+        }
+
+        document.addEventListener('keydown', onKeyPress);
+    </script>
+</body>
+
+</html>

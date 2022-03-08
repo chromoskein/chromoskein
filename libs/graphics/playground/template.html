@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+
+<head>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0px;
+            padding: 0px;
+            /* overflow: hidden; */
+        }
+
+        head,
+        body {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border: 0px;
+        }
+
+        .canvasWrap {
+            width: 100%;
+            height: 100%;
+        }
+
+        #bin {
+            width: 100%;
+            position:fixed;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="canvasWrap"><canvas id="viewport"></canvas></div>
+
+    <script src="parsepdb.js"></script>
+    <script src="../dist/chromatin_3d_viewport.js"></script>
+    <script>
+        let slider = document.getElementById("bin");
+        let chromatinPart = null;
+        let viewport = null;
+        let sphereCull = null;
+        let currentBin = 0;
+
+        window.addEventListener("load", function () {
+            (async () => {
+                var stop = false;
+
+                if (!navigator.gpu) {
+                    alert("WebGPU is not supported/enabled in your browser");
+                    return;
+                }
+
+                // Get a GPU device to render with
+                var adapter = await navigator.gpu.requestAdapter({
+                    powerPreference: "high-performance"
+                });
+
+                var device = await adapter.requestDevice();
+                device.onuncapturederror = function (e) {
+                    stop = true;
+                    console.log(e);
+                };
+                console.log(device);
+
+                // 1. Initialize the library
+                let graphics = new chromatin_3d_viewport.GraphicsLibrary(adapter, device);
+
+                // 2. Find and remember canvas objects
+                let canvas = document.getElementById("viewport");
+
+                // 3. Create viewports and assign them to canvas objects
+                const dataID = 0;
+                let currentSelectedBin = 0;
+                viewport = graphics.createChromatinViewport(canvas);
+                viewport.ssaoKernelSize = 2;
+                viewport.ssaoKernelRadius = 10;
+                viewport.ssaoBlurSize = 2;
+
+                let rawFile = new XMLHttpRequest();
+                rawFile.onreadystatechange = () => {
+                    if (rawFile.readyState == 4 && rawFile.status == 200) {
+                        const pdbData = parsePdb(rawFile.responseText);
+                        const data = pdbData.atoms.map(d => { return { x: d.x, y: d.y, z: d.z } });
+
+                        chromatinPart = viewport.addPart(
+                            data,
+                            true, 1, chromatin_3d_viewport.ChromatinRepresentation.ContinuousTube, true
+                        );
+                        chromatinPart.structure.radius = 0.005;
+
+                        const p = chromatinPart.getBinsPositions()[0];
+                    }
+                }
+                rawFile.open("GET", './wholegenome_test1.pdb');
+                rawFile.send();
+
+                const doFrame = (frametime) => {
+                    viewport.render(frametime);
+
+                    if (!stop) {
+                        requestAnimationFrame(doFrame);
+                    }
+                };
+                requestAnimationFrame(doFrame);
+            })();
+        });
+    </script>
+</body>
+
+</html>

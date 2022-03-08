@@ -1,0 +1,135 @@
+@import "@fluentui/react/dist/sass/References";
+
+.rightPanel {
+  width: 320px;
+  background-color: $ms-color-gray190;
+}
+
+.rightPanel .title {
+  font-weight: 600;
+}
+
+.rightPanel .section {
+  padding: 16px;
+}
+
+.treeView {
+  width: 100%;
+
+  font-size: $ms-font-size-14;
+  font-weight: $ms-font-weight-regular;
+
+  flex: 1;
+  padding: 16px 8px;
+}
+
+
+.treeViewList {
+  width: 100%;
+  display: block;
+}
+
+.treeViewListItem {
+  display: flex;
+  align-items: center;
+  line-height: 22px;
+  height: 36px;
+  padding: 8px;
+  margin: 2px 0px 2px 0px;
+  border-radius: 4px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.treeViewListItem:hover, .treeViewListItem.selected {
+  background-color: $ms-color-gray160;
+}
+
+.treeViewListItem:hover::before {
+    content: "";
+    display: block;
+    width: 3px;
+    height: 16px;
+    flex-shrink: 0;
+    background-color: #60cdff;
+    position: absolute;
+    border-radius: 4px;
+    left: 0px;
+  }
+
+.treeViewListItem .text {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.treeViewListItem .icon {
+  flex-basis: 24px;
+  flex-shrink: 0;
+}
+
+.compensateLeft {
+  margin-left: -2px;
+}
+
+.svg {
+  display: block;
+}
+
+.treeViewListItem .svg {
+  margin: 0 auto;
+}
+
+.treeViewListItem:hover .visibleOnHover {
+  display: block;
+}
+.treeViewListItem .visibleOnHover {
+  display: none;
+}
+
+.treeViewDroppable {
+  background-color: $ms-color-gray160;
+}
+
+.treeViewDragginSource {
+}
+
+.smallButton {
+  font-size: 12px;
+  line-height: 18px;
+  height: 26px;
+  padding: 0px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.smallButton > span {
+}
+
+.treeViewPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.iconHoverBlue:hover .svg {
+  fill: #6db1e8;
+}
+
+.iconHoverRed:hover .svg {
+  fill: #d13438;
+}
+
+.selectionColorbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  display: block;
+}
+
+.horizontalChoiceGroup {
+    display: flex;
+    gap: 16px;
+}

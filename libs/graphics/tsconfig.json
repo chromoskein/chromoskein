@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        // TS/JS version
+        "module": "ES2020",
+        "target": "ES2020",
+        // "lib": [ "ES2015", "dom" ],
+        "sourceMap": true,
+        "declaration": true,
+        // Ouput directory
+        "outDir": "./dist/",
+        // Lints
+        "strict": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        // "noUnusedLocals": false,
+        // "noUnusedParameters": true,
+        // "noImplicitAny": true,
+        "forceConsistentCasingInFileNames": true,
+        // Disable pure javascript.
+        "allowJs": false,
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "node",
+        "typeRoots": [ "./node_modules/@webgpu/types", "./node_modules/@types", "./node_modules/@resize-observer-browser"]
+    }
+}
