@@ -273,15 +273,16 @@ export function ChromatinViewport(props: {
         const distances = [];
 
         const idData1D = configuration.mapValues.id;
+        const datum = configuration.data[0];
+
         let mapData1D: Positions3D | null = null;
         if (idData1D != null) {
             mapData1D = data.data.find(d => d.id == isoDataID.wrap(idData1D))?.values as Positions3D;
         }
 
-        if (mapData1D) {
+        if (mapData1D && datum) {
             const centromereBins = new Array(mapData1D.length);
 
-            const datum = configuration.data[0];
             const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
 
             // Normalize centromeres to current bounding box
