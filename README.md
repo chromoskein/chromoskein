@@ -24,4 +24,4 @@ Run dev server
 
 
 ### Pages
-Pushing to `main` branch triggers publish on https://visitlab.pages.fi.muni.cz/chromatin/chromazoom/
+Pushing to `main` branch triggers publish on https://visitlab.pages.fi.muni.cz/chromatin/chromoskein/
