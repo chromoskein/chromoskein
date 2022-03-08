@@ -49,7 +49,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     data: Array<IChromatinDataConfiguration>,
 
     mapValues: {
-        id: number
+        id: number | null
     },
 
     ssao: {
@@ -100,7 +100,7 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         } as OrbitCameraConfiguration,
 
         mapValues: {
-            id: -1
+            id: null
         },
 
         ssao: {

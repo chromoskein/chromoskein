@@ -1,4 +1,4 @@
-import { Callout, DefaultButton, TextField, ColorPicker, ComboBox, IComboBoxOption, IComboBox, Label, Slider, IColor, Dropdown, IDropdownOption, Stack, Separator, ChoiceGroup, IChoiceGroupOption } from "@fluentui/react";
+import { Callout, DefaultButton, TextField, ColorPicker, ComboBox, IComboBoxOption, IComboBox, Label, Slider, IColor, Dropdown, IDropdownOption, Stack, Separator, ChoiceGroup, IChoiceGroupOption, IconButton } from "@fluentui/react";
 import { Model, TabNode } from "flexlayout-react";
 import React, { Dispatch, FormEvent, useEffect, useState } from "react";
 import { toNumber } from "lodash";
@@ -151,6 +151,16 @@ export function ChromatinViewportConfigurationPanel(props: {
         }
     };
 
+    const removeData1D = () => {
+        updateConfiguration({
+            ...configuration,
+            mapValues: {
+                ...configuration.mapValues,
+                id: null,
+            },
+        });
+    }
+
     const setRepresentationAll = (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption): void => {
         if (configuration == null || option == undefined || typeof option.key == 'string') return;
 
@@ -287,6 +297,7 @@ export function ChromatinViewportConfigurationPanel(props: {
             autoComplete={'on'}
             options={data3DOptions}
             text="Type name of data item to add"
+
             onChange={addData3D}
             onItemClick={addData3D}
             style={{ marginTop: '8px', padding: '4px' }}
@@ -336,19 +347,22 @@ export function ChromatinViewportConfigurationPanel(props: {
         <Separator></Separator>
         <Text nowrap block variant='large'>Map 1D data</Text>
         {data1DOptions.length <= 0 && ("No more data available.")}
-        {data1DOptions.length > 0 && (<ComboBox
-            label=""
-            allowFreeform={false}
-            autoComplete={'on'}
-            options={data1DOptions}
-            onChange={setData1D}
-            onItemClick={setData1D}
-            style={{ marginTop: '8px', padding: '4px' }}
-            shouldRestoreFocus={false}
-            selectedKey={
-                (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
-            }
-        />)}
+        {data1DOptions.length > 0 && (<Stack horizontal>
+            <ComboBox
+                label=""
+                allowFreeform={false}
+                autoComplete={'on'}
+                options={data1DOptions}
+                onChange={setData1D}
+                onItemClick={setData1D}
+                style={{ marginTop: '8px', padding: '4px' }}
+                shouldRestoreFocus={false}
+                selectedKey={configuration.mapValues.id}
+            />
+            <IconButton style={{ margin: '12px 0px' }} iconProps={{ iconName: 'Delete', style: { color: 'white' } }} onClick={removeData1D}></IconButton>
+            {/* <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { removeData1D() }}></Delete16Regular> */}
+
+        </Stack>)}
 
         {/* SELECTIONS */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
