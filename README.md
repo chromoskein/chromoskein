@@ -6,7 +6,7 @@ Chromatin visualisation app + library
 
 
 #### Supported browsers:
- - Google Chrome Canary
+ - Google Chrome Canary with `chrome://flags/#enable-unsafe-webgpu` flag enabled
 
 #### Project initialization
 
