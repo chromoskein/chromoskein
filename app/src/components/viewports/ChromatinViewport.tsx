@@ -658,6 +658,11 @@ export function ChromatinViewport(props: {
     }, [viewport, configuration.backgroundColor]);
 
     useEffect(() => {
+        if (configuration.ssao.radius == 0) {
+            viewport.shadowMethod = "Flat";
+        } else {
+            viewport.shadowMethod = "SSAO";
+        }
         viewport.ssaoKernelRadius = configuration.ssao.radius;
     }, [viewport, configuration.ssao.radius]);
 
@@ -665,13 +670,6 @@ export function ChromatinViewport(props: {
         viewport.ssaoBlurSize = configuration.ssao.blurSize;
     }, [viewport, configuration.ssao.blurSize]);
 
-    useEffect(() => {
-        viewport.ssaoKernelRadius = configuration.ssao.radius;
-    }, [viewport, configuration.ssao.radius]);
-
-    useEffect(() => {
-        viewport.ssaoBlurSize = configuration.ssao.blurSize;
-    }, [viewport, configuration.ssao.blurSize]);
 
     useEffect(() => {
         viewport.showDebugPlanes = configuration.sectionCuts.showDebugPlanes;

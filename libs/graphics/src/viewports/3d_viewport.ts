@@ -9,6 +9,19 @@ import { CullObject, CullSphere, CullPlane, CullRoundedCone } from "../culling";
 import { Image } from 'image-js';
 import blueNoise from './HDR_RGB_0.png';
 
+
+export type ShadowMethod = "SSAO" | "Flat" | "RTX"
+type GBuffer = {
+  colorsOpaque: GPUTexture,
+  colorsTransparent: GPUTexture,
+  worldNormals: GPUTexture,
+  ambientOcclusion: [GPUTexture, GPUTexture],
+  currentAmbientOcclusion: number,
+  globals: {
+    ambientOcclusionTaps: number,
+  },
+  globalsGPU: GPUBuffer,
+}
 export class Viewport3D {
   protected graphicsLibrary: GraphicsLibrary;
 
@@ -20,17 +33,7 @@ export class Viewport3D {
 
   protected outputTexture: GPUTexture | null = null;
   protected depthTexture: GPUTexture | null = null;
-  protected gBuffer: {
-    colorsOpaque: GPUTexture,
-    colorsTransparent: GPUTexture,
-    worldNormals: GPUTexture,
-    ambientOcclusion: [GPUTexture, GPUTexture],
-    currentAmbientOcclusion: number,
-    globals: {
-      ambientOcclusionTaps: number,
-    },
-    globalsGPU: GPUBuffer,
-  } | null = null;
+  protected gBuffer: GBuffer | null = null;
 
   protected _scene: Scene;
   protected _camera: OrbitCamera | SmoothCamera | null = null;
@@ -55,7 +58,7 @@ export class Viewport3D {
   };
   protected _ssaoGlobalsBuffer: Float32Array;
   protected _ssaoGlobalsGPU: GPUBuffer;
-  protected _ssaoNoiseTexure: GPUTexture;
+  protected _ssaoNoiseTexture: GPUTexture;
   //#endregion
 
   //#region Modules
@@ -63,7 +66,7 @@ export class Viewport3D {
   //#endregion
 
   //#region Ray Tracing
-  public rayTraceAO = false;
+  public shadowMethod: ShadowMethod = "SSAO";
   //#endregion
 
   //#region Benchmarking
@@ -193,7 +196,7 @@ export class Viewport3D {
         64 * 4);
     });
 
-    this._ssaoNoiseTexure = this.graphicsLibrary.device.createTexture({
+    this._ssaoNoiseTexture = this.graphicsLibrary.device.createTexture({
       size: {
         width: 64,
         height: 64,
@@ -216,7 +219,7 @@ export class Viewport3D {
       }
 
       this.graphicsLibrary.device.queue.writeTexture(
-        { texture: this._ssaoNoiseTexure, },
+        { texture: this._ssaoNoiseTexture, },
         noiseTextureBuffer,
         { bytesPerRow: 1024, },
         { width: 64, height: 64, depthOrArrayLayers: 1 }
@@ -542,58 +545,78 @@ export class Viewport3D {
     // });
     //#endregion
 
-    if (this.rayTraceAO) {
-      this._scene.renderRayTracingAmbientOcclusion({
-        width: this.width,
-        height: this.height,
-        cameraBindGroup: cameraBindGroup,
-        gBufferBindGroup: device.createBindGroup({
-          layout: this.graphicsLibrary.bindGroupLayouts.rayTracingAmbientOcclusionOutput,
-          entries: [
-            { binding: 0, resource: this.depthTexture.createView() },
-            { binding: 1, resource: this.gBuffer.worldNormals.createView() },
-            { binding: 2, resource: this.gBuffer.ambientOcclusion[0].createView() },
-            {
-              binding: 3,
-              resource: {
-                buffer: this.gBuffer.globalsGPU,
-              },
-            }
-          ]
-        }),
-        passEncoder: computePassEncoder,
-      });
-    } else {
-      this._scene.renderScreenSpaceAmbientOcclusion({
-        width: this.width,
-        height: this.height,
-        cameraBindGroup: cameraBindGroup,
-        gBufferBindGroup: device.createBindGroup({
-          layout: this.graphicsLibrary.bindGroupLayouts.ssaoGBuffer,
-          entries: [
-            { binding: 0, resource: this.depthTexture.createView() },
-            { binding: 1, resource: this.gBuffer.worldNormals.createView() },
-            { binding: 2, resource: this.gBuffer.ambientOcclusion[0].createView() }
-          ]
-        }),
-        ssaoBindGroup: device.createBindGroup({
-          layout: this.graphicsLibrary.bindGroupLayouts.ssaoGlobals,
-          entries: [
-            { binding: 0, resource: { buffer: this._ssaoGlobalsGPU } },
-            { binding: 1, resource: this.graphicsLibrary.nearestRepeatSampler },
-            { binding: 2, resource: this._ssaoNoiseTexure.createView() }
-          ]
-        }),
-        passEncoder: computePassEncoder,
-      });
+    const renderFactory = (shadowMethod: ShadowMethod, viewportContext: {
+      depthTexture: GPUTexture,
+      gBuffer: GBuffer,
+      graphicsLibrary: GraphicsLibrary,
+      ssaoNoiseTexture: GPUTexture
+
+    }) => {
+      return {
+        "RTX": () => {
+          this._scene.renderRayTracingAmbientOcclusion({
+            width: this.width,
+            height: this.height,
+            cameraBindGroup: cameraBindGroup,
+            gBufferBindGroup: device.createBindGroup({
+              layout: this.graphicsLibrary.bindGroupLayouts.rayTracingAmbientOcclusionOutput,
+              entries: [
+                { binding: 0, resource: viewportContext.depthTexture.createView() },
+                { binding: 1, resource: viewportContext.gBuffer.worldNormals.createView() },
+                { binding: 2, resource: viewportContext.gBuffer.ambientOcclusion[0].createView() },
+                {
+                  binding: 3,
+                  resource: {
+                    buffer: viewportContext.gBuffer.globalsGPU,
+                  },
+                }
+              ]
+            }),
+            passEncoder: computePassEncoder,
+          });
+        },
+        "SSAO": () => {
+          this._scene.renderScreenSpaceAmbientOcclusion({
+            width: this.width,
+            height: this.height,
+            cameraBindGroup: cameraBindGroup,
+            gBufferBindGroup: device.createBindGroup({
+              layout: this.graphicsLibrary.bindGroupLayouts.ssaoGBuffer,
+              entries: [
+                { binding: 0, resource: viewportContext.depthTexture.createView() },
+                { binding: 1, resource: viewportContext.gBuffer.worldNormals.createView() },
+                { binding: 2, resource: viewportContext.gBuffer.ambientOcclusion[0].createView() }
+              ]
+            }),
+            ssaoBindGroup: device.createBindGroup({
+              layout: this.graphicsLibrary.bindGroupLayouts.ssaoGlobals,
+              entries: [
+                { binding: 0, resource: { buffer: this._ssaoGlobalsGPU } },
+                { binding: 1, resource: viewportContext.graphicsLibrary.nearestRepeatSampler },
+                { binding: 2, resource: viewportContext.ssaoNoiseTexture.createView() }
+              ]
+            }),
+            passEncoder: computePassEncoder,
+          });
+        },
+        "Flat": () => { }
+      }[shadowMethod]
     }
+
+    renderFactory(this.shadowMethod, {
+      depthTexture: this.depthTexture,
+      gBuffer: this.gBuffer,
+      graphicsLibrary: this.graphicsLibrary,
+      ssaoNoiseTexture: this._ssaoNoiseTexture
+    })()
+
 
     computePassEncoder.setPipeline(this.graphicsLibrary.computePipelines.ambientOcclusionBlur);
     computePassEncoder.setBindGroup(0,
       device.createBindGroup({
         layout: this.graphicsLibrary.bindGroupLayouts.aoBlurIO,
         entries: [
-          { binding: 0, resource: this.gBuffer.ambientOcclusion[0].createView() },          
+          { binding: 0, resource: this.gBuffer.ambientOcclusion[0].createView() },
           { binding: 1, resource: this.gBuffer.worldNormals.createView() },
           { binding: 2, resource: this.depthTexture.createView() },
           { binding: 3, resource: this.gBuffer.ambientOcclusion[1].createView() },
