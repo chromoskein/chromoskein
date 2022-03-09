@@ -25,7 +25,7 @@ export function NewXYZDataDialog(props: {
 
   const [parseConfiguration, setParseConfiguration] = useState<ParseConfiguration>({ type: FileType.PDB });
   const [selectedColumns, setSelectedColumns] = useState<Array<string | number>>([]);
-  const [basePairsResolution, setBasePairsResolution] = useState(0);
+  const [basePairsResolution, setBasePairsResolution] = useState(1000);
 
   // (Re-)Parse the files when new ones are uploaded or the parse configuration changed
   useEffect(() => {
@@ -188,7 +188,7 @@ export function NewXYZDataDialog(props: {
             }
             <SpinButton
               label="Base pairs resolution"
-              defaultValue="1000"
+              defaultValue={`${basePairsResolution}`}
               min={0}
               max={1000000}
               step={1000}
