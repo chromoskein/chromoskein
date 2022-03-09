@@ -524,6 +524,27 @@ export class Viewport3D {
     */
     //#endregion
 
+    if (this.shadowMethod === "Flat") {
+      const clearSSAOPass = commandEncoder.beginRenderPass({
+        label: "",
+        colorAttachments: [
+          {
+            view: this.gBuffer.ambientOcclusion[0].createView(),
+            clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+            loadOp: 'clear',
+            storeOp: 'store',
+          },
+          {
+            view: this.gBuffer.ambientOcclusion[1].createView(),
+            clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+            loadOp: 'clear',
+            storeOp: 'store',
+          },
+        ],
+      });
+      clearSSAOPass.end();
+    }
+
     const computePassEncoder = commandEncoder.beginComputePass();
 
     //#region Ray Trace G-Buffer    
