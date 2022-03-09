@@ -4,12 +4,14 @@ import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState
 import { useCustomCompareEffect, useDeepCompareEffect, useMouse, usePrevious } from "react-use";
 import { ChromatinIntersection, ChromatinPart, ChromatinRepresentation, ContinuousTube, Sphere, Spheres, CullPlane, BinPosition } from "../../modules/graphics";
 import { vec3, vec4 } from "gl-matrix";
-import { BinPositionsData, Data, DataAction, DataState, isoDataID, Position3D, Positions3D } from "../../modules/storage/models/data";
+import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Position3D, Positions3D } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import produce from "immer";
 import { useConfiguration } from "../hooks";
 import { useKey } from "rooks";
 import * as Chroma from "chroma-js";
+import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
+import { iso } from "newtype-ts";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
@@ -17,11 +19,13 @@ export function ChromatinViewport(props: {
     graphicsLibrary: GraphicsModule.GraphicsLibrary,
     configurationID: number,
     configurationsReducer: [ConfigurationState, Dispatch<ConfigurationAction>],
+    coordinatePreviewReducer: [CoordinatePreviewState, React.Dispatch<CoordinatePreviewAction>],
     dataReducer: [DataState, Dispatch<DataAction>],
     selectionsReducer: [SelectionState, Dispatch<SelectionAction>],
 }): JSX.Element {
     // Configuration/Data
     const configurationReducer = useConfiguration<ChromatinViewportConfiguration>(props.configurationID, props.configurationsReducer);
+    const [coordinatePreview, dispatchCoordinatePreview] = props.coordinatePreviewReducer;
 
     const [data, dataDispatch] = props.dataReducer;
     const [globalSelections, globalSelectionsDispatch] = props.selectionsReducer;
@@ -268,73 +272,63 @@ export function ChromatinViewport(props: {
         setClosestIntersection(() => viewport.closestIntersectionBin({ x: mousePosition.elX * window.devicePixelRatio, y: mousePosition.elY * window.devicePixelRatio }));
     }, [viewport, mousePosition]);
 
+
+    useEffect(() => {
+        if (!closestIntersection) {
+            dispatchCoordinatePreview({
+                visible: false
+            })
+            return;
+        }
+
+        dispatchCoordinatePreview({
+            visible: true,
+            type: "bin-coordinates-single",
+            dataId: iso<DataID>().wrap(closestIntersection.chromatinPart.dataId),
+            from: closestIntersection.binIndex
+        })
+    }, [viewport, closestIntersection])
+
     // Calculate 1D Mapping
     useEffect(() => {
-        const distances = [];
-
         const idData1D = configuration.mapValues.id;
         const datum = configuration.data[0];
 
-        let mapData1D: Positions3D | null = null;
-        if (idData1D != null) {
-            mapData1D = data.data.find(d => d.id == isoDataID.wrap(idData1D))?.values as Positions3D;
+        if (datum == null) {
+            return;
+        }
+        let mapData1D = data.data.find(d => d.id == isoDataID.wrap(idData1D ?? -1))?.values as Positions3D;
+
+        if (mapData1D == null) {
+            setMappedValues([]);
+            return
         }
 
-        if (mapData1D && datum) {
-            const centromereBins = new Array(mapData1D.length);
 
-            const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
+        const centromereBins = new Array(mapData1D.length);
 
-            // Normalize centromeres to current bounding box
-            const normalizeCenter = data3D.normalizeCenter;
-            const normalizeScale = data3D.normalizeScale;
-            const centromeres: Array<vec3> = [];
-            for (const c of mapData1D!) {
-                let centromere = vec3.fromValues(c.x, c.y, c.z);
+        const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
 
-                centromere = vec3.sub(vec3.create(), centromere, normalizeCenter);
-                centromere = vec3.scale(vec3.create(), centromere, normalizeScale);
+        // Normalize centromeres to current bounding box
+        const normalizeCenter = data3D.normalizeCenter;
+        const normalizeScale = data3D.normalizeScale;
+        const centromeres: Array<vec3> = [];
+        for (const c of mapData1D!) {
+            let centromere = vec3.fromValues(c.x, c.y, c.z);
 
-                centromeres.push(centromere);
-            }
+            centromere = vec3.sub(vec3.create(), centromere, normalizeCenter);
+            centromere = vec3.scale(vec3.create(), centromere, normalizeScale);
 
-            // Map centromere 3D position to 1D bin index
-            let binsOffset = 0;
-            for (let centromereIndex = 0; centromereIndex < centromereBins.length; centromereIndex++) {
-                let minDistance = 1.0;
-                let minIndex = -1;
+            centromeres.push(centromere);
+        }
 
-                binsOffset = 0;
-                for (let dataIndex = 0; dataIndex < configuration.data.length; dataIndex++) {
-                    const datum = configuration.data[dataIndex];
-                    const chromatinPart = viewport.getChromatinPartByDataId(isoDataID.unwrap(datum.id));
+        // Map centromere 3D position to 1D bin index
+        let binsOffset = 0;
+        for (let centromereIndex = 0; centromereIndex < centromereBins.length; centromereIndex++) {
+            let minDistance = 1.0;
+            let minIndex = -1;
 
-                    if (!chromatinPart) {
-                        break;
-                    }
-
-                    const binsPositions = chromatinPart.getBinsPositions();
-                    for (let i = 0; i < binsPositions.length; i++) {
-                        const bin1DPosition = binsOffset + i;
-
-                        const diff = vec3.sub(vec3.create(), centromeres[centromereIndex], binsPositions[i]);
-                        const distance = vec3.dot(diff, diff);
-
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            minIndex = bin1DPosition;
-                        }
-                    }
-
-                    binsOffset += binsPositions.length;
-                }
-
-                centromereBins[centromereIndex] = minIndex;
-            }
-
-            // Map bin to distance
             binsOffset = 0;
-            let distances = [];
             for (let dataIndex = 0; dataIndex < configuration.data.length; dataIndex++) {
                 const datum = configuration.data[dataIndex];
                 const chromatinPart = viewport.getChromatinPartByDataId(isoDataID.unwrap(datum.id));
@@ -346,62 +340,90 @@ export function ChromatinViewport(props: {
                 const binsPositions = chromatinPart.getBinsPositions();
                 for (let i = 0; i < binsPositions.length; i++) {
                     const bin1DPosition = binsOffset + i;
-                    const distance = Math.min(...centromereBins.map((v) => Math.abs(v - bin1DPosition)));
 
-                    distances.push(distance);
+                    const diff = vec3.sub(vec3.create(), centromeres[centromereIndex], binsPositions[i]);
+                    const distance = vec3.dot(diff, diff);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        minIndex = bin1DPosition;
+                    }
                 }
 
                 binsOffset += binsPositions.length;
             }
 
-            // Color inside with mapping
-            const ratio = Math.max(...distances);
-            distances = distances.map(v => v / ratio);
-            const colorScale = Chroma.scale('YlGnBu');
+            centromereBins[centromereIndex] = minIndex;
+        }
 
-            binsOffset = 0;
-            const allColors = [];
-            for (let dataIndex = 0; dataIndex < configuration.data.length; dataIndex++) {
-                const datum = configuration.data[dataIndex];
-                const chromatinPart = viewport.getChromatinPartByDataId(isoDataID.unwrap(datum.id));
+        // Map bin to distance
+        binsOffset = 0;
+        let distances = [];
+        for (let dataIndex = 0; dataIndex < configuration.data.length; dataIndex++) {
+            const datum = configuration.data[dataIndex];
+            const chromatinPart = viewport.getChromatinPartByDataId(isoDataID.unwrap(datum.id));
 
-                if (!chromatinPart) {
-                    // throw "Could not find chromatin part associated with data ID " + datum.id;
-                    continue;
-                }
-
-                const binsLength = chromatinPart.getBinsPositions().length;
-                const colors = distances.slice(binsOffset, binsOffset + binsLength).map(v => {
-                    const c = colorScale(v).gl();
-                    return vec3.fromValues(c[0], c[1], c[2]);
-                });
-
-                // console.log(localDistances);
-
-                const finalColorsArray = new Array(2 * binsLength + 2);
-                if (chromatinPart.structure instanceof ContinuousTube) for (let i = 0; i < binsLength; i++) {
-                    if (i == 0) {
-                        finalColorsArray[0] = colors[0];
-                        finalColorsArray[1] = colors[0];
-                        finalColorsArray[2] = colors[0];
-                    } else if (i == binsLength - 1) {
-                        finalColorsArray[2 * i + 1] = colors[i];
-                        finalColorsArray[2 * i + 2] = colors[i];
-                        finalColorsArray[2 * i + 3] = colors[i];
-                    }
-                    else {
-                        finalColorsArray[2 * i + 1] = colors[i];
-                        finalColorsArray[2 * i + 2] = colors[i];
-                    }
-                }
-                allColors.push(finalColorsArray);
-
-                binsOffset += binsLength;
+            if (!chromatinPart) {
+                break;
             }
 
+            const binsPositions = chromatinPart.getBinsPositions();
+            for (let i = 0; i < binsPositions.length; i++) {
+                const bin1DPosition = binsOffset + i;
+                const distance = Math.min(...centromereBins.map((v) => Math.abs(v - bin1DPosition)));
+
+                distances.push(distance);
+            }
+
+            binsOffset += binsPositions.length;
+        }
+
+        // Color inside with mapping
+        const ratio = Math.max(...distances);
+        distances = distances.map(v => v / ratio);
+        const colorScale = Chroma.scale('YlGnBu');
+
+        binsOffset = 0;
+        const allColors = [];
+        for (let dataIndex = 0; dataIndex < configuration.data.length; dataIndex++) {
+            const datum = configuration.data[dataIndex];
+            const chromatinPart = viewport.getChromatinPartByDataId(isoDataID.unwrap(datum.id));
+
+            if (!chromatinPart) {
+                // throw "Could not find chromatin part associated with data ID " + datum.id;
+                continue;
+            }
+
+            const binsLength = chromatinPart.getBinsPositions().length;
+            const colors = distances.slice(binsOffset, binsOffset + binsLength).map(v => {
+                const c = colorScale(v).gl();
+                return vec3.fromValues(c[0], c[1], c[2]);
+            });
+
+            // console.log(localDistances);
+
+            const finalColorsArray = new Array(2 * binsLength + 2);
+            if (chromatinPart.structure instanceof ContinuousTube) for (let i = 0; i < binsLength; i++) {
+                if (i == 0) {
+                    finalColorsArray[0] = colors[0];
+                    finalColorsArray[1] = colors[0];
+                    finalColorsArray[2] = colors[0];
+                } else if (i == binsLength - 1) {
+                    finalColorsArray[2 * i + 1] = colors[i];
+                    finalColorsArray[2 * i + 2] = colors[i];
+                    finalColorsArray[2 * i + 3] = colors[i];
+                }
+                else {
+                    finalColorsArray[2 * i + 1] = colors[i];
+                    finalColorsArray[2 * i + 2] = colors[i];
+                }
+            }
+            allColors.push(finalColorsArray);
+
+            binsOffset += binsLength;
+
+
             setMappedValues(allColors);
-        } else {
-            setMappedValues([]);
         }
     }, [viewport, configuration.mapValues, configuration.data, data.data]);
 
@@ -427,7 +449,6 @@ export function ChromatinViewport(props: {
             if (dataIndex < mappedValues.length) {
                 if (chromatinPart.structure instanceof ContinuousTube) {
                     chromatinPart.structure.setColorsCombined(mappedValues[dataIndex]);
-                    console.log("colored")
                 }
             } else {
                 chromatinPart.resetColor({ r: 1.0, g: 1.0, b: 1.0, a: 1.0 });

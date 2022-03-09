@@ -25,7 +25,9 @@ import { ApplicationState, APPLICATION_STATE_VERSION } from './modules/storage/s
 import { ForceGraphViewport } from './components/viewports/ForceGraphViewport';
 import { ToolsList } from './components/Tools/ToolsList';
 import { ToolOptions } from './components/Tools/ToolOptions';
+import { CoordinatePreview } from './components/Tools/CoordinatePreview';
 import { NewGenomicDataDialog } from './components/dialogs/NewGenomicDataDialog';
+import { coordinatePreviewReducer } from './modules/storage/models/coordinatePreview';
 
 export enum Tool {
   PointSelection = 0,
@@ -196,6 +198,19 @@ function App(): JSX.Element {
     // restore?: React.ReactNode;
     // more?: React.ReactNode;
   }
+  //#endregion
+
+
+  const [coordinatePreview, dispatchCoordinatePreview] = useReducer(
+    coordinatePreviewReducer,
+    {
+      type: "bin-coordinates-single",
+      dataId: undefined,
+      visible: false,
+      from: 0,
+      to: 0
+    },
+  );
 
   //#region Viewports creation
   const updateModel = (model: FlexLayout.Model) => {
@@ -250,6 +265,7 @@ function App(): JSX.Element {
           graphicsLibrary={graphicsLibrary}
           configurationID={config}
           configurationsReducer={[configurations, dispatchConfigurations]}
+          coordinatePreviewReducer={[coordinatePreview, dispatchCoordinatePreview]}
           dataReducer={[data, dispatchData]}
           selectionsReducer={[selections, dispatchSelections]}
         ></ChromatinViewport>
@@ -397,7 +413,12 @@ function App(): JSX.Element {
       </div>
 
       <div className="toolOptionsPanel">
-        {activeTab && <ToolOptions configurationID={activeTab.getConfig()} configurationsReducer={[configurations, dispatchConfigurations]}></ToolOptions>}
+        {activeTab && <>
+          <ToolOptions configurationID={activeTab.getConfig()} configurationsReducer={[configurations, dispatchConfigurations]}></ToolOptions>
+          <Separator vertical></Separator>
+          <CoordinatePreview style={{ padding: "0px 8px" }} coordinatePreviewReducer={[coordinatePreview, dispatchCoordinatePreview]} dataReducer={[data, dispatchData]}
+          ></CoordinatePreview>
+        </>}
       </div>
 
       <div className="mainArea">

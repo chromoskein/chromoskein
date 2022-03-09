@@ -3,7 +3,7 @@ import { Dispatch, useState } from "react";
 import { TextFile, UploadTextFilesButton } from "../buttons/UploadTextFilesButton";
 import { ApplicationState } from "../../modules/storage/state";
 import { DataAction, DataActionKind, DataState } from "../../modules/storage/models/data";
-import { fromBEDtoSparse1DNumericData, fromBEDtoSparse1DTextData } from "../../modules/1d_data_utils";
+import { fromBEDtoSparse1DNumericData, fromBEDtoSparse1DTextData } from "../../modules/coordniatesUtils";
 import { CSVDelimiter, parseBED } from "../../modules/parsing";
 
 export function NewGenomicDataDialog(props: {

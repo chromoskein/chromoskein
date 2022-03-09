@@ -177,3 +177,7 @@ export function centromeresPositionsToBins(centromeres: Positions3D, binsPositio
 
     return result;
 }
+
+export function binToGenomicCoordinate(binNumber: number, binResolution: number): [number, number] {
+    return [binNumber * binResolution, (binNumber + 1) * binResolution]
+}
