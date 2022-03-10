@@ -37,7 +37,7 @@ export class Residue {
 }
 
 export type ChromosomeModel = {
-  atoms: Array<Atom>;
+  atoms: Array<{x: number, y: number, z: number}>;
   ranges: Array<{ from: number, to: number }>;
 
   normalizeCenter: vec3;
@@ -49,9 +49,9 @@ export type ChromosomeModel = {
  * @param {String} pdb
  * @returns {Object}
  */
-export function parsePdb(pdb: string): ChromosomeModel {
+export function parsePdb(pdb: string): Array<ChromosomeModel> {
   const pdbLines = pdb.split('\n');
-  let atoms: Array<Atom> = [];
+  let atoms: Array<{x: number, y: number, z: number}> = [];
 
   // Connectivity
   let connectivityBitset: Array<0 | 1> = new Array(pdbLines.length).fill(0);
@@ -65,26 +65,32 @@ export function parsePdb(pdb: string): ChromosomeModel {
 
     const identification = pdbLine.substring(0, 6);
     if (identification === ATOM_NAME || identification === 'HETATM') {
-      // http://www.wwpdb.org/documentation/file-format-content/format33/sect9.html#ATOM
       if (!stop) {
         atoms.push({
-          serial: parseInt(pdbLine.substring(6, 11)),
-          name: pdbLine.substring(12, 16).trim(),
-          altLoc: pdbLine.substring(16, 17).trim(),
-          resName: pdbLine.substring(17, 20).trim(),
-          chainID: pdbLine.substring(21, 22).trim(),
-          resSeq: parseInt(pdbLine.substring(22, 26)),
-          iCode: pdbLine.substring(26, 27).trim(),
           x: parseFloat(pdbLine.substring(30, 38)),
           y: parseFloat(pdbLine.substring(38, 46)),
-          z: parseFloat(pdbLine.substring(46, 54)),
-          occupancy: parseFloat(pdbLine.substring(54, 60)),
-          tempFactor: parseFloat(pdbLine.substring(60, 66)),
-          element: pdbLine.substring(76, 78).trim(),
-          charge: pdbLine.substring(78, 80).trim(),
+          z: parseFloat(pdbLine.substring(46, 54))
         });
       }
-
+      // http://www.wwpdb.org/documentation/file-format-content/format33/sect9.html#ATOM
+      // if (!stop) {
+      //   atoms.push({
+      //     serial: parseInt(pdbLine.substring(6, 11)),
+      //     name: pdbLine.substring(12, 16).trim(),
+      //     altLoc: pdbLine.substring(16, 17).trim(),
+      //     resName: pdbLine.substring(17, 20).trim(),
+      //     chainID: pdbLine.substring(21, 22).trim(),
+      //     resSeq: parseInt(pdbLine.substring(22, 26)),
+      //     iCode: pdbLine.substring(26, 27).trim(),
+      //     x: parseFloat(pdbLine.substring(30, 38)),
+      //     y: parseFloat(pdbLine.substring(38, 46)),
+      //     z: parseFloat(pdbLine.substring(46, 54)),
+      //     occupancy: parseFloat(pdbLine.substring(54, 60)),
+      //     tempFactor: parseFloat(pdbLine.substring(60, 66)),
+      //     element: pdbLine.substring(76, 78).trim(),
+      //     charge: pdbLine.substring(78, 80).trim(),
+      //   });
+      // }
     } else if (identification === 'CONECT') {
       const from = parseInt(pdbLine.substring(6, 11)) - 1;
       const to = parseInt(pdbLine.substring(11, 16)) - 1;
@@ -131,7 +137,7 @@ export function parsePdb(pdb: string): ChromosomeModel {
   // Normalize to [-1.0, 1.0] and center
   // Build bounding box
   const bb = BoundingBoxEmpty();
-  let points = atoms.map(a => vec3.fromValues(a.x!, a.y!, a.z!));
+  let points = atoms.map(v => vec3.fromValues(v.x, v.y, v.z));
   for (const point of points) {
     BoundingBoxExtendByPoint(bb, point);
   }
@@ -155,7 +161,7 @@ export function parsePdb(pdb: string): ChromosomeModel {
     };
   });
 
-  return {
+  return [{
     // Raw data from pdb
     atoms,
     // Connectivity
@@ -163,5 +169,5 @@ export function parsePdb(pdb: string): ChromosomeModel {
     // Normalize
     normalizeCenter: bb.center,
     normalizeScale: scale
-  };
+  }];
 }

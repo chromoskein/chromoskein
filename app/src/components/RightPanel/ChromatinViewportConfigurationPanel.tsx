@@ -1,4 +1,4 @@
-import { Callout, DefaultButton, TextField, ColorPicker, ComboBox, IComboBoxOption, IComboBox, Label, Slider, IColor, Dropdown, IDropdownOption, Stack, Separator, ChoiceGroup, IChoiceGroupOption, IconButton } from "@fluentui/react";
+import { Callout, DefaultButton, TextField, ColorPicker, ComboBox, IComboBoxOption, IComboBox, Label, Slider, IColor, Dropdown, IDropdownOption, Stack, Separator, ChoiceGroup, IChoiceGroupOption, Checkbox } from "@fluentui/react";
 import { Model, TabNode } from "flexlayout-react";
 import React, { Dispatch, FormEvent, useEffect, useState } from "react";
 import { toNumber } from "lodash";
@@ -8,7 +8,7 @@ import { ChromatinRepresentation } from "../../modules/graphics";
 import { Text } from '@fluentui/react/lib/Text';
 
 import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, ViewportConfigurationType } from '../../modules/storage/models/viewports';
-import { DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
+import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration, useSelections, useViewportName } from "../hooks";
 import { SelectionsPart } from "./SelectionsPart";
@@ -27,10 +27,9 @@ export function ChromatinViewportConfigurationPanel(props: {
 
     const [viewportName, setViewportName] = useViewportName(props.node, props.configurationsReducer);
 
-    const viewportDataIDs: Array<DataID> = configuration.data.map(d => d.id);
     const data3DOptions = data.data
         .filter(d => d.type == '3d-positions')
-        .filter(d => !viewportDataIDs.includes(d.id))
+        // .filter(d => configuration.data ? !viewportDataIDs.includes(configuration.data.id) : true)
         .map(d => {
             return {
                 key: isoDataID.unwrap(d.id),
@@ -50,8 +49,7 @@ export function ChromatinViewportConfigurationPanel(props: {
 
     const [isCalloutVisible, setIsCalloutVisible] = useState<boolean>(false);
 
-    const selectedDataPartIndex: number | null = configuration.selectedDataIndex;
-    const selections = useSelections(selectedDataPartIndex, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer);
+    const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer);
 
     //#region Viewport Settings
     const setBackgroundColor = (event: React.SyntheticEvent<HTMLElement>, color: IColor): void => {
@@ -75,71 +73,50 @@ export function ChromatinViewportConfigurationPanel(props: {
             }
         });
     }
-
-    const setSSAOBlurSize = (size: number) => {
-        if (!configuration) return;
-
-        updateConfiguration({
-            ...configuration,
-            ssao: {
-                ...configuration.ssao,
-                blurSize: toNumber(size)
-            }
-
-        });
-    }
     //#endregion
 
     //#region Data Parts
-    const addData3D = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+    // const removeData3D = (index: number) => {
+    //     if (!configuration) return;
+
+    //     const newData = [...configuration.data];
+    //     newData.splice(index, 1);
+
+    //     updateConfiguration({
+    //         ...configuration,
+    //         selectedDataIndex: configuration.selectedDataIndex == index ? null : configuration.selectedDataIndex,
+    //         data: newData,
+    //     });
+    // };
+
+    const setData3D = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
         if (!configuration || !option) return;
 
         const selectedDataId: DataID = isoDataID.wrap(option.key as number);
-        const updateSelectedDataPartIndex = configuration.data.length == 0 ? 0 : configuration.selectedDataIndex;
+        const selectedData = data.data.filter(d => d.id == selectedDataId)[0] as BinPositionsData;
 
         updateConfiguration({
             ...configuration,
-            data: [...configuration.data, {
+            data: {
+                ...configuration.data,
+
                 id: selectedDataId,
+
                 representation: ChromatinRepresentation.ContinuousTube,
-                normalizeToCenter: false,
                 radius: 0.01,
 
                 selections: [],
-
-                mapValues: {
-                    id: -1,
-                }
-            }],
-            selectedDataIndex: updateSelectedDataPartIndex,
-        });
-    };
-
-    const removeData3D = (index: number) => {
-        if (!configuration) return;
-
-        const newData = [...configuration.data];
-        newData.splice(index, 1);
-
-        updateConfiguration({
-            ...configuration,
-            selectedDataIndex: configuration.selectedDataIndex == index ? null : configuration.selectedDataIndex,
-            data: newData,
+            },
+            chromosomes: new Array(selectedData.chromosomes.length).fill(true),
+            mapValues: {
+                id: -1,
+            }
         });
     };
 
     const setData1D = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
         if (option) {
             const selectedDataId: number = option.key as number;
-
-            // const data = [...configuration.data];
-            // data[selectedDataPartIndex] = {
-            //     ...data[selectedDataPartIndex],
-            //     mapValues: {
-            //         ...data[selectedDataPartIndex].mapValues,
-            //         id: selectedDataId,
-            //     },
-            // };
 
             updateConfiguration({
                 ...configuration,
@@ -151,56 +128,15 @@ export function ChromatinViewportConfigurationPanel(props: {
         }
     };
 
-    const removeData1D = () => {
-        updateConfiguration({
-            ...configuration,
-            mapValues: {
-                ...configuration.mapValues,
-                id: null,
-            },
-        });
-    }
-
-    const setRepresentationAll = (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption): void => {
-        if (configuration == null || option == undefined || typeof option.key == 'string') return;
-
-        const newData = configuration.data;
-        for (let i = 0; i < newData.length; i++) {
-            newData[i].representation = option.key;
-        }
+    const setRadius = (radius: number) => {
+        if (!configuration.data) return;
 
         updateConfiguration({
             ...configuration,
-            data: newData
-        });
-    }
-
-    const setRadius = (radius: number, index: number) => {
-        if (!configuration) return;
-
-        const newData = [...configuration.data];
-        newData[index].radius = radius;
-
-        updateConfiguration({
-            ...configuration,
-            data: newData
-        });
-    }
-
-    const setRadiusAll = (radius: number) => {
-        if (!configuration) return;
-
-        const newData = [...configuration.data];
-        for (let i = 0; i < newData.length; i++) {
-            newData[i] = {
-                ...newData[i],
-                radius: radius
-            };
-        }
-
-        updateConfiguration({
-            ...configuration,
-            data: newData
+            data: {
+                ...configuration.data,
+                radius
+            }
         });
     }
     //#endregion
@@ -228,6 +164,18 @@ export function ChromatinViewportConfigurationPanel(props: {
                 ...configuration.cutaway,
                 length: length
             }
+        });
+    }
+
+    const chromosomeCheck = (index: number, isChecked?: boolean) => {
+        if (isChecked === undefined) return;
+
+        const newChromosomes = [...configuration.chromosomes];
+        newChromosomes[index] = isChecked;
+
+        updateConfiguration({
+            ...configuration,
+            chromosomes: newChromosomes
         });
     }
 
@@ -271,55 +219,40 @@ export function ChromatinViewportConfigurationPanel(props: {
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
         <Text nowrap block variant='large'>3D Data</Text>
-        {configuration && configuration.data.map((part, index: number) =>
-            <div style={{ paddingLeft: 8 }}
-                className={index == selectedDataPartIndex ? "treeViewListItem selected" : "treeViewListItem"}
-                key={index}
-                onClick={() => {
-                    if (!configuration) return;
 
-                    updateConfiguration({
-                        ...configuration,
-                        selectedDataIndex: configuration.selectedDataIndex == index ? null : index,
-                    });
-                }}
-            >
-                <span style={{ display: 'block', width: '20px' }}></span>
-                <span className='text'>{data.data.find(e => e.id == part.id)?.name}</span>
-                <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeData3D(index); }}></Delete16Regular>
-            </div>
-        )}
-
-        {data3DOptions.length <= 0 && ("No more data available.")}
-        {data3DOptions.length > 0 && (<ComboBox
+        <ComboBox
             label=""
             allowFreeform={false}
             autoComplete={'on'}
             options={data3DOptions}
-            text="Type name of data item to add"
-
-            onChange={addData3D}
-            onItemClick={addData3D}
+            onChange={setData3D}
+            onItemClick={setData3D}
+            selectedKey={configuration.data ? isoDataID.unwrap(configuration.data.id) : null}
             style={{ marginTop: '8px', padding: '4px' }}
             shouldRestoreFocus={false}
-        />)}
+        />
+
+        {configuration.data != null && (
+            <Stack styles={{ root: { padding: 4 } }}>
+                {configuration.chromosomes.map((v, i) => {
+                    return <Checkbox label={"Chromosome " + i.toString()} key={i} checked={v} onChange={(ev, isChecked) => chromosomeCheck(i, isChecked)} />;
+                })}
+            </Stack>
+        )}
 
         {/* 3D DATA REPRESENTATION */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
         <Text nowrap block variant='large' style={{ marginBottom: '5px' }}>3D Data Visualization</Text>
         <Stack tokens={{ childrenGap: '8px' }}>
-            {configuration.data.length <= 0 && ("No data to configure")}
-
-            {configuration.data.length > 0 && configuration.radiusRange && (
-                <Slider
+            {configuration.data && (<Slider
                     label="Radius"
-                    min={(configuration.radiusRange.min / 2.0) / 100.0}
-                    max={(configuration.radiusRange.min / 2.0)}
-                    step={(configuration.radiusRange.min / 2.0) / 100.0}
-                    value={toNumber(configuration.data[0].radius)}
+                    min={configuration.radiusRange.min}
+                    max={configuration.radiusRange.max}
+                    step={(configuration.radiusRange.max - configuration.radiusRange.min) / 100.0}
+                    value={toNumber(configuration.data.radius)}
                     showValue={false}
-                    onChange={(value) => setRadiusAll(value)}
+                    onChange={(value) => setRadius(value)}
                 />
             )}
             <ChoiceGroup
@@ -347,22 +280,19 @@ export function ChromatinViewportConfigurationPanel(props: {
         <Separator></Separator>
         <Text nowrap block variant='large'>Map 1D data</Text>
         {data1DOptions.length <= 0 && ("No more data available.")}
-        {data1DOptions.length > 0 && (<Stack horizontal>
-            <ComboBox
-                label=""
-                allowFreeform={false}
-                autoComplete={'on'}
-                options={data1DOptions}
-                onChange={setData1D}
-                onItemClick={setData1D}
-                style={{ marginTop: '8px', padding: '4px' }}
-                shouldRestoreFocus={false}
-                selectedKey={configuration.mapValues.id}
-            />
-            <IconButton style={{ margin: '12px 0px' }} iconProps={{ iconName: 'Delete', style: { color: 'white' } }} onClick={removeData1D}></IconButton>
-            {/* <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { removeData1D() }}></Delete16Regular> */}
-
-        </Stack>)}
+        {data1DOptions.length > 0 && (<ComboBox
+            label=""
+            allowFreeform={false}
+            autoComplete={'on'}
+            options={data1DOptions}
+            onChange={setData1D}
+            onItemClick={setData1D}
+            style={{ marginTop: '8px', padding: '4px' }}
+            shouldRestoreFocus={false}
+            selectedKey={
+                (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
+            }
+        />)}
 
         {/* SELECTIONS */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>

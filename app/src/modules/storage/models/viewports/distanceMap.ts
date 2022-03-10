@@ -46,7 +46,7 @@ export interface DistanceViewportConfiguration extends IViewportConfiguration {
     type: ViewportConfigurationType.TAD,
     tag: "TAD",
 
-    data: Array<DistanceDataConfiguration | DistanceSelectionConfiguration>,
+    data: DistanceDataConfiguration | DistanceSelectionConfiguration | null,
   
     camera: OrthoCameraConfiguration,
 
@@ -59,7 +59,8 @@ export interface DistanceViewportConfiguration extends IViewportConfiguration {
       tag: "TAD",
       tabName: "Unnamed TAD",
   
-      data: [],
+      data: null,
+      
       selectedDataIndex: 0,
       selectedSelectionID: null,
   

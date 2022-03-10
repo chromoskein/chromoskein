@@ -374,8 +374,9 @@ export class Viewport3D {
       this._context == null ||
       this.depthTexture == null ||
       this.outputTexture == null ||
-      this.gBuffer == null ||
-      this.scene.bvh == null) {
+      this.gBuffer == null 
+      // this.scene.bvh == null
+      ) {
       return;
     }
 
@@ -474,9 +475,6 @@ export class Viewport3D {
 
         depthLoadOp: 'clear',
         depthStoreOp: 'store',
-
-        stencilLoadOp: 'clear',
-        stencilStoreOp: 'store',
       }
     });
 

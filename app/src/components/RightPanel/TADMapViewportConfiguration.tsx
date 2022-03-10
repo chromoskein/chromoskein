@@ -60,16 +60,15 @@ export function TADMapViewportConfiguration(props: {
                 if (selectedData.length == 1) {
                     updateConfiguration({
                         ...configuration,
-                        selectedDataIndex: 0,
-                        data: [configuration.data.length == 0 ? {
+                        data: !configuration.data ? {
                             type: DistanceMapDataConfiguration.Data,
                             id: selectedDataID,
                             selections: []
                         } as DistanceDataConfiguration : {
-                            ...configuration.data[0],
+                            ...configuration.data,
                             type: DistanceMapDataConfiguration.Data,
                             id: selectedDataID
-                        } as DistanceDataConfiguration]
+                        } as DistanceDataConfiguration
                     });
                 }
             } else if (type == 'selection') {
@@ -79,16 +78,15 @@ export function TADMapViewportConfiguration(props: {
                 if (selectedSelection.length == 1) {
                     updateConfiguration({
                         ...configuration,
-                        selectedDataIndex: 0,
-                        data: [configuration.data.length == 0 ? {
+                        data: !configuration.data ? {
                             type: DistanceMapDataConfiguration.Selection,
                             id: selectedSelectionID,
                             selections: []
                         } : {
-                            ...configuration.data[0],
+                            ...configuration.data,
                             type: DistanceMapDataConfiguration.Selection,
                             id: selectedSelectionID
-                        }]
+                        }
                     });
                 }
             }
@@ -100,13 +98,13 @@ export function TADMapViewportConfiguration(props: {
     }
 
     let listSelectedID = null;
-    if (configuration.data.length > 0 && configuration.data[0].id) {
-        if (configuration.data[0].type === DistanceMapDataConfiguration.Data) {
-            listSelectedID = "data_" + isoDataID.unwrap(configuration.data[0].id);
+    if (configuration.data && configuration.data.id) {
+        if (configuration.data.type === DistanceMapDataConfiguration.Data) {
+            listSelectedID = "data_" + isoDataID.unwrap(configuration.data.id);
         }
 
-        if (configuration.data[0].type === DistanceMapDataConfiguration.Selection) {
-            listSelectedID = "selection_" + isoSelectionID.unwrap(configuration.data[0].id);
+        if (configuration.data.type === DistanceMapDataConfiguration.Selection) {
+            listSelectedID = "selection_" + isoSelectionID.unwrap(configuration.data.id);
         }
     }
 

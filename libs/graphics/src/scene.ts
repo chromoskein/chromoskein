@@ -281,7 +281,6 @@ export class Scene {
             // console.timeEnd('scene::buildBVH::Finish');
         };
         this.bvhWorker.postMessage({ objectsBuffer: copyOfObjectsBuffer });
-
         // console.timeEnd('scene::buildBVH');
     }
 

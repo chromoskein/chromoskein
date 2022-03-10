@@ -79,23 +79,23 @@ export function TADViewport(props: {
             return;
         }
 
-        if (configuration.data.length === 0) {
+        if (configuration.data == null) {
             viewport.setPositions([]);
             return;
         }
 
         if (previousConfiguration
             && previousViewport == viewport
-            && previousConfiguration.data.length > 0
-            && previousConfiguration.data[0].type === DistanceMapDataConfiguration.Data
-            && previousConfiguration.data[0].id === configuration.data[0]?.id) {
+            && previousConfiguration.data
+            && previousConfiguration.data.type === DistanceMapDataConfiguration.Data
+            && previousConfiguration.data.id === configuration.data.id) {
             return;
         }
 
 
         let maxBin = 0;
-        if (configuration.data[0].type === DistanceMapDataConfiguration.Data) {
-            const d = data.data.filter(d => d.id === configuration.data[0].id).at(0);
+        if (configuration.data && configuration.data.type === DistanceMapDataConfiguration.Data) {
+            const d = data.data.filter(d => d.id === configuration.data!.id).at(0);
             if (!d) {
                 return;
             }
@@ -120,8 +120,8 @@ export function TADViewport(props: {
             }
         }
 
-        if (configuration.data[0].type === DistanceMapDataConfiguration.Selection) {
-            const selectedSelection = allSelections.selections.filter(s => s.id == configuration.data[0].id).at(0);
+        if (configuration.data && configuration.data.type === DistanceMapDataConfiguration.Selection) {
+            const selectedSelection = allSelections.selections.filter(s => s.id == configuration.data!.id).at(0);
 
             if (selectedSelection) {
                 const dataID = selectedSelection.dataID;
@@ -165,16 +165,18 @@ export function TADViewport(props: {
     };
 
     // remove data removed from data tab
-    useEffect(() => {
-        const dataWithoutGlobalyRemoved = configuration.data.filter(confD => data.data.find(globalD => confD.id == globalD.id) != undefined);
-        console.log(data, configuration.data, dataWithoutGlobalyRemoved)
+    // useEffect(() => {
+    //     if (!configuration.data) return;
 
-        updateConfiguration({
-            ...configuration,
-            data: dataWithoutGlobalyRemoved
-        })
-        updatePositions();
-    }, [data])
+    //     const dataWithoutGlobalyRemoved = configuration.data.filter(confD => data.data.find(globalD => confD.id == globalD.id) != undefined);
+    //     console.log(data, configuration.data, dataWithoutGlobalyRemoved)
+
+    //     updateConfiguration({
+    //         ...configuration,
+    //         data: dataWithoutGlobalyRemoved
+    //     })
+    //     updatePositions();
+    // }, [data]);
 
     //#region Viewport Initialization
     useEffect(() => {
@@ -274,8 +276,8 @@ export function TADViewport(props: {
     //#region Selections
     // Color selections
     useEffect(() => {
-        if (configuration.data.length == 0) return;
-        if (configuration.data[0].type == DistanceMapDataConfiguration.Selection) return;
+        if (!configuration.data) return;
+        if (configuration.data.type == DistanceMapDataConfiguration.Selection) return;
 
         // console.time('tadViewport::selections');
         const colors = [vec4.fromValues(1.0, 1.0, 1.0, 1.0)];
@@ -324,11 +326,11 @@ export function TADViewport(props: {
 
     // Add selected bins to selection
     const onClick = () => {
-        if (!viewport || !isBeingHovered || !hoveredBins || !isControlPressed) {
+        if (!viewport || !isBeingHovered || !hoveredBins || !isControlPressed || !configuration.data) {
             return;
         }
 
-        const dataID = configuration.data[0].id;
+        const dataID = configuration.data.id;
         const selectionID = configuration.selectedSelectionID;
 
         if (selections.length <= 0 || !selectionID) {
@@ -404,7 +406,7 @@ export function TADViewport(props: {
             >{label}
             </text></g>
         }
-        if (configuration.data.length != 0 && configuration.data[0].type != DistanceMapDataConfiguration.Selection) {
+        if (configuration.data && configuration.data.type != DistanceMapDataConfiguration.Selection) {
             setSvgNumbers([]);
             return
         }

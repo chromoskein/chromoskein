@@ -1,5 +1,5 @@
 import Papa, { parse } from "papaparse";
-import { parsePdb } from "./parsePDB";
+import { ChromosomeModel, parsePdb } from "./parsePDB";
 // import gff from "@gmod/gff";
 import { toNumber } from "lodash";
 import { vec3 } from "gl-matrix";
@@ -31,12 +31,29 @@ export type ParseCSVConfiguration = {
 
 export type ParseConfiguration = ParsePDBConfiguration | ParseCSVConfiguration;
 
-export type ParseResult = {
-    columns: Array<string | number>,
-    rows: Array<Record<string, string>>,
-    normalizeCenter: vec3,
-    normalizeScale: number,
-};
+export type ParseResultType = 'CSV' | 'PDB';
+export type ParseResult = ParseResultCSV | ParseResultPDB;
+export interface IParseResult {
+    type: ParseResultType;
+}
+
+export interface ParseResultCSV extends IParseResult {
+    type: 'CSV';
+
+    columns: Array<string | number>;
+    rows: Array<Record<string, string>>;
+}
+
+export interface ParseResultPDB extends IParseResult {
+    type: 'PDB';
+
+    atoms: Array<{x: number, y: number, z: number}>;
+
+    normalizeCenter: vec3;
+    normalizeScale: number;
+
+    ranges: Array<{ from: number, to: number }>;
+}
 
 export function fileStateToText(state: FileState): string {
     switch (state) {
@@ -55,54 +72,29 @@ export function parseToRows(content: string, config: ParseConfiguration): Array<
     }
 }
 
-function parsePDBToObjects(content: string, config: ParsePDBConfiguration): Array<ParseResult> {
-    const result: Array<ParseResult> = [];
-
+function parsePDBToObjects(content: string, config: ParsePDBConfiguration): Array<ParseResultPDB> {
     const parsed = parsePdb(content);
 
-    if (parsed.ranges.length > 0) {
-        for (const range of parsed.ranges) {
-            const rows = [];
-            for (let atomIndex = range.from; atomIndex < range.to; atomIndex++) {
-                if (atomIndex > 0 && parsed.atoms[atomIndex].serial == parsed.atoms[atomIndex - 1].serial) {
-                    continue
-                }
+    return parsed.map((p: ChromosomeModel) => {
+        return {
+            type: 'PDB',
 
-                rows.push({ x: String(parsed.atoms[atomIndex].x), y: String(parsed.atoms[atomIndex].y), z: String(parsed.atoms[atomIndex].z) });
-            }
-            result.push({
-                columns: ['x', 'y', 'z'],
-                rows,
-                normalizeCenter: parsed.normalizeCenter,
-                normalizeScale: parsed.normalizeScale
-            });
+            atoms: p.atoms,
+
+            normalizeCenter: p.normalizeCenter,
+            normalizeScale: p.normalizeScale,
+
+            ranges: p.ranges,
         }
-    } else {
-        const rows = [];
-        for (let atomIndex = 0; atomIndex < parsed.atoms.length; atomIndex++) {
-            if (atomIndex > 0 && parsed.atoms[atomIndex].serial == parsed.atoms[atomIndex - 1].serial) {
-                continue
-            }
-
-            rows.push({ x: String(parsed.atoms[atomIndex].x), y: String(parsed.atoms[atomIndex].y), z: String(parsed.atoms[atomIndex].z) });
-        }
-        result.push({
-            columns: ['x', 'y', 'z'],
-            rows,
-            normalizeCenter: parsed.normalizeCenter,
-            normalizeScale: parsed.normalizeScale
-        });
-    }
-
-    return result;
+    });
 }
 
-function parseCSVToObjects(content: string, config: ParseCSVConfiguration): ParseResult {
-    const result: ParseResult = {
+function parseCSVToObjects(content: string, config: ParseCSVConfiguration): ParseResultCSV {
+    const result: ParseResultCSV = {
+        type: 'CSV',
+
         columns: [],
         rows: [],
-        normalizeCenter: vec3.create(),
-        normalizeScale: 0.0,
     };
 
     let delimiter;
@@ -144,7 +136,7 @@ function parseCSVToObjects(content: string, config: ParseCSVConfiguration): Pars
     return result;
 }
 
-export function parseResultToXYZ(parseResult: ParseResult, columns: Array<string | number>): Array<{ x: number, y: number, z: number }> {
+export function parseResultToXYZ(parseResult: ParseResultCSV, columns: Array<string | number>): Array<{ x: number, y: number, z: number }> {
     const positions: Array<{ x: number, y: number, z: number }> = [];
 
     for (let i = 0; i < parseResult.rows.length; i++) {
@@ -159,7 +151,7 @@ export function parseResultToXYZ(parseResult: ParseResult, columns: Array<string
     return positions;
 }
 
-export function parseResultToSparse1D(parseResult: ParseResult, columns: Array<string | number>): Array<{ from: number, to: number, value: number }> {
+export function parseResultToSparse1D(parseResult: ParseResultCSV, columns: Array<string | number>): Array<{ from: number, to: number, value: number }> {
     const data: Array<{ from: number, to: number, value: number }> = [];
 
     for (let i = 0; i < parseResult.rows.length; i++) {
@@ -174,7 +166,7 @@ export function parseResultToSparse1D(parseResult: ParseResult, columns: Array<s
     return data;
 }
 
-export function parseResultToSparseDistanceMatrix(parseResult: ParseResult, columns: Array<string | number>): Array<{ from: number, to: number, distance: number }> {
+export function parseResultToSparseDistanceMatrix(parseResult: ParseResultCSV, columns: Array<string | number>): Array<{ from: number, to: number, distance: number }> {
     const data: Array<{ from: number, to: number, distance: number }> = [];
 
     for (let i = 0; i < parseResult.rows.length; i++) {
@@ -235,7 +227,7 @@ export function parseBED(content: string, delimiter: CSVDelimiter.Space | CSVDel
         type: FileType.CSV,
         hasHeader: false,
         delimiter: delimiter
-    })
+    }) as ParseResultCSV;
 
     const annotations = parseResults.rows.filter(r => r[1] != "browser" && r[1] != "track")
     return annotations.map(

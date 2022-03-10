@@ -193,6 +193,7 @@ export class ContinuousTube implements HighLevelStructure {
                     color: this._colors[i],
                     color2: this._colors[i],
                     borderColor: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
+                    borderColor2: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
                     borderRatio: this._borderRadius,
                 });
 

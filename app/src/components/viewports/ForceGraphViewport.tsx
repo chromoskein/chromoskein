@@ -189,12 +189,12 @@ export function ForceGraphViewport(props: {
             return;
         }
 
-        if (props.configuration.data.length == 0) {
+        if (!props.configuration.data) {
             console.warn("No data available");
             return;
         }
 
-        const d: Data = data.data.filter(d => d.id == props.configuration.data[0].id)[0];
+        const d: Data = data.data.filter(d => d.id == props.configuration.data!.id)[0];
 
         if (!d) {
             console.warn("No data selected");
@@ -207,7 +207,7 @@ export function ForceGraphViewport(props: {
         }
         const selectedData = d.values as Positions3D;
         setBinPositions(selectedData);
-    }, [viewport, data, props.configuration.data[0]]);
+    }, [viewport, data, props.configuration.data]);
 
     useEffect(() => {
         // const simulation = d3.forceSimulation<GraphNode>()

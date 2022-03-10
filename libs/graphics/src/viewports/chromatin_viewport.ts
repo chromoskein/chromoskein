@@ -21,24 +21,18 @@ export class ChromatinPart {
   private _structure: ChromatinRepresentationType;
   private _highLevelID: number;
   private _dataId: number;
+  private _chromosomeIndex: number;
   private _binsPositions: Array<vec3>;
   private _binsColor: Array<vec4>;
-  private _quantiles: Array<number> = [];
 
-  constructor(chromatinViewport: ChromatinViewport, structure: ChromatinRepresentationType, highLevelID: number, dataId: number, binsPositions: Array<vec3>) {
+  constructor(chromatinViewport: ChromatinViewport, structure: ChromatinRepresentationType, highLevelID: number, dataId: number, chromosomeIndex: number, binsPositions: Array<vec3>) {
     this._chromatinViewport = chromatinViewport;
     this._structure = structure;
     this._highLevelID = highLevelID;
     this._dataId = dataId;
+    this._chromosomeIndex = chromosomeIndex;
     this._binsPositions = binsPositions;
     this._binsColor = new Array<vec4>(this._binsPositions.length);
-
-    const distances = []
-    for (let i = 0; i < binsPositions.length - 1; i++) {
-      distances.push(Math.min(vec3.distance(binsPositions[i], binsPositions[i + 1])));
-    }
-
-    this._quantiles = quantile(distances, [0.05, 0.95]);
   }
 
   public lowLevelIndexToBinIndex(hit: Hit): number | null {
@@ -47,12 +41,18 @@ export class ChromatinPart {
 
       // Calculate Intersection
       const intersection = vec3.add(vec3.create(), ray.origin, vec3.scale(vec3.create(), ray.direction, hit.distance));
+      
 
       // Calculate normal
       const i = this._structure.localOffsetOf(LowLevelStructure.RoundedCone, hit.lowLevelIndex);
 
       const from = this._structure.points[i];
       const to = this._structure.points[i + 1];
+
+      if (!from || !to) { 
+        return null;
+      }
+
       const radius = this._structure.radius;
 
       const ba = vec3.sub(vec3.create(), to, from);
@@ -143,8 +143,8 @@ export class ChromatinPart {
     return this._highLevelID;
   }
 
-  public get quantiles(): Array<number> {
-    return this._quantiles;
+  public get chromosomeIndex(): number {
+    return this._chromosomeIndex;
   }
 }
 
@@ -225,26 +225,8 @@ export class ChromatinViewport extends Viewport3D {
    * 
    * @returns created structure
    */
-  public addPart(bins: Array<{ x: number, y: number, z: number }>, center = false, dataId: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
-    let pointsVec3 = bins.map(p => vec3.fromValues(p.x, p.y, p.z));
-
-    // if (center) {
-    //   // Build bounding box
-    //   const bb = BoundingBoxEmpty();
-    //   for (const point of pointsVec3) {
-    //     BoundingBoxExtendByPoint(bb, point);
-    //   }
-
-    //   pointsVec3 = pointsVec3.map(v => vec3.sub(vec3.create(), v, bb.center));
-
-    //   const bbSizeLengthsVec3 = vec3.sub(vec3.create(), bb.max, bb.min);
-    //   const bbSizeLengths = [Math.abs(bbSizeLengthsVec3[0]), Math.abs(bbSizeLengthsVec3[1]), Math.abs(bbSizeLengthsVec3[2])];
-
-    //   const maxLength = Math.max(...bbSizeLengths);
-    //   const scale = 1.0 / maxLength;
-
-    //   pointsVec3 = pointsVec3.map(v => vec3.scale(vec3.create(), v, scale));
-    // }
+  public addPart(bins: Array<{ x: number, y: number, z: number }>, center = false, dataId: number, chromosomeIndex: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
+    const pointsVec3 = bins.map(p => vec3.fromValues(p.x, p.y, p.z));
 
     this.binPositions = pointsVec3.map(p => vec3.clone(p));
 
@@ -278,6 +260,7 @@ export class ChromatinViewport extends Viewport3D {
       structure,
       highLevelID,
       dataId,
+      chromosomeIndex,
       this.binPositions,
     ));
 
@@ -304,8 +287,8 @@ export class ChromatinViewport extends Viewport3D {
     return this._chromatin;
   }
 
-  public getChromatinPartByDataId(dataId: number): ChromatinPart | null {
-    const chromatinPartIndex = this._chromatin.findIndex(v => v.dataId == dataId);
+  public getChromatinPartByChromosomeIndex(chromosomeIndex: number): ChromatinPart | null {
+    const chromatinPartIndex = this._chromatin.findIndex(v => v.chromosomeIndex == chromosomeIndex);
 
     return this._chromatin[chromatinPartIndex];
   }

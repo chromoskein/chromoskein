@@ -29,15 +29,10 @@ export type ChromatinViewportTool = ChromatinPointSelection | ChromatinSphereSel
 
 export interface IChromatinDataConfiguration extends IDataConfiguration {
     id: DataID,
+
     selections: Array<ViewportSelectionOptions>,
-
     representation: ChromatinRepresentation,
-    normalizeToCenter: boolean,
     radius: number,
-
-    mapValues: {
-        id: number
-    }
 }
 
 export interface ChromatinViewportConfiguration extends IViewportConfiguration {
@@ -46,15 +41,15 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
 
     camera: OrbitCameraConfiguration | SmoothCameraConfiguration,
 
-    data: Array<IChromatinDataConfiguration>,
+    data: IChromatinDataConfiguration | null,
+    chromosomes: Array<boolean>,
 
     mapValues: {
-        id: number | null
+        id: number
     },
 
     ssao: {
         radius: number;
-        blurSize: number;
     },
 
     radiusRange: {
@@ -77,7 +72,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
 }
 
 export function chromatinDataConfigurationEqual(d1: IChromatinDataConfiguration, d2: IChromatinDataConfiguration): boolean {
-    return d1.id === d2.id && d1.representation === d2.representation && d1.radius === d2.radius && d1.normalizeToCenter && d2.normalizeToCenter;
+    return d1.id === d2.id && d1.representation === d2.representation && d1.radius === d2.radius;
 }
 
 export function defaultChromatinViewportConfiguration(): ChromatinViewportConfiguration {
@@ -86,8 +81,9 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         tabName: "Unnamed 3D Viewport",
         tag: "3D",
 
-        data: [],
-        selectedDataIndex: null,
+        data: null,
+        chromosomes: [],
+
         selectedSelectionID: null,
 
         backgroundColor: blackBackground,
@@ -100,7 +96,7 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         } as OrbitCameraConfiguration,
 
         mapValues: {
-            id: null
+            id: -1
         },
 
         ssao: {

@@ -95,9 +95,14 @@ export function useSelections<T extends ConfigurationsWithSelections>(
     const [result, setResult] = useState<Array<[Selection, ViewportSelectionOptions]>>([]);
 
     useEffect(() => {
-        const dataPartID = (dataPartIndex != null && configuration.data.length > dataPartIndex) ? configuration.data[dataPartIndex].id : null;
+        if (!configuration.data) {
+            setResult(() => []);
+            return;
+        }
+
+        const dataPartID = configuration.data.id;
         const selections = dataPartID != null ? globalSelections.selections.filter(selection => selection.dataID === dataPartID) : [];
-        const selectionsAssociatedData: Array<ViewportSelectionOptions> = (dataPartID != null && dataPartIndex != null) ? configuration.data[dataPartIndex].selections.map(s => { return { ...s } }) : [];
+        const selectionsAssociatedData: Array<ViewportSelectionOptions> = (dataPartID != null && dataPartIndex != null) ? configuration.data.selections.map(s => { return { ...s } }) : [];
 
         if (dataPartIndex == null || dataPartID == null) return;
 
@@ -107,7 +112,7 @@ export function useSelections<T extends ConfigurationsWithSelections>(
         const toRemoveAssociatedDataIds = selectionsAssociatedDataIds.filter(s => !selectionsIDs.includes(s));
         const toAddAssociatedDataIds = selectionsIDs.filter(s => !selectionsAssociatedDataIds.includes(s));
 
-        const newSelectionsAssociatedData = configuration.data[dataPartIndex].selections.filter(s => !toRemoveAssociatedDataIds.includes(s.selectionID)).map(s => { return { ...s } });
+        const newSelectionsAssociatedData = configuration.data.selections.filter(s => !toRemoveAssociatedDataIds.includes(s.selectionID)).map(s => { return { ...s } });
 
         for (const addID of toAddAssociatedDataIds) {
             newSelectionsAssociatedData.push({
@@ -117,9 +122,8 @@ export function useSelections<T extends ConfigurationsWithSelections>(
         }
 
         if (toRemoveAssociatedDataIds.length > 0 || toAddAssociatedDataIds.length > 0) {
-            const newData = [...configuration.data];
-            newData[dataPartIndex] = {
-                ...configuration.data[dataPartIndex],
+            const newData = {
+                ...configuration.data,
                 selections: newSelectionsAssociatedData
             }
 
@@ -138,7 +142,7 @@ export function useSelections<T extends ConfigurationsWithSelections>(
             }
         }
         setResult(() => newResult);
-    }, [configuration, configuration.data, configuration.selectedDataIndex, globalSelections, dataPartIndex]);
+    }, [configuration, configuration.data, globalSelections, dataPartIndex]);
 
     return result;
 }

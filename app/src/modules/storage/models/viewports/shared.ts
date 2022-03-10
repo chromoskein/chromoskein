@@ -39,8 +39,8 @@ export interface IViewportConfiguration {
   type: ViewportConfigurationType,
 
   tabName: string,
-  data: Array<IDataConfiguration>,
-  selectedDataIndex: dataIndex | null,
+  data: Array<IDataConfiguration> | IDataConfiguration | null,
+
   selectedSelectionID: SelectionID | null,
 
   backgroundColor: IColor,

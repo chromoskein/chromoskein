@@ -1,6 +1,7 @@
-import { Checkbox, ChoiceGroup, ConstrainMode, DefaultButton, DetailsList, DetailsListLayoutMode, Dialog, DialogFooter, Dropdown, IChoiceGroupOption, IDropdownOption, IDropdownStyles, PrimaryButton, SelectionMode, SpinButton, Stack } from '@fluentui/react';
+import { Checkbox, ChoiceGroup, ConstrainMode, DefaultButton, DetailsList, DetailsListLayoutMode, Dialog, DialogFooter, Dropdown, IChoiceGroupOption, IColumn, IDropdownOption, IDropdownStyles, PrimaryButton, SelectionMode, SpinButton, Stack } from '@fluentui/react';
+import { vec3 } from 'gl-matrix';
 import React, { Dispatch, useEffect, useRef, useState } from 'react';
-import { CSVDelimiter, FileState, FileType, ParseResult, parseResultToXYZ, parseToRows, ParseConfiguration } from '../../modules/parsing';
+import { CSVDelimiter, FileState, FileType, ParseResult, parseResultToXYZ, parseToRows, ParseConfiguration, ParseResultCSV,ParseResultPDB } from '../../modules/parsing';
 import { DataState, DataAction, DataActionKind, BinPositionsData } from '../../modules/storage/models/data';
 import { UploadTextFilesButton } from '../buttons/UploadTextFilesButton';
 
@@ -42,24 +43,45 @@ export function NewXYZDataDialog(props: {
   };
 
   const acceptFiles = () => {
-    if (parsedFiles && parsedFiles.length > 0) {
-      const parsedFile = parsedFiles[0];
+    if (parsedFiles && parsedFiles.length <= 0) return;
+    const parsedFile = parsedFiles[0];
 
-      for (let i = 0; i < parsedFile.length; i++) {
-        const parsedResult: ParseResult = parsedFile[i];
+    for (let i = 0; i < parsedFile.length; i++) {
+      const parsedResultUntyped: ParseResult = parsedFile[i];
+
+      if (parsedResultUntyped.type == 'CSV') {
+        const parsedResult: ParseResultCSV = parsedResultUntyped as ParseResultCSV;
+
+        const values = parseResultToXYZ(parsedResult, selectedColumns);
+
         dispatchData({
           type: DataActionKind.ADD_DATA,
 
           data: {
             name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
             type: '3d-positions',
-            values: parseResultToXYZ(
-              parsedResult,
-              parseConfiguration.type == FileType.CSV ? selectedColumns : ['x', 'y', 'z']),
-            basePairsResolution: basePairsResolution,
+            values: values,
+            basePairsResolution: 0,
+            binOffset: 0,
+            normalizeCenter: vec3.create(),
+            normalizeScale: 1.0,
+          } as BinPositionsData
+        });
+      } else {
+        const parsedResult: ParseResultPDB = parsedResultUntyped as ParseResultPDB;
+
+        dispatchData({
+          type: DataActionKind.ADD_DATA,
+
+          data: {
+            name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
+            type: '3d-positions',
+            values: parsedResult.atoms,
+            basePairsResolution: 0,
             binOffset: 0,
             normalizeCenter: parsedResult.normalizeCenter,
-            normalizeScale: parsedResult.normalizeScale
+            normalizeScale: parsedResult.normalizeScale,
+            chromosomes: parsedResult.ranges,
           } as BinPositionsData
         });
       }
@@ -128,7 +150,17 @@ export function NewXYZDataDialog(props: {
 
   let dropdownOptions: IDropdownOption[] = [];
   if (parsedFiles && parsedFiles.at(0)) {
-    dropdownOptions = parsedFiles[0][0].columns.map(v => { return { key: String(v), text: String(v) }; });
+    const parsedFile: ParseResult = parsedFiles[0][0];
+
+    if (parsedFile.type == 'CSV') {
+      dropdownOptions = parsedFile.columns.map(v => { return { key: String(v), text: String(v) }; });
+    } else if (parsedFile.type == 'PDB') {
+      dropdownOptions = [
+        { key: 'x', text: 'x' },
+        { key: 'y', text: 'y' },
+        { key: 'z', text: 'z' }
+      ];
+    }
   }
 
   const xyzDropdowns =
@@ -198,10 +230,23 @@ export function NewXYZDataDialog(props: {
             />
           </Stack>
           <div style={{ width: 480 }}>
-            {parsedFiles && parsedFiles[0] && (
+            {parsedFiles && parsedFiles[0] && parsedFiles[0][0].type == "CSV" && (
               <DetailsList
                 items={parsedFiles[0][0].rows.slice(0, 10)}
                 columns={parsedFiles[0][0].columns.map((v, index) => { return { key: String(index), name: String(v), fieldName: String(v), minWidth: 75, maxWidth: 300, isResizable: true }; })}
+                layoutMode={DetailsListLayoutMode.justified}
+                constrainMode={ConstrainMode.horizontalConstrained}
+                selectionMode={SelectionMode.none}
+              />
+            )}
+            {parsedFiles && parsedFiles[0] && parsedFiles[0][0].type == "PDB" && (
+              <DetailsList
+                items={parsedFiles[0][0].atoms.slice(0, 10)}
+                columns={[
+                  { key: 'x', name: 'x', fieldName: 'x' } as IColumn,
+                  { key: 'y', name: 'y', fieldName: 'y' } as IColumn,
+                  { key: 'z', name: 'z', fieldName: 'z' } as IColumn
+                ]}
                 layoutMode={DetailsListLayoutMode.justified}
                 constrainMode={ConstrainMode.horizontalConstrained}
                 selectionMode={SelectionMode.none}

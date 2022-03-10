@@ -1,4 +1,4 @@
-import { ChromatinViewportConfiguration, D1ViewportConfiguration, DistanceViewportConfiguration, ForceGraphViewportConfiguration, ViewportConfiguration, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
+import { ChromatinViewportConfiguration, D1ViewportConfiguration, DistanceMapDataConfiguration, DistanceViewportConfiguration, ForceGraphViewportConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
 import { DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionID, Selection, SelectionState } from "../../modules/storage/models/selections";
 import { ConfigurationReducer, ConfigurationsWithSelections, useConfiguration, useSelections, useViewportName } from "../hooks";
@@ -20,17 +20,23 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     const [globalSelections, globalSelectionsDispatch] = props.selectionsReducer;
     const [configuration, updateConfiguration] = props.configurationReducer;
 
-    const selectedDataPartIndex: number | null = configuration.selectedDataIndex;
-    const selectedDataPartID: DataID | null = (selectedDataPartIndex != null && configuration.data.length > 0) ? configuration.data[selectedDataPartIndex].id as DataID : null;
+    const selectedDataPartID: DataID | SelectionID | null = configuration.data ? configuration.data.id : null;
+
     const selections = props.selections;
     const [renaming, setRenaming] = useState<{ id: SelectionID, newName: string } | null>(null);
+
+    if (!configuration.data) return <div></div>;
+
+    if (configuration.type == ViewportConfigurationType.TAD && configuration.data.type == DistanceMapDataConfiguration.Selection) {
+        return <div></div>;
+    }
 
     const addSelection = () => {
         if (selectedDataPartID) {
             const dataSize = data.data.find(d => d.id == selectedDataPartID)?.values?.length;
 
             if (dataSize) {
-                globalSelectionsDispatch({ type: SelectionActionKind.ADD, dataID: selectedDataPartID, dataSize });
+                globalSelectionsDispatch({ type: SelectionActionKind.ADD, dataID: selectedDataPartID as DataID, dataSize });
             }
         }
     }
@@ -58,16 +64,16 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
 
     }
 
-    const setSelectionVisiblity = (dataPartIndex: number, selectionID: SelectionID, visible: boolean) => {
-        const associatedSelectionIndex = configuration.data[dataPartIndex].selections.findIndex(s => s.selectionID == selectionID);
-        const newData = configuration.data.map(d => {
-            return {
-                ...d,
-                selections: d.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
-            };
-        });
+    const setSelectionVisiblity = (selectionID: SelectionID, visible: boolean) => {
+        if (!configuration.data) return;
 
-        newData[dataPartIndex].selections[associatedSelectionIndex].visible = visible;
+        const associatedSelectionIndex = configuration.data.selections.findIndex(s => s.selectionID == selectionID);
+        const newData = {
+            ...configuration.data,
+            selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
+        };
+
+        newData.selections[associatedSelectionIndex].visible = visible;
 
         updateConfiguration({
             ...configuration,
@@ -85,8 +91,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     }
 
     return <div><Text nowrap block variant='large'>Selections</Text>
-        {selectedDataPartIndex == null && ("No data part selected. Select a data part to add/view selections.")}
-        {selectedDataPartIndex != null && selections.map(([selection, associatedData]) => {
+        {selectedDataPartID != null && selections.map(([selection, associatedData]) => {
             if (renaming && renaming.id === selection.id) {
                 return <div
                     className={selection.id == configuration.selectedSelectionID ? "treeViewListItem selected" : "treeViewListItem"}
@@ -96,8 +101,8 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                     <span style={{ display: 'block', width: '4px' }}></span>
                     <TextField className="text" defaultValue={selection.name} onChange={(_e, newName) => handleRenameChange(newName)} onKeyDown={(e) => e.key === 'Enter' && handleRenameEnd()}></TextField>
                     <Rename16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={handleRenameEnd}></Rename16Regular>
-                    {(associatedData.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selectedDataPartIndex, selection.id, false) }}></EyeShow16Regular>)}
-                    {(!associatedData.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selectedDataPartIndex, selection.id, true) }}></EyeOff16Regular>)}
+                    {(associatedData.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, false) }}></EyeShow16Regular>)}
+                    {(!associatedData.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, true) }}></EyeOff16Regular>)}
                     <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeSelection(selection.id) }}></Delete16Regular>
                 </div>
             } else {
@@ -109,12 +114,12 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                     <span style={{ display: 'block', width: '4px' }}></span>
                     <span className='text'>{selection.name}</span>
                     <Rename16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={() => handleRenameStart(selection)}></Rename16Regular>
-                    {(associatedData.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selectedDataPartIndex, selection.id, false) }}></EyeShow16Regular>)}
-                    {(!associatedData.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selectedDataPartIndex, selection.id, true) }}></EyeOff16Regular>)}
+                    {(associatedData.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, false) }}></EyeShow16Regular>)}
+                    {(!associatedData.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, true) }}></EyeOff16Regular>)}
                     <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeSelection(selection.id) }}></Delete16Regular>
                 </div>
             }
         })}
-        {(selectedDataPartIndex != null) && (<PrimaryButton text='Add selection' style={{ marginTop: '8px' }} onClick={() => addSelection()} />)}
+        {(selectedDataPartID != null) && (<PrimaryButton text='Add selection' style={{ marginTop: '8px' }} onClick={() => addSelection()} />)}
     </div>
 }
