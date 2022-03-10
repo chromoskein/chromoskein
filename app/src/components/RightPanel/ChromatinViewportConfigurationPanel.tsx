@@ -212,7 +212,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                     />
                 </Callout>
             )}
-            <Slider label="SSAO Radius" min={0.0} max={1.0} step={0.01} value={configuration.ssao.radius} showValue onChange={setSSAORadius} />
+            {/* <Slider label="SSAO Radius" min={0.0} max={1.0} step={0.01} value={configuration.ssao.radius} showValue onChange={setSSAORadius} /> */}
         </Stack>
 
         {/* List of 3D data */}
@@ -246,14 +246,14 @@ export function ChromatinViewportConfigurationPanel(props: {
         <Text nowrap block variant='large' style={{ marginBottom: '5px' }}>3D Data Visualization</Text>
         <Stack tokens={{ childrenGap: '8px' }}>
             {configuration.data && (<Slider
-                    label="Radius"
-                    min={configuration.radiusRange.min}
-                    max={configuration.radiusRange.max}
-                    step={(configuration.radiusRange.max - configuration.radiusRange.min) / 100.0}
-                    value={toNumber(configuration.data.radius)}
-                    showValue={false}
-                    onChange={(value) => setRadius(value)}
-                />
+                label="Radius"
+                min={configuration.radiusRange.min}
+                max={configuration.radiusRange.max}
+                step={(configuration.radiusRange.max - configuration.radiusRange.min) / 100.0}
+                value={toNumber(configuration.data.radius)}
+                showValue={false}
+                onChange={(value) => setRadius(value)}
+            />
             )}
             <ChoiceGroup
                 defaultSelectedKey="X"
