@@ -1,7 +1,7 @@
 import { Checkbox, ChoiceGroup, ConstrainMode, DefaultButton, DetailsList, DetailsListLayoutMode, Dialog, DialogFooter, Dropdown, IChoiceGroupOption, IColumn, IDropdownOption, IDropdownStyles, PrimaryButton, SelectionMode, SpinButton, Stack } from '@fluentui/react';
 import { vec3 } from 'gl-matrix';
 import React, { Dispatch, useEffect, useRef, useState } from 'react';
-import { CSVDelimiter, FileState, FileType, ParseResult, parseResultToXYZ, parseToRows, ParseConfiguration, ParseResultCSV,ParseResultPDB } from '../../modules/parsing';
+import { CSVDelimiter, FileState, FileType, ParseResult, parseResultToXYZ, parseToRows, ParseConfiguration, ParseResultCSV, ParseResultPDB } from '../../modules/parsing';
 import { DataState, DataAction, DataActionKind, BinPositionsData } from '../../modules/storage/models/data';
 import { UploadTextFilesButton } from '../buttons/UploadTextFilesButton';
 
@@ -61,7 +61,7 @@ export function NewXYZDataDialog(props: {
             name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
             type: '3d-positions',
             values: values,
-            basePairsResolution: 0,
+            basePairsResolution: basePairsResolution,
             binOffset: 0,
             normalizeCenter: vec3.create(),
             normalizeScale: 1.0,
@@ -77,7 +77,7 @@ export function NewXYZDataDialog(props: {
             name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
             type: '3d-positions',
             values: parsedResult.atoms,
-            basePairsResolution: 0,
+            basePairsResolution: basePairsResolution,
             binOffset: 0,
             normalizeCenter: parsedResult.normalizeCenter,
             normalizeScale: parsedResult.normalizeScale,
@@ -132,7 +132,7 @@ export function NewXYZDataDialog(props: {
     });
   }
 
-  const onBasePairsChanged = (_event: React.SyntheticEvent<HTMLElement>, newValue?: string): void => {
+  const onBasePairsResolutionChanged = (_event: React.SyntheticEvent<HTMLElement>, newValue?: string): void => {
     if (newValue) {
       setBasePairsResolution(parseInt(newValue));
     }
@@ -226,7 +226,7 @@ export function NewXYZDataDialog(props: {
               step={1000}
               incrementButtonAriaLabel="Increase value by 1000"
               decrementButtonAriaLabel="Decrease value by 1000"
-              onChange={onBasePairsChanged}
+              onChange={onBasePairsResolutionChanged}
             />
           </Stack>
           <div style={{ width: 480 }}>
