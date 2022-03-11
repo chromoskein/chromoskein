@@ -173,7 +173,7 @@ export function ChromatinViewport(props: {
 
 
     useEffect(() => {
-        if (!closestIntersection) {
+        if (!closestIntersection || !configuration.showTooltip) {
             dispatchCoordinatePreview({
                 visible: false
             })

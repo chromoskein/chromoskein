@@ -212,3 +212,11 @@ li {
   align-items: center;
   padding: 8px;
 }
+
+.coordinatePreview {
+  position: fixed;
+  white-space: nowrap;
+  pointer-events: none;
+  background-color: $ms-color-gray140;
+  border: 1px solid $ms-color-gray190;
+}

@@ -206,6 +206,13 @@ export function ChromatinViewportConfigurationPanel(props: {
         });
     }
 
+    const handleShowTooltipChange = () => {
+        updateConfiguration({
+            ...configuration,
+            showTooltip: !configuration.showTooltip
+        });
+    }
+
     if (configuration == null || configuration == undefined || configuration.type != ViewportConfigurationType.Chromatin) {
         return <div></div>;
     }
@@ -352,6 +359,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                 }
             />)
         }
+        <Checkbox label="Show tooltip" checked={configuration.showTooltip} onChange={handleShowTooltipChange} />
 
         {/* SELECTIONS */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>

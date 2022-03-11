@@ -416,9 +416,6 @@ function App(): JSX.Element {
       <div className="toolOptionsPanel">
         {activeTab && <>
           <ToolOptions configurationID={activeTab.getConfig()} configurationsReducer={[configurations, dispatchConfigurations]}></ToolOptions>
-          <Separator vertical></Separator>
-          <CoordinatePreview style={{ padding: "0px 8px" }} coordinatePreviewReducer={[coordinatePreview, dispatchCoordinatePreview]} dataReducer={[data, dispatchData]}
-          ></CoordinatePreview>
         </>}
       </div>
 
@@ -440,6 +437,11 @@ function App(): JSX.Element {
           selectionsReducer={[selections, dispatchSelections]}
         ></RightPanel>
       </div>
+      <CoordinatePreview
+        style={{ padding: "0px 8px" }}
+        coordinatePreviewReducer={[coordinatePreview, dispatchCoordinatePreview]}
+        dataReducer={[data, dispatchData]}
+      />
 
       <NewXYZDataDialog
         hidden={newXYZDataDialogHidden}

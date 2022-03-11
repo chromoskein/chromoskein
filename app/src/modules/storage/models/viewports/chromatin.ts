@@ -49,7 +49,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     },
 
     otherMapValues: Array<DataID>,
-
+    showTooltip: boolean;
     ssao: {
         radius: number;
     },
@@ -102,7 +102,7 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         },
 
         otherMapValues: [],
-
+        showTooltip: true,
         ssao: {
             radius: 0.25,
             blurSize: 2,
