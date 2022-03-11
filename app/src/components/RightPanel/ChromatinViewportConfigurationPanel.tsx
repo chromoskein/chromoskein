@@ -1,6 +1,6 @@
 import { Callout, DefaultButton, TextField, ColorPicker, ComboBox, IComboBoxOption, IComboBox, Label, Slider, IColor, Dropdown, IDropdownOption, Stack, Separator, ChoiceGroup, IChoiceGroupOption, Checkbox } from "@fluentui/react";
 import { Model, TabNode } from "flexlayout-react";
-import React, { Dispatch, FormEvent, useEffect, useState } from "react";
+import React, { Dispatch, FormEvent, MouseEvent, MouseEventHandler, useEffect, useState } from "react";
 import { toNumber } from "lodash";
 import './RightPanel.scss';
 import { Delete16Regular } from '@fluentui/react-icons';
@@ -167,6 +167,19 @@ export function ChromatinViewportConfigurationPanel(props: {
         });
     }
 
+    const handleChromosomeMouseEvent = (event: MouseEvent<HTMLDivElement>, index: number) => {
+        if (event.buttons != 1) {
+            return;
+        }
+
+        const newChromosomes = [...configuration.chromosomes];
+        newChromosomes[index] = !newChromosomes[index];
+        updateConfiguration({
+            ...configuration,
+            chromosomes: newChromosomes
+        });
+    }
+
     const chromosomeCheck = (index: number, isChecked?: boolean) => {
         if (isChecked === undefined) return;
 
@@ -235,10 +248,22 @@ export function ChromatinViewportConfigurationPanel(props: {
         {configuration.data != null && (
             <Stack styles={{ root: { padding: 4 } }}>
                 {configuration.chromosomes.map((v, i) => {
-                    return <Checkbox label={"Chromosome " + i.toString()} key={i} checked={v} onChange={(ev, isChecked) => chromosomeCheck(i, isChecked)} />;
+                    return <div
+                        style={{ width: "max-content" }}
+                        draggable={false}
+                        key={i}
+                        onMouseDown={(e) => handleChromosomeMouseEvent(e, i)}
+                        onMouseEnter={(e) => handleChromosomeMouseEvent(e, i)}>
+                        <Checkbox
+                            label={"Chromosome " + i.toString()}
+                            checked={v}
+                        />
+                    </div>
+
                 })}
             </Stack>
-        )}
+        )
+        }
 
         {/* 3D DATA REPRESENTATION */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
@@ -280,19 +305,21 @@ export function ChromatinViewportConfigurationPanel(props: {
         <Separator></Separator>
         <Text nowrap block variant='large'>Map 1D data</Text>
         {data1DOptions.length <= 0 && ("No more data available.")}
-        {data1DOptions.length > 0 && (<ComboBox
-            label=""
-            allowFreeform={false}
-            autoComplete={'on'}
-            options={data1DOptions}
-            onChange={setData1D}
-            onItemClick={setData1D}
-            style={{ marginTop: '8px', padding: '4px' }}
-            shouldRestoreFocus={false}
-            selectedKey={
-                (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
-            }
-        />)}
+        {
+            data1DOptions.length > 0 && (<ComboBox
+                label=""
+                allowFreeform={false}
+                autoComplete={'on'}
+                options={data1DOptions}
+                onChange={setData1D}
+                onItemClick={setData1D}
+                style={{ marginTop: '8px', padding: '4px' }}
+                shouldRestoreFocus={false}
+                selectedKey={
+                    (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
+                }
+            />)
+        }
 
         {/* SELECTIONS */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
