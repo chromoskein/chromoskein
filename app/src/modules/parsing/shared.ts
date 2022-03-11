@@ -47,7 +47,7 @@ export interface ParseResultCSV extends IParseResult {
 export interface ParseResultPDB extends IParseResult {
     type: 'PDB';
 
-    atoms: Array<{x: number, y: number, z: number}>;
+    atoms: Array<{ x: number, y: number, z: number }>;
 
     normalizeCenter: vec3;
     normalizeScale: number;
@@ -217,11 +217,13 @@ export function parseResultToSparseDistanceMatrix(parseResult: ParseResultCSV, c
 //     return parsedAnnotations;
 // }
 
-export function parseBED(content: string, delimiter: CSVDelimiter.Space | CSVDelimiter.Tabulator): Array<{
+export type ParseResultBED = Array<{
     chrom: string,
     from: number, to: number,
     attributes: Record<number, string>
-}> {
+}>
+
+export function parseBED(content: string, delimiter: CSVDelimiter.Space | CSVDelimiter.Tabulator): ParseResultBED {
 
     const parseResults = parseCSVToObjects(content, {
         type: FileType.CSV,
@@ -229,14 +231,16 @@ export function parseBED(content: string, delimiter: CSVDelimiter.Space | CSVDel
         delimiter: delimiter
     }) as ParseResultCSV;
 
-    const annotations = parseResults.rows.filter(r => r[1] != "browser" && r[1] != "track")
+    const annotations = parseResults.rows.filter(r => r[1] != "browser" && r[1] != "track" && Object.keys(r).length != 1)
+
     return annotations.map(
         a => {
             return {
                 chrom: a[1],
                 from: toNumber(a[2]),
                 to: toNumber(a[3]),
-                attributes: a
+                attributes: a,
+                ...a
             }
         }
     );
