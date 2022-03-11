@@ -377,13 +377,15 @@ export function ChromatinViewport(props: {
                 if (chromosomeIndex < innerColors.length) {
                     chromatinPart.structure.setColorsCombined(innerColors[chromosomeIndex]);
                 } else {
-                    chromatinPart.structure.resetColorBorder(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+                    chromatinPart.structure.resetColor(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+                    chromatinPart.structure.resetColor2(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                 }
 
                 if (chromosomeIndex < borderColors.length) {
                     chromatinPart.structure.setBorderColorsCombined(borderColors[chromosomeIndex]);
                 } else {
-                    chromatinPart.structure.resetColorBorder(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+                    chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+                    chromatinPart.structure.resetBorderColors2(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                 }
             }
         }
