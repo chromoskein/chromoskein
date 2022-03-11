@@ -180,18 +180,6 @@ export function ChromatinViewportConfigurationPanel(props: {
         });
     }
 
-    const chromosomeCheck = (index: number, isChecked?: boolean) => {
-        if (isChecked === undefined) return;
-
-        const newChromosomes = [...configuration.chromosomes];
-        newChromosomes[index] = isChecked;
-
-        updateConfiguration({
-            ...configuration,
-            chromosomes: newChromosomes
-        });
-    }
-
     if (configuration == null || configuration == undefined || configuration.type != ViewportConfigurationType.Chromatin) {
         return <div></div>;
     }
