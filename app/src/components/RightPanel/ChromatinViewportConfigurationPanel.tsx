@@ -47,6 +47,18 @@ export function ChromatinViewportConfigurationPanel(props: {
             } as IComboBoxOption;
         });
 
+    const otherData1DOptions = data.data
+        .filter(d => d.type == "sparse-1d-data-text" || d.type == "sparse-1d-data-numerical")
+        .map(d => {
+            return {
+                key: isoDataID.unwrap(d.id),
+                id: isoDataID.unwrap(d.id).toString(),
+                text: d.name,
+            }
+        })
+
+
+
     const [isCalloutVisible, setIsCalloutVisible] = useState<boolean>(false);
 
     const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer);
@@ -127,6 +139,19 @@ export function ChromatinViewportConfigurationPanel(props: {
             });
         }
     };
+
+    const setOtherData1D = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+
+        const selected = option?.selected;
+        if (option) {
+            updateConfiguration({
+                ...configuration,
+                otherMapValues: selected
+                    ? [...configuration.otherMapValues, isoDataID.wrap(Number(option!.key))]
+                    : configuration.otherMapValues.filter(id => id != isoDataID.wrap(Number(option!.key)))
+            });
+        }
+    }
 
     const setRadius = (radius: number) => {
         if (!configuration.data) return;
@@ -305,6 +330,24 @@ export function ChromatinViewportConfigurationPanel(props: {
                 shouldRestoreFocus={false}
                 selectedKey={
                     (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
+                }
+            />)
+        }
+        <Text nowrap block variant='large'>The other map 1D data</Text>
+        {otherData1DOptions.length <= 0 && ("No more data available.")}
+        {
+            otherData1DOptions.length > 0 && (<ComboBox
+                label=""
+                allowFreeform={false}
+                autoComplete={'on'}
+                multiSelect
+                options={otherData1DOptions}
+                onChange={setOtherData1D}
+                // onItemClick={setData1D}
+                style={{ marginTop: '8px', padding: '4px' }}
+                shouldRestoreFocus={false}
+                selectedKey={
+                    configuration.otherMapValues.map(k => isoDataID.unwrap(k))
                 }
             />)
         }

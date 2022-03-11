@@ -183,6 +183,7 @@ export function ChromatinViewport(props: {
             visible: true,
             type: "bin-coordinates-single",
             dataId: iso<DataID>().wrap(closestIntersection.chromatinPart.dataId),
+            mappingIds: configuration.otherMapValues,
             from: closestIntersection.binIndex
         })
     }, [viewport, closestIntersection])
@@ -540,7 +541,7 @@ export function ChromatinViewport(props: {
         if (!selection) {
             throw "No global selection found with local selection ID " + selectionId;
         }
-        
+
         const datum = configuration.data;
         const binPositions = data.data.filter(d => d.id == datum.id)[0] as BinPositionsData;
         const selectedChromosomeIndex = selectedChromatinPart.chromosomeIndex;
@@ -551,7 +552,7 @@ export function ChromatinViewport(props: {
             newBins[selectedChromosomeOffset + closestIntersection.binIndex] = isAltPressed ? 0 : 1;
         } else if (tool.type == ChromatinViewportToolType.SphereSelection) {
             const sphereCenter = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
-            const sphereRadius = tool.radius; 
+            const sphereRadius = tool.radius;
 
             // Highlight all the bins inside the sphere
             const binsPositions = selectedChromatinPart.getBinsPositions();

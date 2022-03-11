@@ -48,6 +48,8 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
         id: number
     },
 
+    otherMapValues: Array<DataID>,
+
     ssao: {
         radius: number;
     },
@@ -98,6 +100,8 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         mapValues: {
             id: -1
         },
+
+        otherMapValues: [],
 
         ssao: {
             radius: 0.25,

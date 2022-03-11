@@ -50,7 +50,6 @@ export function NewGenomicDataDialog(props: {
 
 
     if (file != null) {
-        debugger;
         parsedFile = parseBED(file.content, delimiter)
         if (parsedFile.length == 0) {
             parsedFileColumns = [];
