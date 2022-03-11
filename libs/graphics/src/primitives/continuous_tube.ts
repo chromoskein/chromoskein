@@ -455,6 +455,8 @@ export class ContinuousTube implements HighLevelStructure {
                         color2[0] * 255, color2[1] * 255, color2[2] * 255, color2[3] * 255], offsetBytes + 64);
             // u8view.set([color2[0] * 255, color2[1] * 255, color2[2] * 255, color2[3] * 255], offsetBytes + 68);
         }
+
+        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
     }
 
     public setBorderColorsCombined(colors: Array<vec4>): void {
@@ -475,5 +477,7 @@ export class ContinuousTube implements HighLevelStructure {
             u8view.set([color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255, color2[0] * 255, color2[1] * 255, color2[2] * 255, color2[3] * 255], offsetBytes + 72);
             // u8view.set([color2[0] * 255, color2[1] * 255, color2[2] * 255, color2[3] * 255], offsetBytes + 76);
         }
+
+        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
     }
 }

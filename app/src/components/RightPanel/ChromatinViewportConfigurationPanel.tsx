@@ -115,6 +115,7 @@ export function ChromatinViewportConfigurationPanel(props: {
     };
 
     const setData1D = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+        console.log('set data 1d');
         if (option) {
             const selectedDataId: number = option.key as number;
 
