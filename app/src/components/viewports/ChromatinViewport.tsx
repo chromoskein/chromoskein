@@ -184,6 +184,7 @@ export function ChromatinViewport(props: {
             visible: true,
             type: "bin-coordinates-single",
             dataId: iso<DataID>().wrap(closestIntersection.chromatinPart.dataId),
+            mappingIds: configuration.otherMapValues,
             from: closestIntersection.binIndex
         })
     }, [viewport, closestIntersection])
@@ -543,7 +544,6 @@ export function ChromatinViewport(props: {
             const sphereCenter = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
             const sphereRadius = tool.radius;
             const value = isAltPressed ? 0 : 1;
-
 
             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                 const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
