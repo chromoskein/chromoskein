@@ -48,15 +48,13 @@ export function NewXYZDataDialog(props: {
 
     for (let i = 0; i < parsedFile.length; i++) {
       const parsedResultUntyped: ParseResult = parsedFile[i];
-      debugger;
-
       if (parsedResultUntyped.type == 'CSV') {
         const parsedResult: ParseResultCSV = parsedResultUntyped as ParseResultCSV;
 
         const values = parseResultToXYZ(parsedResult, selectedColumns);
 
         const data: BinPositionsData = {
-          id: isoDataID.wrap(0), // will be replaced in reducer
+          id: isoDataID.wrap(-1), // will be replaced in reducer
           name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
           type: '3d-positions',
           values: values,
@@ -75,7 +73,7 @@ export function NewXYZDataDialog(props: {
         const parsedResult: ParseResultPDB = parsedResultUntyped as ParseResultPDB;
 
         const data: BinPositionsData = {
-          id: isoDataID.wrap(0), // will be replaced in reducer
+          id: isoDataID.wrap(-1), // will be replaced in reducer
           name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
           type: '3d-positions',
           values: parsedResult.atoms,

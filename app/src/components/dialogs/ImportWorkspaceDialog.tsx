@@ -13,7 +13,6 @@ export function ImportWorkspaceDialog(props: {
     const [file, setFile] = useState<TextFile | null>(null);
     const [fileName, setFileName] = useState("");
     function previewFile(files: Array<TextFile>) {
-        debugger;
         const file = files[0]
         setFile(file);
         setFileName(file.name);
