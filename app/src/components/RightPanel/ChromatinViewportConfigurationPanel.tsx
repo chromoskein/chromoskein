@@ -233,7 +233,7 @@ export function ChromatinViewportConfigurationPanel(props: {
             shouldRestoreFocus={false}
         />
 
-        {configuration.data != null && (
+        {configuration.data != null && configuration.chromosomes.length != 0 && (
             <Stack styles={{ root: { padding: 4 } }}>
                 {configuration.chromosomes.map((v, i) => {
                     return <div

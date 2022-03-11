@@ -90,10 +90,10 @@ export interface BinPositionsData extends Data {
   normalizeCenter: vec3;
   normalizeScale: number;
 
-  chromosomes: [{
+  chromosomes: Array<{
     from: number;
     to: number;
-  }]
+  }>
 }
 
 export type DataState = {

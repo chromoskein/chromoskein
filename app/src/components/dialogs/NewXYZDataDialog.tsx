@@ -2,7 +2,7 @@ import { Checkbox, ChoiceGroup, ConstrainMode, DefaultButton, DetailsList, Detai
 import { vec3 } from 'gl-matrix';
 import React, { Dispatch, useEffect, useRef, useState } from 'react';
 import { CSVDelimiter, FileState, FileType, ParseResult, parseResultToXYZ, parseToRows, ParseConfiguration, ParseResultCSV, ParseResultPDB } from '../../modules/parsing';
-import { DataState, DataAction, DataActionKind, BinPositionsData } from '../../modules/storage/models/data';
+import { DataState, DataAction, DataActionKind, BinPositionsData, isoDataID } from '../../modules/storage/models/data';
 import { UploadTextFilesButton } from '../buttons/UploadTextFilesButton';
 
 
@@ -48,41 +48,47 @@ export function NewXYZDataDialog(props: {
 
     for (let i = 0; i < parsedFile.length; i++) {
       const parsedResultUntyped: ParseResult = parsedFile[i];
+      debugger;
 
       if (parsedResultUntyped.type == 'CSV') {
         const parsedResult: ParseResultCSV = parsedResultUntyped as ParseResultCSV;
 
         const values = parseResultToXYZ(parsedResult, selectedColumns);
 
+        const data: BinPositionsData = {
+          id: isoDataID.wrap(0), // will be replaced in reducer
+          name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
+          type: '3d-positions',
+          values: values,
+          basePairsResolution: basePairsResolution,
+          binOffset: 0,
+          normalizeCenter: vec3.create(),
+          normalizeScale: 1.0,
+          chromosomes: [{ from: 0, to: (values.length - 1) }]
+        }
         dispatchData({
           type: DataActionKind.ADD_DATA,
 
-          data: {
-            name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
-            type: '3d-positions',
-            values: values,
-            basePairsResolution: basePairsResolution,
-            binOffset: 0,
-            normalizeCenter: vec3.create(),
-            normalizeScale: 1.0,
-          } as BinPositionsData
+          data: data
         });
       } else {
         const parsedResult: ParseResultPDB = parsedResultUntyped as ParseResultPDB;
 
+        const data: BinPositionsData = {
+          id: isoDataID.wrap(0), // will be replaced in reducer
+          name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
+          type: '3d-positions',
+          values: parsedResult.atoms,
+          basePairsResolution: basePairsResolution,
+          binOffset: 0,
+          normalizeCenter: parsedResult.normalizeCenter,
+          normalizeScale: parsedResult.normalizeScale,
+          chromosomes: parsedResult.ranges.length == 0 ? [{ from: 0, to: (parsedResult.atoms.length - 1) }] : parsedResult.ranges,
+        }
+
         dispatchData({
           type: DataActionKind.ADD_DATA,
-
-          data: {
-            name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
-            type: '3d-positions',
-            values: parsedResult.atoms,
-            basePairsResolution: basePairsResolution,
-            binOffset: 0,
-            normalizeCenter: parsedResult.normalizeCenter,
-            normalizeScale: parsedResult.normalizeScale,
-            chromosomes: parsedResult.ranges,
-          } as BinPositionsData
+          data: data
         });
       }
     }
