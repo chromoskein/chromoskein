@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, Dispatch } from "react";
 import * as GraphicsModule from "../../modules/graphics";
 import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, chromatinDataConfigurationEqual, getDefaultViewportSelectionOptions, IChromatinDataConfiguration, ChromatinViewportToolType, ConfigurationActionKind } from "../../modules/storage/models/viewports";
-import { useCustomCompareEffect, useDeepCompareEffect, useMouse, usePrevious } from "react-use";
+import { useCustomCompareEffect, useDeepCompareEffect, useMouse, useMouseHovered, usePrevious } from "react-use";
 import { ChromatinIntersection, ChromatinPart, ChromatinRepresentation, ContinuousTube, Sphere, Spheres, CullPlane, BinPosition } from "../../modules/graphics";
 import { vec3, vec4 } from "gl-matrix";
 import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Position3D, Positions3D } from "../../modules/storage/models/data";
@@ -32,12 +32,12 @@ export function ChromatinViewport(props: {
     const [configuration, updateConfiguration] = configurationReducer;
 
     // Canvas
-    const canvasElement = useRef(null);
+    const canvasElement = useRef<HTMLCanvasElement>(null);
     const [viewport, setViewport] = useState<GraphicsModule.ChromatinViewport>(() => props.graphicsLibrary.createChromatinViewport(null));
 
     const previousConfiguration = usePrevious(configuration);
 
-    const mousePosition = useMouse(canvasElement);
+    const mousePosition = useMouseHovered(canvasElement);
 
     const [closestIntersection, setClosestIntersection] = useState<ChromatinIntersection | null>(null);
 
@@ -168,12 +168,22 @@ export function ChromatinViewport(props: {
 
     // Find closest intersection
     useEffect(() => {
+
+        // so useMouseHovered doesn't work, so this bullshit needs to be here to prevent setting intersections when hovering outside canvas
+        if (0 > mousePosition.elX || mousePosition.elX > (canvasElement.current?.offsetWidth ?? 0)) {
+            setClosestIntersection(null);
+            return;
+        }
+        if (0 > mousePosition.elY || mousePosition.elY > (canvasElement.current?.offsetHeight ?? 0)) {
+            setClosestIntersection(null);
+            return;
+        }
         setClosestIntersection(() => viewport.closestIntersectionBin({ x: mousePosition.elX * window.devicePixelRatio, y: mousePosition.elY * window.devicePixelRatio }));
     }, [viewport, mousePosition]);
 
 
     useEffect(() => {
-        if (!closestIntersection) {
+        if (!closestIntersection || !configuration.showTooltip) {
             dispatchCoordinatePreview({
                 visible: false
             })
