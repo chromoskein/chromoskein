@@ -448,11 +448,8 @@ export function ChromatinViewport(props: {
                 }
             }
         } else if (tool.type == ChromatinViewportToolType.JoinSelection && configuration.selectedSelectionID != null) {
-            /*const datum = configuration.data[configuration.selectedDataIndex];
-            const selectedChromatinPart = viewport.getChromatinPartByDataId(isoDataID.unwrap(datum.id));
             const selection = globalSelections.selections.find(s => s.id == configuration.selectedSelectionID);
-
-            if (!selection || !selectedChromatinPart) {
+            if (!selection) {
                 return;
             }
 
@@ -461,17 +458,32 @@ export function ChromatinViewport(props: {
             }
 
             if (tool.from != null) {
-                selectedChromatinPart.setBinColor(tool.from, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                const fromChromosomeSliceIndex = chromosomeSlices.findIndex(c => c.from <= tool.from! && tool.from! < c.to);
+                const fromChromosomeSlice = chromosomeSlices[fromChromosomeSliceIndex];
+                const fromChromosomePart = viewport.getChromatinPartByChromosomeIndex(fromChromosomeSliceIndex);
+
+                fromChromosomePart?.setBinColor(tool.from, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
             }
 
             if (closestIntersection && tool.from != null) {
-                const startBinIndex = Math.min(closestIntersection.binIndex, tool.from);
-                const endBinIndex = Math.max(closestIntersection.binIndex, tool.from);
+                const closestIntersectionChromosomeOffset = chromosomeSlices[closestIntersection.chromatinPart.chromosomeIndex].from;
 
-                for (let i = startBinIndex; i <= endBinIndex; i++) {
-                    closestIntersection.chromatinPart.setBinColor(i, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                const startBinIndex = Math.min(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
+                const endBinIndex = Math.max(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
+
+                for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                    const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+                    if (!chromatinPart) return;
+    
+                    const binsPositions = chromatinPart.getBinsPositions();
+                    const binOffset = chromosomeSlices[chromosomeIndex].from;
+                    for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
+                        if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) < endBinIndex) {
+                            chromatinPart.setBinColor(binIndex, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                        }
+                    }
                 }
-            }*/
+            }
         }
         // console.timeEnd('colorBins::intersection');
         // console.timeEnd('colorBins');
@@ -536,6 +548,7 @@ export function ChromatinViewport(props: {
 
         const datum = configuration.data;
         const binPositions = data.data.filter(d => d.id == datum.id)[0] as BinPositionsData;
+        const chromosomeSlices = binPositions.chromosomes;
         const selectedChromosomeIndex = selectedChromatinPart.chromosomeIndex;
         const selectedChromosomeOffset = binPositions.chromosomes[selectedChromosomeIndex].from;
 
@@ -562,32 +575,43 @@ export function ChromatinViewport(props: {
                 }
             }
         } else if (tool.type == ChromatinViewportToolType.JoinSelection) {
-            // if (tool.from == null) {
-            //     updateConfiguration({
-            //         ...configuration,
-            //         tool: {
-            //             ...tool,
-            //             from: intersection.binIndex
-            //         }
-            //     });
-            // } else {
-            //     const startBinIndex = Math.min(intersection.binIndex, tool.from);
-            //     const endBinIndex = Math.max(intersection.binIndex, tool.from);
+            if (tool.from == null) {
+                updateConfiguration({
+                    ...configuration,
+                    tool: {
+                        ...tool,
+                        from: selectedChromosomeOffset + closestIntersection.binIndex
+                    }
+                });
+            } else {
+                const closestIntersectionChromosomeOffset = chromosomeSlices[closestIntersection.chromatinPart.chromosomeIndex].from;
 
-            //     const value = isAltPressed ? 0 : 1;
-            //     for (let i = startBinIndex; i <= endBinIndex; i++) {
-            //         newBins[i] = value;
-            //     }
+                const startBinIndex = Math.min(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
+                const endBinIndex = Math.max(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
 
-            //     updateConfiguration({
-            //         ...configuration,
-            //         tool: {
-            //             ...tool,
-            //             from: null,
-            //             to: null
-            //         }
-            //     });
-            // }
+                const value = isAltPressed ? 0 : 1;
+                for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                    const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+                    if (!chromatinPart) return;
+    
+                    const binsPositions = chromatinPart.getBinsPositions();
+                    const binOffset = chromosomeSlices[chromosomeIndex].from;
+                    for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
+                        if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) < endBinIndex) {
+                            newBins[binOffset + binIndex] = value;
+                        }
+                    }
+                }
+
+                updateConfiguration({
+                    ...configuration,
+                    tool: {
+                        ...tool,
+                        from: null,
+                        to: null
+                    }
+                });
+            }
         }
 
         globalSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selectionId, name: null, color: null, bins: newBins });
