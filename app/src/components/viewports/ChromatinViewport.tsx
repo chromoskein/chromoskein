@@ -168,7 +168,6 @@ export function ChromatinViewport(props: {
 
     // Find closest intersection
     useEffect(() => {
-
         // so useMouseHovered doesn't work, so this bullshit needs to be here to prevent setting intersections when hovering outside canvas
         if (0 > mousePosition.elX || mousePosition.elX > (canvasElement.current?.offsetWidth ?? 0)) {
             setClosestIntersection(null);
@@ -180,7 +179,6 @@ export function ChromatinViewport(props: {
         }
         setClosestIntersection(() => viewport.closestIntersectionBin({ x: mousePosition.elX * window.devicePixelRatio, y: mousePosition.elY * window.devicePixelRatio }));
     }, [viewport, mousePosition]);
-
 
     useEffect(() => {
         if (!closestIntersection || !configuration.showTooltip) {
@@ -259,7 +257,7 @@ export function ChromatinViewport(props: {
         const colorScale = Chroma.scale('YlGnBu');
 
         binsOffset = 0;
-        const allColors: Array<Array<vec4>> = [];
+        const allColors: Array<Array<vec4>> = new Array(data3D.chromosomes.length);
         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
             const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
 
@@ -289,7 +287,7 @@ export function ChromatinViewport(props: {
                     finalColorsArray[2 * i + 2] = colors[i];
                 }
             }
-            allColors.push(finalColorsArray);
+            allColors[chromosomeIndex] = finalColorsArray;
 
             binsOffset += binsLength;
         }
@@ -313,7 +311,7 @@ export function ChromatinViewport(props: {
         // Reset colors
         // Color by mapping & selection
         // console.time('colorBins::selections');
-        const allBorderColors: Array<Array<vec4>> = [];
+        const allBorderColors: Array<Array<vec4>> = new Array(binPositions.chromosomes.length);
         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
             const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
 
@@ -359,7 +357,7 @@ export function ChromatinViewport(props: {
                     }
                 }
             }
-            allBorderColors.push(finalColorsArray);
+            allBorderColors[chromosomeIndex] = finalColorsArray;
         }
 
         setBorderColors(allBorderColors);
@@ -384,14 +382,14 @@ export function ChromatinViewport(props: {
             }
 
             if (chromatinPart.structure instanceof ContinuousTube) {
-                if (chromosomeIndex < innerColors.length) {
+                if (innerColors[chromosomeIndex]) {
                     chromatinPart.structure.setColorsCombined(innerColors[chromosomeIndex]);
                 } else {
                     chromatinPart.structure.resetColor(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                     chromatinPart.structure.resetColor2(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                 }
 
-                if (chromosomeIndex < borderColors.length) {
+                if (borderColors[chromosomeIndex]) {
                     chromatinPart.structure.setBorderColorsCombined(borderColors[chromosomeIndex]);
                 } else {
                     chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
