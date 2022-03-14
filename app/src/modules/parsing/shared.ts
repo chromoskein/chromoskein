@@ -216,7 +216,7 @@ export function parseResultToSparseDistanceMatrix(parseResult: ParseResultCSV, c
 // }
 
 export type ParseResultBED = Array<{
-    chrom: string,
+    chromosome: string,
     from: number, to: number,
     attributes: Record<number, string>
 }>
@@ -234,7 +234,7 @@ export function parseBED(content: string, delimiter: CSVDelimiter.Space | CSVDel
     return annotations.map(
         a => {
             return {
-                chrom: a[1],
+                chromosome: a[1],
                 from: toNumber(a[2]),
                 to: toNumber(a[3]),
                 attributes: a,

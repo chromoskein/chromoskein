@@ -33,7 +33,7 @@ export function CoordinatePreview(props: {
         return <></>
     }
 
-    const renderMapped = (genomicFrom: number, genomicTo: number) => {
+    const renderMapped = (chromosome: string, genomicFrom: number, genomicTo: number) => {
         const valueRender = [];
         for (const mappedId of coordinatePreview.mappingIds) {
             const mappedData = data.data.find(d => d.id == mappedId);
@@ -48,13 +48,13 @@ export function CoordinatePreview(props: {
 
             if (mappedData.type == 'sparse-1d-data-text') {
                 const data1d = mappedData.values as Sparse1DTextData
-                for (const txtValue of data1d.filter(v => v.from <= genomicTo && v.to >= genomicFrom)) {
+                for (const txtValue of data1d.filter(v => v.chromosome == chromosome && v.from <= genomicTo && v.to >= genomicFrom)) {
                     valueRender.push(<Text>{mappedData.name}:  {txtValue.name} </Text>)
                 }
             }
             if (mappedData.type == 'sparse-1d-data-numerical') {
                 const data1d = mappedData.values as Sparse1DNumericData
-                for (const txtValue of data1d.filter(v => v.from <= genomicTo && v.to >= genomicFrom)) {
+                for (const txtValue of data1d.filter(v => v.chromosome == chromosome && v.from <= genomicTo && v.to >= genomicFrom)) {
                     valueRender.push(<Text>{mappedData.name}:  {txtValue.value} </Text>)
                 }
             }
@@ -79,7 +79,7 @@ export function CoordinatePreview(props: {
         return <div ref={ref} className="coordinatePreview" style={{ ...props.style, top: verticalShift, left: horizontalShift }}>
             <Stack tokens={{ childrenGap: '4px', padding: '8px' }}>
                 <Text style={{ fontWeight: 600 }}>Chromosome: {coordinatePreview.chromosomeName} | Bin: {coordinatePreview.from} | Genomic: {genomicFrom} - {genomicTo} </Text>
-                {...renderMapped(genomicFrom, genomicTo)}
+                {...renderMapped(coordinatePreview.chromosomeName, genomicFrom, genomicTo)}
             </Stack>
         </div>
 
