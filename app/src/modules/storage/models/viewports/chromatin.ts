@@ -45,10 +45,11 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     chromosomes: Array<boolean>,
 
     mapValues: {
-        id: number
+        id: number;
+        aggregationFunction: string;
     },
 
-    otherMapValues: Array<DataID>,
+    tooltipData: Array<DataID>,
     showTooltip: boolean;
     ssao: {
         radius: number;
@@ -69,6 +70,8 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
         showDebugBins: boolean;
         showDebugIntersections: boolean;
     }
+
+    colorMappingMode: 'none' | 'centromers' | '1d-numerical' | '1d-density'
 
     tool?: ChromatinViewportTool;
 }
@@ -98,10 +101,11 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         } as OrbitCameraConfiguration,
 
         mapValues: {
-            id: -1
+            id: -1,
+            aggregationFunction: 'mean'
         },
 
-        otherMapValues: [],
+        tooltipData: [],
         showTooltip: true,
         ssao: {
             radius: 0.25,
@@ -123,6 +127,7 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
             showDebugBins: false,
             showDebugIntersections: false,
         },
+        colorMappingMode: 'none',
 
         tool: {} as ChromatinPointSelection,
     } as ChromatinViewportConfiguration;

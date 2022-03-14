@@ -193,7 +193,7 @@ export function ChromatinViewport(props: {
             visible: true,
             type: "bin-coordinates-single",
             dataId: iso<DataID>().wrap(closestIntersection.chromatinPart.dataId),
-            mappingIds: configuration.otherMapValues,
+            mappingIds: configuration.tooltipData,
             from: closestIntersection.binIndex,
             chromosomeName: closestIntersection.chromatinPart.name
         })
