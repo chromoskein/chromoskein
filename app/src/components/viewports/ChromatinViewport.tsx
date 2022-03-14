@@ -606,7 +606,7 @@ export function ChromatinViewport(props: {
                     const binsPositions = chromatinPart.getBinsPositions();
                     const binOffset = chromosomeSlices[chromosomeIndex].from;
                     for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
-                        if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) < endBinIndex) {
+                        if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) <= endBinIndex) {
                             newBins[binOffset + binIndex] = value;
                         }
                     }
