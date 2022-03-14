@@ -246,7 +246,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                     />
                 </Callout>
             )}
-            {/* <Slider label="SSAO Radius" min={0.0} max={1.0} step={0.01} value={configuration.ssao.radius} showValue onChange={setSSAORadius} /> */}
+            <Slider label="SSAO Radius" min={0.01} max={1.0} step={0.01} value={configuration.ssao.radius} showValue onChange={setSSAORadius} />
         </Stack>
 
         {/* List of 3D data */}
