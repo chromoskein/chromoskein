@@ -226,7 +226,7 @@ export function ChromatinViewport(props: {
                 const chromosomeBinOffset = centromereSlices[chromosomeIndex].from;
                 
                 const colors: Array<vec4> = valuesNormalized.slice(chromosomeBinOffset, chromosomeBinOffset + chromatinPart.getBinsPositions().length).map(v => {
-                    return colorScale(v).gl();
+                    return scale(v).gl();
                 });
     
                 allColors[chromosomeIndex] = chromatinPart.cacheColorArray(colors);
