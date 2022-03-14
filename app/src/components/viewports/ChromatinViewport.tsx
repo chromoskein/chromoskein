@@ -41,15 +41,16 @@ export function ChromatinViewport(props: {
 
     const [closestIntersection, setClosestIntersection] = useState<ChromatinIntersection | null>(null);
 
-    const [isControlPressed, setControlPressed] = useState(false);
-    const [isAltPressed, setAltPressed] = useState(false);
+    const [isPrimaryModPressed, setPrimaryModPressed] = useState(false);
+    const [isSecondaryModPressed, setSecondaryModPressed] = useState(false);
+
 
     // Input
-    useKey(["ControlLeft"], () => setControlPressed(true), { eventTypes: ["keydown"] });
-    useKey(["ControlLeft"], () => setControlPressed(false), { eventTypes: ["keyup"] });
+    useKey(["Control", "Meta"], () => setPrimaryModPressed(true), { eventTypes: ["keydown"] });
+    useKey(["Control", "Meta"], () => setPrimaryModPressed(false), { eventTypes: ["keyup"] });
 
-    useKey(["AltLeft"], () => setAltPressed(true), { eventTypes: ["keydown"] });
-    useKey(["AltLeft"], () => setAltPressed(false), { eventTypes: ["keyup"] });
+    useKey(["Alt"], () => setSecondaryModPressed(true), { eventTypes: ["keydown"] });
+    useKey(["Alt"], () => setSecondaryModPressed(false), { eventTypes: ["keyup"] });
 
     // 
     const [innerColors, setInnerColors] = useState<Array<Array<vec4>>>([]);
@@ -99,8 +100,8 @@ export function ChromatinViewport(props: {
     useEffect(() => {
         if (!viewport || !viewport.camera) return;
 
-        viewport.camera.ignoreEvents = isControlPressed;
-    }, [isControlPressed]);
+        viewport.camera.ignoreEvents = isPrimaryModPressed;
+    }, [isPrimaryModPressed]);
 
     // Establish 3D structure
     const configurePart = (part: ChromatinPart, configuration: IChromatinDataConfiguration) => {
@@ -482,7 +483,7 @@ export function ChromatinViewport(props: {
                 for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                     const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
                     if (!chromatinPart) return;
-    
+
                     const binsPositions = chromatinPart.getBinsPositions();
                     const binOffset = chromosomeSlices[chromosomeIndex].from;
                     for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
@@ -537,7 +538,7 @@ export function ChromatinViewport(props: {
     }, [viewport, configuration.cutaway.axis, configuration.cutaway.length]);
 
     const onClick = () => {
-        if (!viewport || !configuration.data || !closestIntersection || !isControlPressed || !configuration.tool || !configuration.selectedSelectionID) {
+        if (!viewport || !configuration.data || !closestIntersection || !isPrimaryModPressed || !configuration.tool || !configuration.selectedSelectionID) {
             return;
         }
 
@@ -562,11 +563,11 @@ export function ChromatinViewport(props: {
 
         const newBins: Uint16Array = selection.bins.slice();
         if (tool.type == ChromatinViewportToolType.PointSelection) {
-            newBins[selectedChromosomeOffset + closestIntersection.binIndex] = isAltPressed ? 0 : 1;
+            newBins[selectedChromosomeOffset + closestIntersection.binIndex] = isSecondaryModPressed ? 0 : 1;
         } else if (tool.type == ChromatinViewportToolType.SphereSelection) {
             const sphereCenter = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
             const sphereRadius = tool.radius;
-            const value = isAltPressed ? 0 : 1;
+            const value = isSecondaryModPressed ? 0 : 1;
 
             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                 const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
@@ -597,11 +598,11 @@ export function ChromatinViewport(props: {
                 const startBinIndex = Math.min(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
                 const endBinIndex = Math.max(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
 
-                const value = isAltPressed ? 0 : 1;
+                const value = isSecondaryModPressed ? 0 : 1;
                 for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                     const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
                     if (!chromatinPart) return;
-    
+
                     const binsPositions = chromatinPart.getBinsPositions();
                     const binOffset = chromosomeSlices[chromosomeIndex].from;
                     for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {

@@ -5,6 +5,8 @@ import { ChromatinViewportConfiguration, ChromatinViewportToolType, Configuratio
 import { useConfigurationTypeless } from "../hooks";
 import { Label, Separator, Slider, Stack } from "@fluentui/react";
 import { Text } from '@fluentui/react/lib/Text';
+import { UAParser } from "ua-parser-js";
+
 
 export function ToolOptions(props: {
     configurationID: number,
@@ -13,6 +15,8 @@ export function ToolOptions(props: {
     const configurationReducer = useConfigurationTypeless(props.configurationID, props.configurationsReducer);
     const [configuration, updateConfiguration] = configurationReducer;
     const tool = configuration.tool;
+    const isMac = new UAParser().getOS().name == 'Mac OS';
+
 
     if (!tool) {
         return <div></div>
@@ -36,7 +40,7 @@ export function ToolOptions(props: {
 
         if (tool.type == ChromatinViewportToolType.PointSelection) {
             return <Stack.Item align="center">
-                <Text nowrap variant='medium'>Hold <b>CONTROL</b> and click a pointed bin to the selection. Hold <b>CTRL + ALT</b> to remove a bin from the selection.</Text>
+                <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: add to selection | <strong>{isMac ? "command + option + click" : "option + click"}</strong>: remove from selection.</Text>
             </Stack.Item>
         }
         if (tool.type == ChromatinViewportToolType.SphereSelection) {
@@ -57,7 +61,7 @@ export function ToolOptions(props: {
                     <Separator vertical></Separator>
                 </Stack.Item>
                 <Stack.Item align="center">
-                    <Text nowrap variant='medium'>Hold <b>CONTROL</b> and click to add all bins in the sphere to the selection. Hold <b>CTRL + ALT</b> to remove bins from the selection.</Text>
+                    <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: add to selection | <strong>{isMac ? "command + option + click" : "option + click"}</strong>: remove from selection.</Text>
                 </Stack.Item>
             </>
         }
@@ -72,7 +76,7 @@ export function ToolOptions(props: {
                     <Separator vertical></Separator>
                 </Stack.Item>
                 <Stack.Item align="center">
-                    <Text nowrap variant='medium'>Hold <b>CONTROL</b> to select a path and add all bins on it to the selection. Hold <b>CTRL + ALT</b> to remove bins on the path from the selection.</Text>
+                    {tool.from == null ? <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: start adding to selection | <strong>{isMac ? "command + option + click" : "Ctrk + alt + click"}</strong>: start removing from selection.</Text> : <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: end adding to selection | <strong>{isMac ? "command + option + click" : "Ctrk + alt + click"}</strong>: end removing from selection.</Text>}
                 </Stack.Item>
             </>
         }
