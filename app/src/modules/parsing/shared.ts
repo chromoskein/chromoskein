@@ -1,5 +1,5 @@
 import Papa, { parse } from "papaparse";
-import { ChromosomeModel, parsePdb } from "./parsePDB";
+import { ChromatinModel, parsePdb } from "./parsePDB";
 // import gff from "@gmod/gff";
 import { toNumber } from "lodash";
 import { vec3 } from "gl-matrix";
@@ -46,13 +46,12 @@ export interface ParseResultCSV extends IParseResult {
 
 export interface ParseResultPDB extends IParseResult {
     type: 'PDB';
-
     atoms: Array<{ x: number, y: number, z: number }>;
 
     normalizeCenter: vec3;
     normalizeScale: number;
 
-    ranges: Array<{ from: number, to: number }>;
+    ranges: Array<{ name: string, from: number, to: number }>;
 }
 
 export function fileStateToText(state: FileState): string {
@@ -75,7 +74,7 @@ export function parseToRows(content: string, config: ParseConfiguration): Array<
 function parsePDBToObjects(content: string, config: ParsePDBConfiguration): Array<ParseResultPDB> {
     const parsed = parsePdb(content);
 
-    return parsed.map((p: ChromosomeModel) => {
+    return parsed.map((p: ChromatinModel) => {
         return {
             type: 'PDB',
 
@@ -83,7 +82,6 @@ function parsePDBToObjects(content: string, config: ParsePDBConfiguration): Arra
 
             normalizeCenter: p.normalizeCenter,
             normalizeScale: p.normalizeScale,
-
             ranges: p.ranges,
         }
     });

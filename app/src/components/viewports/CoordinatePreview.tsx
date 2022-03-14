@@ -78,7 +78,7 @@ export function CoordinatePreview(props: {
         const [genomicFrom, genomicTo] = binToGenomicCoordinate(coordinatePreview.from, dataModel3d.basePairsResolution)
         return <div ref={ref} className="coordinatePreview" style={{ ...props.style, top: verticalShift, left: horizontalShift }}>
             <Stack tokens={{ childrenGap: '4px', padding: '8px' }}>
-                <Text style={{ fontWeight: 600 }}>Bin: {coordinatePreview.from} (Genomic: {genomicFrom} - {genomicTo}) </Text>
+                <Text style={{ fontWeight: 600 }}>Chromosome: {coordinatePreview.chromosomeName} | Bin: {coordinatePreview.from} | Genomic: {genomicFrom} - {genomicTo} </Text>
                 {...renderMapped(genomicFrom, genomicTo)}
             </Stack>
         </div>

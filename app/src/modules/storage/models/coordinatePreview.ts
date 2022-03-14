@@ -9,6 +9,7 @@ export type CoordinatePreviewState = {
     mappingIds: Array<DataID>,
     visible: boolean,
     from: number,
+    chromosomeName: string,
     to: number,
 }
 
@@ -19,6 +20,7 @@ export type CoordinatePreviewAction = {
     mappingIds?: Array<DataID>,
     visible?: boolean,
     from?: number,
+    chromosomeName?: string,
     to?: number,
 }
 

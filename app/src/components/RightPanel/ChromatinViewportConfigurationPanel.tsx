@@ -276,7 +276,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                         onMouseDown={(e) => handleChromosomeMouseEvent(e, i)}
                         onMouseEnter={(e) => handleChromosomeMouseEvent(e, i)}>
                         <Checkbox
-                            label={"Chromosome " + i.toString()}
+                            label={(data.data.filter(d => d.id == configuration.data?.id)[0] as BinPositionsData).chromosomes[i].name}
                             checked={v}
                         />
                     </div>

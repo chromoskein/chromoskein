@@ -83,7 +83,6 @@ export interface BinPositionsData extends Data {
   type: '3d-positions';
 
   values: Positions3D;
-
   basePairsResolution: number;
   binOffset: number;
 
@@ -91,6 +90,7 @@ export interface BinPositionsData extends Data {
   normalizeScale: number;
 
   chromosomes: Array<{
+    name: string;
     from: number;
     to: number;
   }>
