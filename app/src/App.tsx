@@ -57,10 +57,9 @@ function App(): JSX.Element {
     if (adapter == null) {
       return;
     }
-
     const waitForDevice = async function () {
       const device = await adapter.requestDevice({
-        requiredFeatures: ['timestamp-query']
+        // requiredFeatures: ['timestamp-query']
       });
       device.onuncapturederror = (error: GPUUncapturedErrorEvent) => {
         setDeviceError(error);
