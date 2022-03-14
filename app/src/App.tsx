@@ -124,7 +124,8 @@ function App(): JSX.Element {
 
   function setCurrentState(state: ApplicationState) {
     if (state.version == null || state.version < APPLICATION_STATE_VERSION) {
-      throw "The workspace you are trying to load was created in a version of Chromazoom that is no longer supported."
+      clearBrowser() //not awaiting on purpouse
+      throw "The workspace you are trying to load was created in a version of Chromazoom that is no longer supported. Your saved workspace has been deleted. Sorry, hopefully it was nothing important ^_^;)"
     }
     if (state.data)
       dispatchData({
@@ -400,9 +401,7 @@ function App(): JSX.Element {
           onNewForceGraphViewport={addForceGraphViewport}
           onNewWorkspace={() => setCurrentState(initialState)}
           onSaveState={async () => await saveToBrowser(getCurrentState())}
-          onResetState={() => clearBrowser(Object.keys(getCurrentState())
-          ).then(() => window.location.reload())
-          }
+          onResetState={() => clearBrowser().then(() => window.location.reload())}
           onFileExport={async () => {
             await saveToFile(getCurrentState())
           }}
