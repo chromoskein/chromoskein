@@ -11,6 +11,30 @@ function deg_to_rad(degrees: number): number {
 function easeOutExp(t: number): number {
     return -Math.pow(2, -10 * t) + 1;
 }
+
+//~ LOL, these definitions are useless actually...
+type OrbitingParams = {
+    currentLerpTime: number;
+    lastFrameAngleX: number;
+    lastFrameAngleY: number;
+    endAngleY: number;
+    endAngleX: number;
+    pivot: vec3;
+}
+
+type ZoomingParams = {
+    currentLerpTime: number;
+    endAmount: number;
+    lastFrameZoomAmount: number;
+}
+
+type PanningParams = {
+    currentLerpTime: number;
+    startPosition: vec3;
+    endPosition: vec3;
+    lastFramePosition: vec3;
+}
+
 export class SmoothCamera extends Camera {
     private currentMousePos = { x: 0, y: 0 };
     private lastMousePos = { x: 0, y: 0 };
@@ -22,31 +46,38 @@ export class SmoothCamera extends Camera {
     //~ general
     animTime = 1000.0;
     zoomToCursor = false;
-
-    //~ orbiting
-    orbitCurrentLerpTime = 0;
-    orbitLastFrameAngleX = 0;
-    orbitLastFrameAngleY = 0;
-    orbitEndAngleY = 0;
-    orbitEndAngleX = 0;
     orbitingSpeed = 0.5;
-    orbitingPivot = vec3.fromValues(0, 0, 0);
-
-    //~ zooming
-    zoomCurrentLerpTime = 0.0;
-    zoomEndAmount = 0.0;
-    lastFrameZoomAmount = 0.0;
-    scrollingSpeed = 0.0015;
-
-    //~ panning
-    panStartPosition = vec3.fromValues(0, 0, 0);
-    lastFramePosition = vec3.fromValues(0, 0, 0);
-    panEndPosition = vec3.fromValues(0, 0, 0);
-    panCurrentLerpTime = 0.0;
+    zoomingSpeed = 0.0015;
     panningSpeed = 0.005;
+
+    //~ orbiting params
+    orbiting: OrbitingParams = {
+        currentLerpTime: 0,
+        lastFrameAngleX: 0,
+        lastFrameAngleY: 0,
+        endAngleY: 0,
+        endAngleX: 0,
+        pivot: vec3.fromValues(0, 0, 0)
+    }
+
+    //~ zooming params
+    zooming: ZoomingParams = {
+        currentLerpTime: 0.0,
+        endAmount: 0.0,
+        lastFrameZoomAmount: 0.0,
+    }
+
+    //~ panning params
+    panning: PanningParams = {
+        currentLerpTime: 0.0,
+        startPosition: vec3.fromValues(0, 0, 0),
+        endPosition: vec3.fromValues(0, 0, 0),
+        lastFramePosition: vec3.fromValues(0, 0, 0),
+    }
 
     constructor(device: GPUDevice, width: number, height: number, near = 0.01, fieldOfView = 45.0) {
         super(device, width, height, near, fieldOfView);
+
 
         this.updateCPU(0);
     }
@@ -58,20 +89,20 @@ export class SmoothCamera extends Camera {
         this.updateOrbiting(dt);
         this.updatePanning(dt);
 
-        const mvm = this.computeModelViewMatrix(this.position, this.orbitingPivot);
+        const mvm = this.computeModelViewMatrix(this.position, this.orbiting.pivot);
         mat4.copy(this._viewMatrix, mvm);
 
         super.updateCPU(dt);
     }
 
     protected updateZooming(dt: number): void {
-        this.zoomCurrentLerpTime += dt;
-        if (this.zoomCurrentLerpTime > this.animTime) this.zoomCurrentLerpTime = this.animTime;
-        const perc = this.zoomCurrentLerpTime / this.animTime;
+        this.zooming.currentLerpTime += dt;
+        if (this.zooming.currentLerpTime > this.animTime) this.zooming.currentLerpTime = this.animTime;
+        const perc = this.zooming.currentLerpTime / this.animTime;
 
-        const currentZoom = this.lerpNumber(0.0, this.zoomEndAmount, easeOutExp(perc));
-        const change = currentZoom - this.lastFrameZoomAmount;
-        this.lastFrameZoomAmount = currentZoom;
+        const currentZoom = this.lerpNumber(0.0, this.zooming.endAmount, easeOutExp(perc));
+        const change = currentZoom - this.zooming.lastFrameZoomAmount;
+        this.zooming.lastFrameZoomAmount = currentZoom;
 
         if (!this.zoomToCursor) {
             //~ zoom in => move the camera by the current frame change
@@ -115,35 +146,37 @@ export class SmoothCamera extends Camera {
 
         //~ move camera by offset 
         vec3.sub(this.position, this.position, offset);
-        vec3.sub(this.orbitingPivot, this.orbitingPivot, offset);
+        vec3.sub(this.orbiting.pivot, this.orbiting.pivot, offset);
 
     }
 
     protected updateOrbiting(dt: number): void {
-        this.orbitCurrentLerpTime += dt;
-        if (this.orbitCurrentLerpTime > this.animTime) this.orbitCurrentLerpTime = this.animTime;
-        const perc = this.orbitCurrentLerpTime / this.animTime;
+        this.orbiting.currentLerpTime += dt;
+        if (this.orbiting.currentLerpTime > this.animTime) this.orbiting.currentLerpTime = this.animTime;
+        const perc = this.orbiting.currentLerpTime / this.animTime;
 
-        const currentAngleX = this.lerpNumber(0.0, this.orbitEndAngleX, easeOutExp(perc));
-        const currentAngleY = this.lerpNumber(0.0, this.orbitEndAngleY, easeOutExp(perc));
+        const currentAngleX = this.lerpNumber(0.0, this.orbiting.endAngleX, easeOutExp(perc));
+        const currentAngleY = this.lerpNumber(0.0, this.orbiting.endAngleY, easeOutExp(perc));
 
-        const rotIncrementX = currentAngleX - this.orbitLastFrameAngleX;
-        const rotIncrementY = currentAngleY - this.orbitLastFrameAngleY;
-        this.orbitLastFrameAngleX = currentAngleX;
-        this.orbitLastFrameAngleY = currentAngleY;
+        const rotIncrementX = currentAngleX - this.orbiting.lastFrameAngleX;
+        const rotIncrementY = currentAngleY - this.orbiting.lastFrameAngleY;
+        this.orbiting.lastFrameAngleX = currentAngleX;
+        this.orbiting.lastFrameAngleY = currentAngleY;
 
         const horizRot = quat.create();
-        quat.setAxisAngle(horizRot, this.up(), deg_to_rad(-rotIncrementY));
+        // quat.setAxisAngle(horizRot, this.up(), deg_to_rad(-rotIncrementY));
+        quat.setAxisAngle(horizRot, vec3.fromValues(0, 1, 0), deg_to_rad(-rotIncrementY));
         const vertRot = quat.create();
-        quat.setAxisAngle(vertRot, this.right(), deg_to_rad(rotIncrementX));
+        // quat.setAxisAngle(vertRot, this.right(), deg_to_rad(rotIncrementX));
+        quat.setAxisAngle(vertRot, vec3.fromValues(1, 0, 0), deg_to_rad(rotIncrementX));
         const newRot = quat.create();
         quat.mul(newRot, horizRot, vertRot);
         const v = vec3.create();
-        vec3.sub(v, this.position, this.orbitingPivot);
+        vec3.sub(v, this.position, this.orbiting.pivot);
         const newPos = vec3.create();
         const shift = vec3.create();
         vec3.transformQuat(shift, v, newRot);
-        vec3.add(newPos, this.orbitingPivot, shift);
+        vec3.add(newPos, this.orbiting.pivot, shift);
 
         vec3.copy(this.position, newPos);
         quat.mul(this.rotation, newRot, this.rotation);
@@ -153,19 +186,19 @@ export class SmoothCamera extends Camera {
     }
 
     protected updatePanning(dt: number): void {
-        this.panCurrentLerpTime += dt;
-        if (this.panCurrentLerpTime > this.animTime) this.panCurrentLerpTime = this.animTime;
-        const perc = this.panCurrentLerpTime / this.animTime;
+        this.panning.currentLerpTime += dt;
+        if (this.panning.currentLerpTime > this.animTime) this.panning.currentLerpTime = this.animTime;
+        const perc = this.panning.currentLerpTime / this.animTime;
 
         const currentFramePosition = vec3.create();
-        vec3.lerp(currentFramePosition, this.panStartPosition, this.panEndPosition, easeOutExp(perc));
+        vec3.lerp(currentFramePosition, this.panning.startPosition, this.panning.endPosition, easeOutExp(perc));
         const frameOffset = vec3.create();
-        vec3.sub(frameOffset, currentFramePosition, this.lastFramePosition);
-        vec3.copy(this.lastFramePosition, currentFramePosition);
+        vec3.sub(frameOffset, currentFramePosition, this.panning.lastFramePosition);
+        vec3.copy(this.panning.lastFramePosition, currentFramePosition);
         vec3.add(this.position, this.position, frameOffset);
 
         //~ Seems like I should also add this, otherwise orbiting will be weird...
-        vec3.add(this.orbitingPivot, this.orbitingPivot, frameOffset);
+        vec3.add(this.orbiting.pivot, this.orbiting.pivot, frameOffset);
 
         this.isMoving = this.isMoving || (perc < 1.0);
 
@@ -178,7 +211,7 @@ export class SmoothCamera extends Camera {
             type: CameraConfigurationType.Smooth,
 
             position: { x: this.position[0], y: this.position[1], z: this.position[2] },
-            lookAtPosition: { x: this.orbitingPivot[0], y: this.orbitingPivot[1], z: this.orbitingPivot[2] },
+            lookAtPosition: { x: this.orbiting.pivot[0], y: this.orbiting.pivot[1], z: this.orbiting.pivot[2] },
             rotationQuat: { x: this.rotation[0], y: this.rotation[1], z: this.rotation[2], w: this.rotation[3] }
         };
     }
@@ -198,6 +231,14 @@ export class SmoothCamera extends Camera {
     public get rotation(): quat {
         return this._rotation;
     }
+
+    public get orbitingPivot(): vec3 {
+        return this.orbiting.pivot;
+    }
+
+    public set orbitingPivot(pivot: vec3) {
+        this.orbiting.pivot = pivot;
+    }
     //#endregion
 
     protected computeModelViewMatrix(camPosition: vec3, lookAtPosition: vec3): mat4 {
@@ -209,7 +250,7 @@ export class SmoothCamera extends Camera {
 
     protected getModelViewMatrix(): mat4 {
         let mvm = mat4.create();
-        mvm = this.computeModelViewMatrix(this.position, this.orbitingPivot);
+        mvm = this.computeModelViewMatrix(this.position, this.orbiting.pivot);
         return mvm;
     }
 
@@ -255,11 +296,11 @@ export class SmoothCamera extends Camera {
                 this.dragging = true;
             }
 
-            this.orbitCurrentLerpTime = 0.0;
-            this.orbitLastFrameAngleX = 0.0;
-            this.orbitLastFrameAngleY = 0.0;
-            this.orbitEndAngleY = delta.x * this.orbitingSpeed;
-            this.orbitEndAngleX = delta.y * this.orbitingSpeed;
+            this.orbiting.currentLerpTime = 0.0;
+            this.orbiting.lastFrameAngleX = 0.0;
+            this.orbiting.lastFrameAngleY = 0.0;
+            this.orbiting.endAngleY = delta.x * this.orbitingSpeed;
+            this.orbiting.endAngleX = delta.y * this.orbitingSpeed;
 
             this.lastMousePos = { x: event.screenX, y: event.screenY };
         }
@@ -267,17 +308,17 @@ export class SmoothCamera extends Camera {
         {
             const delta = { x: event.screenX - this.lastMousePos.x, y: event.screenY - this.lastMousePos.y };
 
-            vec3.copy(this.panStartPosition, this.position);
-            vec3.copy(this.lastFramePosition, this.position);
+            vec3.copy(this.panning.startPosition, this.position);
+            vec3.copy(this.panning.lastFramePosition, this.position);
 
-            vec3.copy(this.panEndPosition, this.position);
+            vec3.copy(this.panning.endPosition, this.position);
             const incrVec = vec3.create();
             vec3.scale(incrVec, this.up(), delta.y * this.panningSpeed);
-            vec3.add(this.panEndPosition, this.panEndPosition, incrVec);
+            vec3.add(this.panning.endPosition, this.panning.endPosition, incrVec);
             vec3.scale(incrVec, this.right(), delta.x * this.panningSpeed);
-            vec3.add(this.panEndPosition, this.panEndPosition, incrVec);
+            vec3.add(this.panning.endPosition, this.panning.endPosition, incrVec);
 
-            this.panCurrentLerpTime = 0.0;
+            this.panning.currentLerpTime = 0.0;
 
             this.lastMousePos = { x: event.screenX, y: event.screenY };
         }
@@ -308,11 +349,11 @@ export class SmoothCamera extends Camera {
 
         if (this.ignoreEvents) return;
 
-        const speed = this.scrollingSpeed;
+        const speed = this.zoomingSpeed;
 
-        this.zoomEndAmount = event.deltaY * speed;
-        this.lastFrameZoomAmount = 0.0;
-        this.zoomCurrentLerpTime = 0.0;
+        this.zooming.endAmount = event.deltaY * speed;
+        this.zooming.lastFrameZoomAmount = 0.0;
+        this.zooming.currentLerpTime = 0.0;
 
         this.currentMousePos = { x: event.offsetX, y: event.offsetY };
     }
