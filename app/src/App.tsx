@@ -453,11 +453,11 @@ function App(): JSX.Element {
         onClose={() => { setWorkspaceFileImportDialogHidden(true) }}
         onFileImported={setCurrentState}
       />
-      <NewGenomicDataDialog
+      {!newGenomicDataDialogHidden && (<NewGenomicDataDialog
         hidden={newGenomicDataDialogHidden}
         onClose={() => setNewGenomicDataDialogHidden(true)}
         dataReducer={[data, dispatchData]}
-      ></NewGenomicDataDialog>
+      ></NewGenomicDataDialog>)}
       {/* <New1DDataDialog hidden={new1DDataDialogHidden} closeFunction={() => { setNew1DDataDialogHidden(true) }} ></New1DDataDialog>
       <NewDistanceMatrixDialog hidden={newDistanceDataDialogHidden} closeFunction={() => { setNewDistanceDataDialogHidden(true) }} ></NewDistanceMatrixDialog> */}
     </div>

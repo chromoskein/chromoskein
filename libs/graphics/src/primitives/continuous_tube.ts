@@ -297,6 +297,12 @@ export class ContinuousTube implements HighLevelStructure {
     public resetColorBorder(color: vec4): void {
         if (!this.buffer) return;
 
+        this._colors.fill(color);
+        this._colors2.fill(color);
+
+        this._borderColors.fill(color);
+        this._borderColors2.fill(color);
+
         const colorsArrayBuffer = new Uint8Array([
             color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
             color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
@@ -319,6 +325,24 @@ export class ContinuousTube implements HighLevelStructure {
         }
 
         this.setColors(this._colors);
+    }
+
+    public resetColors(color: vec4): void {
+        if (!this.buffer) return;
+
+        this._colors.fill(color);
+        this._colors2.fill(color);
+
+        const colorsArrayBuffer = new Uint8Array([
+            color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
+            color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
+        ]);
+
+        const u8view = this.buffer.u8view;
+
+        for (let i = 0; i < this._points.length - 1; i++) {
+            u8view.set(colorsArrayBuffer, (this._roundedConesPosition + i) * LL_STRUCTURE_SIZE_BYTES + 64);
+        }
     }
 
     public setColor(color: vec4, i: number): void {
