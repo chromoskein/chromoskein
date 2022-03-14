@@ -93,6 +93,29 @@ export class ChromatinPart {
     }
   }
 
+  public cacheColorArray(colors: Array<vec4>): Array<vec4> {    
+    const binsLength = this._binsPositions.length;
+    const finalColorsArray: Array<vec4> = new Array(2 * this._binsPositions.length + 2);
+
+    if (this._structure instanceof ContinuousTube) for (let i = 0; i < this._binsPositions.length; i++) {
+        if (i == 0) {
+            finalColorsArray[0] = colors[0];
+            finalColorsArray[1] = colors[0];
+            finalColorsArray[2] = colors[0];
+        } else if (i == binsLength - 1) {
+            finalColorsArray[2 * i + 1] = colors[i];
+            finalColorsArray[2 * i + 2] = colors[i];
+            finalColorsArray[2 * i + 3] = colors[i];
+        }
+        else {
+            finalColorsArray[2 * i + 1] = colors[i];
+            finalColorsArray[2 * i + 2] = colors[i];
+        }
+    }
+
+    return finalColorsArray;
+  }
+
   public setBinColor(binIndex: number, color: GPUColorDict): void {
     const c = vec4.fromValues(color.r, color.g, color.b, color.a);
 

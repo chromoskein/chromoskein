@@ -204,9 +204,34 @@ export function ChromatinViewport(props: {
 
         const datum = configuration.data;
         const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
+        const centromereSlices = data3D.chromosomes;
         const mapData1D: Positions3D | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Positions3D;
         if (!mapData1D) {
             return;
+        }
+
+        const mapScaleToChromatin = (values: Array<number>, scale: Chroma.Scale): Array<Array<vec4>> => {
+            const ratio = Math.max(...values);
+            const valuesNormalized = values.map(v => v / ratio);
+
+            const allColors: Array<Array<vec4>> = new Array(data3D.chromosomes.length);
+
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+                if (!chromatinPart) {
+                    continue;
+                }
+    
+                const chromosomeBinOffset = centromereSlices[chromosomeIndex].from;
+                
+                const colors: Array<vec4> = valuesNormalized.slice(chromosomeBinOffset, chromosomeBinOffset + chromatinPart.getBinsPositions().length).map(v => {
+                    return colorScale(v).gl();
+                });
+    
+                allColors[chromosomeIndex] = chromatinPart.cacheColorArray(colors);
+            }
+
+            return allColors;
         }
 
         const centromereBins = new Array(mapData1D.length);
@@ -245,55 +270,16 @@ export function ChromatinViewport(props: {
         }
 
         // Map bin to distance
-        let binsOffset = 0;
-        let distances = [];
+        const distances: Array<number> = [];
         for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
             const distance = Math.min(...centromereBins.map((v) => Math.abs(v - valueIndex)));
             distances.push(distance);
         }
 
         // Color inside with mapping
-        const ratio = Math.max(...distances);
-        distances = distances.map(v => v / ratio);
-        const colorScale = Chroma.scale('YlGnBu');
+        const colorScale = Chroma.scale('YlGnBu');        
 
-        binsOffset = 0;
-        const allColors: Array<Array<vec4>> = new Array(data3D.chromosomes.length);
-        for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-            const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-
-            if (!chromatinPart) {
-                continue;
-            }
-
-            const binsLength = chromatinPart.getBinsPositions().length;
-            const colors = distances.slice(binsOffset, binsOffset + binsLength).map(v => {
-                const c = colorScale(v).gl();
-                return vec4.fromValues(c[0], c[1], c[2], 1.0);
-            });
-
-            const finalColorsArray: Array<vec4> = new Array(2 * binsLength + 2);
-            if (chromatinPart.structure instanceof ContinuousTube) for (let i = 0; i < binsLength; i++) {
-                if (i == 0) {
-                    finalColorsArray[0] = colors[0];
-                    finalColorsArray[1] = colors[0];
-                    finalColorsArray[2] = colors[0];
-                } else if (i == binsLength - 1) {
-                    finalColorsArray[2 * i + 1] = colors[i];
-                    finalColorsArray[2 * i + 2] = colors[i];
-                    finalColorsArray[2 * i + 3] = colors[i];
-                }
-                else {
-                    finalColorsArray[2 * i + 1] = colors[i];
-                    finalColorsArray[2 * i + 2] = colors[i];
-                }
-            }
-            allColors[chromosomeIndex] = finalColorsArray;
-
-            binsOffset += binsLength;
-        }
-
-        setInnerColors(() => allColors);
+        setInnerColors(() => mapScaleToChromatin(distances, colorScale));
     }, [viewport, configuration.mapValues, configuration.data, data.data, configuration.chromosomes]);
 
     // Calculate/Cache border colors (selections)
@@ -340,25 +326,7 @@ export function ChromatinViewport(props: {
                 }
             }
 
-            const finalColorsArray: Array<vec4> = new Array(2 * binsLength + 2);
-            if (chromatinPart.structure instanceof ContinuousTube) {
-                for (let i = 0; i < binsLength; i++) {
-                    if (i == 0) {
-                        finalColorsArray[0] = colors[finalColorIndices[0]];
-                        finalColorsArray[1] = colors[finalColorIndices[0]];
-                        finalColorsArray[2] = colors[finalColorIndices[0]];
-                    } else if (i == binsLength - 1) {
-                        finalColorsArray[2 * i + 1] = colors[finalColorIndices[i]];
-                        finalColorsArray[2 * i + 2] = colors[finalColorIndices[i]];
-                        finalColorsArray[2 * i + 3] = colors[finalColorIndices[i]];
-                    }
-                    else {
-                        finalColorsArray[2 * i + 1] = colors[finalColorIndices[i]];
-                        finalColorsArray[2 * i + 2] = colors[finalColorIndices[i]];
-                    }
-                }
-            }
-            allBorderColors[chromosomeIndex] = finalColorsArray;
+            allBorderColors[chromosomeIndex] = chromatinPart.cacheColorArray(colors);
         }
 
         setBorderColors(allBorderColors);

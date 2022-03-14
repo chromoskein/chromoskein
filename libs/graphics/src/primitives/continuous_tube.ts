@@ -347,7 +347,7 @@ export class ContinuousTube implements HighLevelStructure {
             this.setColor(colors[i], i);
         }
 
-        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._colors.length - 1) * LL_STRUCTURE_SIZE_BYTES });
+        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._colors.length) * LL_STRUCTURE_SIZE_BYTES });
     }
 
     public resetColor2(color: vec4): void {
