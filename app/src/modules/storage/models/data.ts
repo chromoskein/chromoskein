@@ -5,10 +5,10 @@ import { vec3 } from 'gl-matrix';
 //#region Data Description
 export type Dense1DData = Array<number>;
 export type Sparse1DTextData = Array<{
-  from: number, to: number, name: string
+  chromosome: string, from: number, to: number, name: string
 }>
 export type Sparse1DNumericData = Array<{
-  from: number, to: number, value: number
+  chromosome: string, from: number, to: number, value: number
 }>
 export type SparseDistanceMatrix = Array<{ from: number, to: number, distance: number }>;
 export type Position3D = { x: number, y: number, z: number }
@@ -18,7 +18,7 @@ export type Colors = Array<{ r: number, g: number, b: number, a: number }>
 
 export type BEDAnnotations = Array<BEDAnnotation>
 export type BEDAnnotation = {
-  chrom: string,
+  chromosome: string,
   from: number, to: number,
   attributes: Record<number, string>
 }
@@ -83,7 +83,6 @@ export interface BinPositionsData extends Data {
   type: '3d-positions';
 
   values: Positions3D;
-
   basePairsResolution: number;
   binOffset: number;
 
@@ -91,6 +90,7 @@ export interface BinPositionsData extends Data {
   normalizeScale: number;
 
   chromosomes: Array<{
+    name: string;
     from: number;
     to: number;
   }>

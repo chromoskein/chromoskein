@@ -101,7 +101,7 @@ export function NewGenomicDataDialog(props: {
             type: DataActionKind.ADD_DATA,
             data: {
                 name: `${file.name}`,
-                type: 'sparse-1d-data-numerical',
+                type: 'bed-annotation',
                 values: parsedBed,
             }
         });

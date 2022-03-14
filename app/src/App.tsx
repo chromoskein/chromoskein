@@ -25,7 +25,7 @@ import { ApplicationState, APPLICATION_STATE_VERSION } from './modules/storage/s
 import { ForceGraphViewport } from './components/viewports/ForceGraphViewport';
 import { ToolsList } from './components/Tools/ToolsList';
 import { ToolOptions } from './components/Tools/ToolOptions';
-import { CoordinatePreview } from './components/Tools/CoordinatePreview';
+import { CoordinatePreview } from './components/viewports/CoordinatePreview';
 import { NewGenomicDataDialog } from './components/dialogs/NewGenomicDataDialog';
 import { coordinatePreviewReducer } from './modules/storage/models/coordinatePreview';
 
@@ -209,6 +209,7 @@ function App(): JSX.Element {
       mappingIds: [],
       visible: false,
       from: 0,
+      chromosomeName: "",
       to: 0
     },
   );

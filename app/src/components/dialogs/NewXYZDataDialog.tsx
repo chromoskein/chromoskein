@@ -62,7 +62,7 @@ export function NewXYZDataDialog(props: {
           binOffset: 0,
           normalizeCenter: vec3.create(),
           normalizeScale: 1.0,
-          chromosomes: [{ from: 0, to: (values.length - 1) }]
+          chromosomes: [{ name: "chr1", from: 0, to: (values.length - 1) }]
         }
         dispatchData({
           type: DataActionKind.ADD_DATA,
@@ -81,7 +81,7 @@ export function NewXYZDataDialog(props: {
           binOffset: 0,
           normalizeCenter: parsedResult.normalizeCenter,
           normalizeScale: parsedResult.normalizeScale,
-          chromosomes: parsedResult.ranges.length == 0 ? [{ from: 0, to: (parsedResult.atoms.length - 1) }] : parsedResult.ranges,
+          chromosomes: parsedResult.ranges.length == 0 ? [{ name: "chr1", from: 0, to: (parsedResult.atoms.length - 1) }] : parsedResult.ranges,
         }
 
         dispatchData({

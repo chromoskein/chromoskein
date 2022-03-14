@@ -157,10 +157,10 @@ export function ChromatinViewport(props: {
         for (const [chromosomeIndex, chromosome] of configuration.chromosomes.entries()) {
             if (!chromosome) continue;
 
-            const slice = datum.chromosomes[chromosomeIndex];
-            const positions = datum.values.slice(slice.from, slice.to);
+            const chromosomeInfo = datum.chromosomes[chromosomeIndex];
+            const positions = datum.values.slice(chromosomeInfo.from, chromosomeInfo.to);
 
-            const chromatinPart = viewport.addPart(positions as Positions3D, true, isoDataID.unwrap(datum.id), chromosomeIndex, ChromatinRepresentation.ContinuousTube, false);
+            const chromatinPart = viewport.addPart(chromosomeInfo.name, positions as Positions3D, true, isoDataID.unwrap(datum.id), chromosomeIndex, ChromatinRepresentation.ContinuousTube, false);
             configurePart(chromatinPart, configuration.data);
         }
 
@@ -194,7 +194,8 @@ export function ChromatinViewport(props: {
             type: "bin-coordinates-single",
             dataId: iso<DataID>().wrap(closestIntersection.chromatinPart.dataId),
             mappingIds: configuration.otherMapValues,
-            from: closestIntersection.binIndex
+            from: closestIntersection.binIndex,
+            chromosomeName: closestIntersection.chromatinPart.name
         })
     }, [viewport, closestIntersection])
 
