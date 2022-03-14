@@ -362,7 +362,6 @@ export function ChromatinViewport(props: {
                     chromatinPart.structure.setBorderColorsCombined(borderColors[chromosomeIndex]);
                 } else {
                     chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-                    chromatinPart.structure.resetBorderColors2(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                 }
             }
         }
