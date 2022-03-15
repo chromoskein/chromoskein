@@ -398,16 +398,15 @@ export function ChromatinViewport(props: {
         // Reset colors
         // Color by mapping & selection
         // console.time('colorBins::selections');
-        const allBorderColors: Array<Array<vec4>> = new Array(binPositions.chromosomes.length);
+        const allBorderColors: Array<Array<vec4>> = new Array(binPositions.chromosomes.length).fill([]);
         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
             const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-
             if (!chromatinPart) {
                 continue;
             }
 
-            const colors = [vec4.fromValues(1.0, 1.0, 1.0, 1.0)];
-            const binsLength = selections[0].bins.length;
+            const colors: Array<vec4> = [vec4.fromValues(1.0, 1.0, 1.0, 1.0)];
+            const binsLength = chromatinPart.getBinsPositions().length;
             const finalColorIndices = new Uint16Array(binsLength);
             for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
                 const selection = selections[selectionIndex];
@@ -420,13 +419,18 @@ export function ChromatinViewport(props: {
                 colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
                 const colorIndex = colors.length - 1;
 
-                for (let i = 0; i < selection.bins.length; i++) {
+                for (let i = 0; i < binsLength; i++) {
                     const j = chromosomeSlices[chromosomeIndex].from + i;
-                    finalColorIndices[i] = selection.bins[j] * colorIndex + (1 - selection.bins[j]) * finalColorIndices[j];
+                    finalColorIndices[i] = selection.bins[j] * colorIndex + (1 - selection.bins[j]) * finalColorIndices[i];
                 }
             }
 
-            allBorderColors[chromosomeIndex] = chromatinPart.cacheColorArray(colors);
+            const finalColors: Array<vec4> = new Array(binsLength);
+            for(let i = 0; i < binsLength; i++) {
+                finalColors[i] = colors[finalColorIndices[i]];
+            }
+
+            allBorderColors[chromosomeIndex] = chromatinPart.cacheColorArray(finalColors);
         }
 
         setBorderColors(allBorderColors);
@@ -457,7 +461,7 @@ export function ChromatinViewport(props: {
                     chromatinPart.structure.resetColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                 }
 
-                if (borderColors[chromosomeIndex]) {
+                if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
                     chromatinPart.structure.setBorderColorsCombined(borderColors[chromosomeIndex]);
                 } else {
                     chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
