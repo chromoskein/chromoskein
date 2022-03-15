@@ -46,7 +46,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
 
     mapValues: {
         id: number;
-        aggregationFunction: string;
+        aggregationFunction: "min" | "max" | "median" | "mean";
     },
 
     tooltipData: Array<DataID>,

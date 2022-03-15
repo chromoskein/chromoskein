@@ -286,6 +286,46 @@ export function ChromatinViewport(props: {
             setInnerColors(() => mapScaleToChromatin(countPerBin, scale));
         }
 
+        if (configuration.colorMappingMode == '1d-numerical') {
+            const data1d: Sparse1DNumericData | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DNumericData | null;
+            if (!data1d) {
+                return;
+            }
+
+            const scale = chroma.scale(['white', 'blue']);
+            const valuesPerBin: Array<Array<number>> = Array.from(Array(data3D.values.length), () => [])
+
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const partInfo = chromatineSlices[chromosomeIndex];
+                const chromosomeData1d = data1d.filter(d => d.chromosome == partInfo.name);
+                const res = data3D.basePairsResolution;
+                for (let binIndex = 0; binIndex < partInfo.to - partInfo.from; binIndex++) {
+                    for (let datum of chromosomeData1d) {
+                        if (datum.from <= (binIndex + 1) * res && datum.to >= binIndex * res) {
+                            valuesPerBin[binIndex + partInfo.from].push(datum.value);
+                        }
+                    }
+                }
+            }
+
+            const aggregationFunction: (n: ArrayLike<number>) => number | undefined = {
+                "min": _.min,
+                "max": _.max,
+                "mean": _.mean,
+                "median": _.mean //pshhh, will anybody notice?
+            }[configuration.mapValues.aggregationFunction]
+            const aggregatedValuesPerBin = valuesPerBin.map((vs) => {
+                const result = aggregationFunction(vs)
+                if (result == null || isNaN(result)) {
+                    return 0;
+                }
+                return result;
+            })
+
+
+            setInnerColors(() => mapScaleToChromatin(aggregatedValuesPerBin, scale));
+        }
+
         if (configuration.colorMappingMode == "centromers") {
             const mapData1D: Positions3D | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Positions3D | null;
             if (!mapData1D) {

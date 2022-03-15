@@ -203,7 +203,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                 ...configuration,
                 mapValues: {
                     ...configuration.mapValues,
-                    aggregationFunction: String(option.key),
+                    aggregationFunction: String(option.key) as "min" | "max" | "median" | "mean",
                 },
             });
         }
