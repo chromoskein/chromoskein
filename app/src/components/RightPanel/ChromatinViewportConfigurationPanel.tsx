@@ -171,7 +171,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                 id: selectedDataId,
 
                 representation: ChromatinRepresentation.ContinuousTube,
-                radius: 0.01,
+                radius: 0.0,
 
                 selections: [],
             },

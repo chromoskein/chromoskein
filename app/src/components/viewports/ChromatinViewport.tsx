@@ -151,7 +151,7 @@ export function ChromatinViewport(props: {
                     ...configuration.data,
                     radius: quantiles[0] / 2.0
                 },
-                radiusRange: { min: quantiles[0] / 2.0, max: quantiles[1] / 2.0 }
+                radiusRange: { min: 0.0, max: quantiles[1] / 2.0 }
             });
         }
 
