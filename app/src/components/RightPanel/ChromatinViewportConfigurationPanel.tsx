@@ -96,10 +96,10 @@ export function ChromatinViewportConfigurationPanel(props: {
         })
 
     const aggregationFunctionOptions = [
-        {key: 'mean', id: 'mean', text: 'Mean'},
-        {key: 'median', id: 'median', text: 'Median'},
-        {key: 'max', id: 'max', text: 'Maximum'},
-        {key: 'min', id: 'min', text: 'Minimum'},
+        { key: 'mean', id: 'mean', text: 'Mean' },
+        { key: 'median', id: 'median', text: 'Median' },
+        { key: 'max', id: 'max', text: 'Maximum' },
+        { key: 'min', id: 'min', text: 'Minimum' },
 
     ]
 
@@ -122,7 +122,11 @@ export function ChromatinViewportConfigurationPanel(props: {
         if (!configuration || !option) return;
         updateConfiguration({
             ...configuration,
-            colorMappingMode: option.key as "none" | "centromers" | "1d-numerical" | "1d-density"
+            colorMappingMode: option.key as "none" | "centromers" | "1d-numerical" | "1d-density",
+            mapValues: {
+                ...configuration.mapValues,
+                id: -1,
+            },
         })
     }
 
@@ -450,19 +454,19 @@ export function ChromatinViewportConfigurationPanel(props: {
                         (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
                     }
                 />
-                <ComboBox
-                    label="Aggregation function"
-                    allowFreeform={false}
-                    autoComplete={'on'}
-                    options={aggregationFunctionOptions}
-                    onChange={setAggragationFunction}
-                    style={{ marginTop: '8px', padding: '4px' }}
-                    shouldRestoreFocus={false}
-                    selectedKey={configuration.mapValues.aggregationFunction}
-                />
+                    <ComboBox
+                        label="Aggregation function"
+                        allowFreeform={false}
+                        autoComplete={'on'}
+                        options={aggregationFunctionOptions}
+                        onChange={setAggragationFunction}
+                        style={{ marginTop: '8px', padding: '4px' }}
+                        shouldRestoreFocus={false}
+                        selectedKey={configuration.mapValues.aggregationFunction}
+                    />
                 </>)
             }</>
-            
+
         }
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>

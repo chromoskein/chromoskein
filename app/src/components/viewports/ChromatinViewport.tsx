@@ -8,10 +8,11 @@ import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Posit
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration } from "../hooks";
 import { useKey } from "rooks";
-import * as Chroma from "chroma-js";
+import * as chroma from "chroma-js";
 import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
 import { iso } from "newtype-ts";
 import { quantile } from "simple-statistics";
+import _ from "lodash";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
@@ -201,16 +202,40 @@ export function ChromatinViewport(props: {
 
     // Calculate/Cache Inner Colors (centromeres, 1D data mapping)
     useEffect(() => {
-        if (!viewport || !configuration.data || !configuration.mapValues || configuration.mapValues.id < 0) {
+        if (!viewport || !configuration.data) {
             return;
         }
+
 
         const datum = configuration.data;
         const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
         const chromatineSlices = data3D.chromosomes;
 
+        const clearInnerColor = () => {
+            //setting inner colors to empty [] doesn't do anything
+            const defaultColor: vec4 = [1.0, 1.0, 1.0, 1.0];
+            const allColors: Array<Array<vec4>> = [];
 
-        const mapScaleToChromatin = (values: Array<number>, scale: Chroma.Scale): Array<Array<vec4>> => {
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                let partInfo = chromatineSlices[chromosomeIndex];
+                let part = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+                if (!part) {
+                    continue;
+                }
+                const chromosomeColors: Array<vec4> = []
+                for (let binIndex = partInfo.from; binIndex < partInfo.to; binIndex++) {
+                    chromosomeColors.push(defaultColor);
+                }
+                allColors.push(part.cacheColorArray(chromosomeColors));
+            }
+            setInnerColors(() => allColors)
+        }
+
+        if (!configuration.mapValues || configuration.mapValues.id < 0 || configuration.colorMappingMode == "none") {
+            clearInnerColor()
+        }
+
+        const mapScaleToChromatin = (values: Array<number>, scale: chroma.Scale): Array<Array<vec4>> => {
             const ratio = Math.max(...values);
             const valuesNormalized = values.map(v => v / ratio);
 
@@ -233,31 +258,32 @@ export function ChromatinViewport(props: {
 
             return allColors;
         }
-        if (configuration.colorMappingMode == "none") {
-            //calling chromatinPart.structure.resetColors doesn't do anything
-            const defaultColor: vec4 = [1.0, 1.0, 1.0, 1.0];
-            const allColors: Array<Array<vec4>> = [];
-
-            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-                let partInfo = chromatineSlices[chromosomeIndex];
-                let part = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-                if (!part) {
-                    continue;
-                }
-                const chromosomeColors: Array<vec4> = []
-                for (let binIndex = partInfo.from; binIndex < partInfo.to; binIndex++) {
-                    chromosomeColors.push(defaultColor);
-                }
-                allColors.push(part.cacheColorArray(chromosomeColors));
-            }
-            setInnerColors(() => allColors)
-        }
 
         if (configuration.colorMappingMode == '1d-density') {
-            const data1d: Sparse1DTextData | Sparse1DNumericData | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
+
+            const data1d: Array<{ chromosome: string, from: number, to: number }> | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
             if (!data1d) {
                 return;
             }
+
+            const scale = chroma.scale(['white', 'blue']);
+            const countPerBin: Array<number> = Array(data3D.values.length);
+            _.fill(countPerBin, 0)
+
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const partInfo = chromatineSlices[chromosomeIndex];
+                const chromosomeData1d = data1d.filter(d => d.chromosome == partInfo.name);
+                const res = data3D.basePairsResolution;
+                for (let binIndex = 0; binIndex < partInfo.to - partInfo.from; binIndex++) {
+                    for (let datum of chromosomeData1d) {
+                        if (datum.from <= (binIndex + 1) * res && datum.to >= binIndex * res) {
+                            countPerBin[binIndex + partInfo.from] += 1;
+                        }
+                    }
+                }
+            }
+
+            setInnerColors(() => mapScaleToChromatin(countPerBin, scale));
         }
 
         if (configuration.colorMappingMode == "centromers") {
@@ -308,7 +334,7 @@ export function ChromatinViewport(props: {
             }
 
             // Color inside with mapping
-            const colorScale = Chroma.scale('YlGnBu');
+            const colorScale = chroma.scale('YlGnBu');
 
             setInnerColors(() => mapScaleToChromatin(distances, colorScale));
         }
