@@ -55,7 +55,7 @@ export function NewGenomicDataDialog(props: {
             parsedFileColumns = [];
         } else {
             parsedFileColumns = [
-                { key: 'chomosome', name: 'chrom', fieldName: 'chrom', minWidth: 0 },
+                { key: 'chomosome', name: 'chrom', fieldName: 'chromosome', minWidth: 0 },
                 { key: 'from', name: 'from', fieldName: 'from', minWidth: 0 },
                 { key: 'to', name: 'to', fieldName: 'to', minWidth: 0 },
                 // { key: '4', name: '4', fieldName: '4', minWidth: 0 },

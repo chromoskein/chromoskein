@@ -4,7 +4,7 @@ import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState
 import { useCustomCompareEffect, useDeepCompareEffect, useMouse, useMouseHovered, usePrevious } from "react-use";
 import { ChromatinIntersection, ChromatinPart, ChromatinRepresentation, ContinuousTube, Sphere, Spheres, CullPlane, BinPosition } from "../../modules/graphics";
 import { vec3, vec4 } from "gl-matrix";
-import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Position3D, Positions3D } from "../../modules/storage/models/data";
+import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Position3D, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration } from "../hooks";
 import { useKey } from "rooks";
@@ -201,15 +201,14 @@ export function ChromatinViewport(props: {
 
     // Calculate/Cache Inner Colors (centromeres, 1D data mapping)
     useEffect(() => {
-        if (!viewport || !configuration.data || !configuration.mapValues || configuration.mapValues.id < 0) return;
+        if (!viewport || !configuration.data || !configuration.mapValues || configuration.mapValues.id < 0) {
+            return;
+        }
 
         const datum = configuration.data;
         const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
-        const centromereSlices = data3D.chromosomes;
-        const mapData1D: Positions3D | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Positions3D;
-        if (!mapData1D) {
-            return;
-        }
+        const chromatineSlices = data3D.chromosomes;
+
 
         const mapScaleToChromatin = (values: Array<number>, scale: Chroma.Scale): Array<Array<vec4>> => {
             const ratio = Math.max(...values);
@@ -222,66 +221,100 @@ export function ChromatinViewport(props: {
                 if (!chromatinPart) {
                     continue;
                 }
-    
-                const chromosomeBinOffset = centromereSlices[chromosomeIndex].from;
-                
+
+                const chromosomeBinOffset = chromatineSlices[chromosomeIndex].from;
+
                 const colors: Array<vec4> = valuesNormalized.slice(chromosomeBinOffset, chromosomeBinOffset + chromatinPart.getBinsPositions().length).map(v => {
                     return scale(v).gl();
                 });
-    
+
                 allColors[chromosomeIndex] = chromatinPart.cacheColorArray(colors);
             }
 
             return allColors;
         }
+        if (configuration.colorMappingMode == "none") {
+            //calling chromatinPart.structure.resetColors doesn't do anything
+            const defaultColor: vec4 = [1.0, 1.0, 1.0, 1.0];
+            const allColors: Array<Array<vec4>> = [];
 
-        const centromereBins = new Array(mapData1D.length);
-
-        // Normalize centromeres to current bounding box
-        const normalizeCenter = data3D.normalizeCenter;
-        const normalizeScale = data3D.normalizeScale;
-        const centromeres: Array<vec3> = [];
-        for (const c of mapData1D) {
-            let centromere = vec3.fromValues(c.x, c.y, c.z);
-
-            centromere = vec3.sub(vec3.create(), centromere, normalizeCenter);
-            centromere = vec3.scale(vec3.create(), centromere, normalizeScale);
-
-            centromeres.push(centromere);
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                let partInfo = chromatineSlices[chromosomeIndex];
+                let part = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+                if (!part) {
+                    continue;
+                }
+                const chromosomeColors: Array<vec4> = []
+                for (let binIndex = partInfo.from; binIndex < partInfo.to; binIndex++) {
+                    chromosomeColors.push(defaultColor);
+                }
+                allColors.push(part.cacheColorArray(chromosomeColors));
+            }
+            setInnerColors(() => allColors)
         }
 
-        // Map centromere 3D position to 1D bin index
-        for (let centromereIndex = 0; centromereIndex < centromeres.length; centromereIndex++) {
-            let minDistance = 1.0;
-            let minIndex = -1;
+        if (configuration.colorMappingMode == '1d-density') {
+            const data1d: Sparse1DTextData | Sparse1DNumericData | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
+            if (!data1d) {
+                return;
+            }
+        }
 
-            for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
-                const value = vec3.fromValues(data3D.values[valueIndex].x, data3D.values[valueIndex].y, data3D.values[valueIndex].z);
+        if (configuration.colorMappingMode == "centromers") {
+            const mapData1D: Positions3D | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Positions3D | null;
+            if (!mapData1D) {
+                return;
+            }
+            const centromereBins = new Array(mapData1D.length);
 
-                const diff = vec3.sub(vec3.create(), centromeres[centromereIndex], value);
-                const distance = vec3.dot(diff, diff);
+            // Normalize centromeres to current bounding box
+            const normalizeCenter = data3D.normalizeCenter;
+            const normalizeScale = data3D.normalizeScale;
+            const centromeres: Array<vec3> = [];
+            for (const c of mapData1D) {
+                let centromere = vec3.fromValues(c.x, c.y, c.z);
 
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    minIndex = valueIndex;
-                }
+                centromere = vec3.sub(vec3.create(), centromere, normalizeCenter);
+                centromere = vec3.scale(vec3.create(), centromere, normalizeScale);
+
+                centromeres.push(centromere);
             }
 
-            centromereBins[centromereIndex] = minIndex;
+            // Map centromere 3D position to 1D bin index
+            for (let centromereIndex = 0; centromereIndex < centromeres.length; centromereIndex++) {
+                let minDistance = 1.0;
+                let minIndex = -1;
+
+                for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
+                    const value = vec3.fromValues(data3D.values[valueIndex].x, data3D.values[valueIndex].y, data3D.values[valueIndex].z);
+
+                    const diff = vec3.sub(vec3.create(), centromeres[centromereIndex], value);
+                    const distance = vec3.dot(diff, diff);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        minIndex = valueIndex;
+                    }
+                }
+
+                centromereBins[centromereIndex] = minIndex;
+            }
+
+            // Map bin to distance
+            const distances: Array<number> = [];
+            for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
+                const distance = Math.min(...centromereBins.map((v) => Math.abs(v - valueIndex)));
+                distances.push(distance);
+            }
+
+            // Color inside with mapping
+            const colorScale = Chroma.scale('YlGnBu');
+
+            setInnerColors(() => mapScaleToChromatin(distances, colorScale));
         }
 
-        // Map bin to distance
-        const distances: Array<number> = [];
-        for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
-            const distance = Math.min(...centromereBins.map((v) => Math.abs(v - valueIndex)));
-            distances.push(distance);
-        }
 
-        // Color inside with mapping
-        const colorScale = Chroma.scale('YlGnBu');        
-
-        setInnerColors(() => mapScaleToChromatin(distances, colorScale));
-    }, [viewport, configuration.mapValues, configuration.data, data.data, configuration.chromosomes]);
+    }, [viewport, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes]);
 
     // Calculate/Cache border colors (selections)
     useEffect(() => {
