@@ -211,28 +211,34 @@ export function ChromatinViewport(props: {
         const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
         const chromatineSlices = data3D.chromosomes;
 
-        const clearInnerColor = () => {
-            //setting inner colors to empty [] doesn't do anything
-            const defaultColor: vec4 = [1.0, 1.0, 1.0, 1.0];
-            const allColors: Array<Array<vec4>> = [];
+        // const clearInnerColor = () => {
+        //     //setting inner colors to empty [] doesn't do anything
+        //     const defaultColor: vec4 = [1.0, 1.0, 1.0, 1.0];
+        //     const allColors: Array<Array<vec4>> = [];
 
-            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-                let partInfo = chromatineSlices[chromosomeIndex];
-                let part = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-                if (!part) {
-                    continue;
-                }
-                const chromosomeColors: Array<vec4> = []
-                for (let binIndex = partInfo.from; binIndex < partInfo.to; binIndex++) {
-                    chromosomeColors.push(defaultColor);
-                }
-                allColors.push(part.cacheColorArray(chromosomeColors));
-            }
-            setInnerColors(() => allColors)
-        }
+        //     for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+        //         const partInfo = chromatineSlices[chromosomeIndex];
+        //         const part = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+        //         if (!part) {
+        //             continue;
+        //         }
+        //         const chromosomeColors: Array<vec4> = [];
+        //         for (let binIndex = partInfo.from; binIndex < partInfo.to; binIndex++) {
+        //             chromosomeColors.push(defaultColor);
+        //         }
 
-        if (!configuration.mapValues || configuration.mapValues.id < 0 || configuration.colorMappingMode == "none") {
-            clearInnerColor()
+        //         allColors[chromosomeIndex] = part.cacheColorArray(chromosomeColors);
+        //     }
+
+        //     setInnerColors(() => allColors)
+        // }
+
+        // if (!configuration.mapValues || configuration.mapValues.id < 0 || configuration.colorMappingMode == "none") {
+        //     clearInnerColor()
+        // }
+        
+        if (configuration.colorMappingMode == "none") {
+            setInnerColors(() => []);
         }
 
         const mapScaleToChromatin = (values: Array<number>, scale: chroma.Scale): Array<Array<vec4>> => {
@@ -275,7 +281,7 @@ export function ChromatinViewport(props: {
                 const chromosomeData1d = data1d.filter(d => d.chromosome == partInfo.name);
                 const res = data3D.basePairsResolution;
                 for (let binIndex = 0; binIndex < partInfo.to - partInfo.from; binIndex++) {
-                    for (let datum of chromosomeData1d) {
+                    for (const datum of chromosomeData1d) {
                         if (datum.from <= (binIndex + 1) * res && datum.to >= binIndex * res) {
                             countPerBin[binIndex + partInfo.from] += 1;
                         }
@@ -455,7 +461,7 @@ export function ChromatinViewport(props: {
             }
 
             if (chromatinPart.structure instanceof ContinuousTube) {
-                if (innerColors[chromosomeIndex]) {
+                if (chromosomeIndex < innerColors.length && innerColors[chromosomeIndex] && innerColors[chromosomeIndex].length != 0) {
                     chromatinPart.structure.setColorsCombined(innerColors[chromosomeIndex]);
                 } else {
                     chromatinPart.structure.resetColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));

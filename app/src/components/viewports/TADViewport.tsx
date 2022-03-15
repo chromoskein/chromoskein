@@ -360,32 +360,32 @@ export function TADViewport(props: {
             const transformations = {
 
                 "end": {
-                    labelScale: 20,
+                    labelScale: 14,
                     xTransform: 0,
                     rotation: 45
                 },
                 "start": {
-                    labelScale: 20,
+                    labelScale: 14,
                     xTransform: 0,
                     rotation: 45
 
                 },
                 "mid": {
-                    labelScale: 20,
+                    labelScale: 14,
                     xTransform: 0,
                     rotation: 45
                 },
                 "fill": {
-                    labelScale: 16,
+                    labelScale: 12,
                     xTransform: 0,
                     rotation: 0
 
                 }
             }
 
-            let additionalScaling = 1;
+            let additionalScaling = 1.0;
             if (hoveredBins?.from == index || hoveredBins?.to == index) {
-                additionalScaling = 3;
+                additionalScaling = 1.5;
             }
 
 
@@ -402,7 +402,7 @@ export function TADViewport(props: {
                 y={0}
                 fill="cyan"
                 textAnchor="middle"
-                fontSize={16}
+                fontSize={14}
             >{label}
             </text></g>
         }
