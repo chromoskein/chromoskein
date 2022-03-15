@@ -40,7 +40,7 @@ export function ToolOptions(props: {
 
         if (tool.type == ChromatinViewportToolType.PointSelection) {
             return <Stack.Item align="center">
-                <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: add to selection | <strong>{isMac ? "command + option + click" : "option + click"}</strong>: remove from selection.</Text>
+                <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: add to selection | <strong>{isMac ? "command + option + click" : "Ctrl + Alt + click"}</strong>: remove from selection.</Text>
             </Stack.Item>
         }
         if (tool.type == ChromatinViewportToolType.SphereSelection) {
@@ -61,7 +61,7 @@ export function ToolOptions(props: {
                     <Separator vertical></Separator>
                 </Stack.Item>
                 <Stack.Item align="center">
-                    <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: add to selection | <strong>{isMac ? "command + option + click" : "option + click"}</strong>: remove from selection.</Text>
+                    <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: add to selection | <strong>{isMac ? "command + option + click" : "Ctrl + Alt + click"}</strong>: remove from selection.</Text>
                 </Stack.Item>
             </>
         }
@@ -76,7 +76,7 @@ export function ToolOptions(props: {
                     <Separator vertical></Separator>
                 </Stack.Item>
                 <Stack.Item align="center">
-                    {tool.from == null ? <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: start adding to selection | <strong>{isMac ? "command + option + click" : "Ctrk + alt + click"}</strong>: start removing from selection.</Text> : <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: end adding to selection | <strong>{isMac ? "command + option + click" : "Ctrk + alt + click"}</strong>: end removing from selection.</Text>}
+                    {tool.from == null ? <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: start adding to selection | <strong>{isMac ? "command + option + click" : "Ctrk + Alt + click"}</strong>: start removing from selection.</Text> : <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: end adding to selection | <strong>{isMac ? "command + option + click" : "Ctrk + alt + click"}</strong>: end removing from selection.</Text>}
                 </Stack.Item>
             </>
         }
