@@ -426,7 +426,7 @@ export function ChromatinViewport(props: {
             }
 
             const finalColors: Array<vec4> = new Array(binsLength);
-            for(let i = 0; i < binsLength; i++) {
+            for (let i = 0; i < binsLength; i++) {
                 finalColors[i] = colors[finalColorIndices[i]];
             }
 
@@ -481,19 +481,18 @@ export function ChromatinViewport(props: {
             viewport.removeStructureByName(SphereSelectionName);
         }
 
+        const selection = globalSelections.selections.find(s => s.id == configuration.selectedSelectionID);
+        if (!selection) {
+            return;
+        }
+
         if (closestIntersection != null && tool.type == ChromatinViewportToolType.PointSelection) {
-            closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+            closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
         } else if (closestIntersection != null && tool.type == ChromatinViewportToolType.SphereSelection && configuration.selectedSelectionID) {
-            const selection = globalSelections.selections.find(s => s.id == configuration.selectedSelectionID);
-
-            if (!selection) {
-                return;
-            }
-
             // Only find position in space where the ray intersects
             const sphereCenter = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
 
-            // // Update (create if not already created) the configuration of selection sphere
+            // Update (create if not already created) the configuration of selection sphere
             const sphere = (viewport.getStructureByName(SphereSelectionName) ?? viewport.scene.addSphere(
                 SphereSelectionName,
                 sphereCenter,
@@ -533,15 +532,14 @@ export function ChromatinViewport(props: {
             }
 
             if (closestIntersection) {
-                closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
             }
 
             if (tool.from != null) {
                 const fromChromosomeSliceIndex = chromosomeSlices.findIndex(c => c.from <= tool.from! && tool.from! < c.to);
-                const fromChromosomeSlice = chromosomeSlices[fromChromosomeSliceIndex];
                 const fromChromosomePart = viewport.getChromatinPartByChromosomeIndex(fromChromosomeSliceIndex);
 
-                fromChromosomePart?.setBinColor(tool.from, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                fromChromosomePart?.setBinColor(tool.from, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
             }
 
             if (closestIntersection && tool.from != null) {
@@ -558,7 +556,7 @@ export function ChromatinViewport(props: {
                     const binOffset = chromosomeSlices[chromosomeIndex].from;
                     for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
                         if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) < endBinIndex) {
-                            chromatinPart.setBinColor(binIndex, { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+                            chromatinPart.setBinColor(binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
                         }
                     }
                 }

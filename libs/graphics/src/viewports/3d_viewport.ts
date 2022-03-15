@@ -492,7 +492,6 @@ export class Viewport3D {
     gBufferRasterizeOpaquePass.end();
 
     // commandEncoder.writeTimestamp(this.timestampsQuerySet, 1);
-    /*
     const gBufferRasterizeTransparentPass = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
@@ -516,7 +515,7 @@ export class Viewport3D {
     gBufferRasterizeTransparentPass.setBindGroup(2, cullObjectsBindGroup);
     this.scene.renderRasterization(gBufferRasterizeTransparentPass, this._camera, RenderObjects.Transparent, this.depthTexture.createView());
     gBufferRasterizeTransparentPass.end();
-    */
+
     //#endregion
 
     const computePassEncoder = commandEncoder.beginComputePass();
