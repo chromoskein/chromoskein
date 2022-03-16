@@ -1,4 +1,4 @@
-import { range, toNumber } from "lodash";
+import { groupBy, range, toNumber } from "lodash";
 import { BEDAnnotation, BEDAnnotations, GFF3Annotation, GFF3Annotations, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "./storage/models/data"
 
 
@@ -9,6 +9,7 @@ export function fromBEDtoSparse1DTextData(annotations: BEDAnnotations, column: n
         .filter(d => nameSelector(d) != null)
         .map(d => {
             return {
+                chromosome: d.chromosome,
                 from: d.from,
                 to: d.to,
                 name: nameSelector(d) as string // filtered above
@@ -28,6 +29,7 @@ export function fromBEDtoSparse1DNumericData(annotations: BEDAnnotations, column
             return value != null && !isNaN(value)
         }).map(d => {
             return {
+                chromosome: d.chromosome,
                 from: d.from,
                 to: d.to,
                 value: valueSelector(d) as number // filtered above
@@ -43,76 +45,87 @@ export type GFFSimplificationSettings = {
     valueByAttribute: boolean
 }
 
-export function fromGFF3toSparse1DTextData(annotations: GFF3Annotations, simplification: GFFSimplificationSettings): Sparse1DTextData {
-    const nameBy = simplification.nameBy
-    if (!nameBy) {
-        return [];
-    }
+// export function fromGFF3toSparse1DTextData(annotations: GFF3Annotations, simplification: GFFSimplificationSettings): Sparse1DTextData {
+//     const nameBy = simplification.nameBy
+//     if (!nameBy) {
+//         return [];
+//     }
 
-    const nameSelector = (d: GFF3Annotation) => simplification.nameByAttribute
-        ? (d.attributes[nameBy]?.join(";"))
-        : (d.seqId ?? "")
+//     const nameSelector = (d: GFF3Annotation) => simplification.nameByAttribute
+//         ? (d.attributes[nameBy]?.join(";"))
+//         : (d.seqId ?? "")
 
-    return annotations.filter(d => nameSelector(d) != null && d.from != null && d.to != null)
-        .map(d => {
-            return {
-                from: d.from!,
-                to: d.to!,
-                strand: d.strand ?? ".",
-                name: nameSelector(d) as string // filtered above
-            }
-        })
-}
+//     return annotations.filter(d => nameSelector(d) != null && d.from != null && d.to != null)
+//         .map(d => {
+//             return {
+//                 from: d.from!,
+//                 to: d.to!,
+//                 strand: d.strand ?? ".",
+//                 name: nameSelector(d) as string // filtered above
+//             }
+//         })
+// }
 
-export function fromGFF3toSparse1DNumericData(annotations: GFF3Annotations, simplification: GFFSimplificationSettings): Sparse1DNumericData {
-    const valueBy = simplification.valueBy
-    if (!valueBy) {
-        return [];
-    }
+// export function fromGFF3toSparse1DNumericData(annotations: GFF3Annotations, simplification: GFFSimplificationSettings): Sparse1DNumericData {
+//     const valueBy = simplification.valueBy
+//     if (!valueBy) {
+//         return [];
+//     }
 
-    const valueSelector = (d: GFF3Annotation) => {
-        const valueArray = d.attributes[valueBy] ?? [];
-        return simplification.valueByAttribute
-            ? toNumber(valueArray[0])
-            : d.score
+//     const valueSelector = (d: GFF3Annotation) => {
+//         const valueArray = d.attributes[valueBy] ?? [];
+//         return simplification.valueByAttribute
+//             ? toNumber(valueArray[0])
+//             : d.score
 
-    }
+//     }
 
-    return annotations.filter(d => valueSelector(d) != null && d.from != null && d.to != null)
-        .map(d => {
-            return {
-                from: d.from!,
-                to: d.to!,
-                strand: d.strand ?? ".",
-                value: valueSelector(d) as number // filtered above
-            }
-        })
-}
+//     return annotations.filter(d => valueSelector(d) != null && d.from != null && d.to != null)
+//         .map(d => {
+//             return {
+//                 from: d.from!,
+//                 to: d.to!,
+//                 strand: d.strand ?? ".",
+//                 value: valueSelector(d) as number // filtered above
+//             }
+//         })
+// }
 
 export function simplifySparseBinData(data: Sparse1DNumericData, simplificator: (bin: number[]) => number): Sparse1DNumericData {
     //group values by bin
-    const coords = new Map<number, number[]>();
-    for (const d of data) {
-        for (const coord of range(d.from, d.to)) {
-            if (coords.has(coord)) {
-                coords.get(coord)?.push(d.value);
-            } else {
-                coords.set(coord, [d.value]);
+    const dataByChromosome = groupBy(data, d => d.chromosome);
+    const choromsomes = data.map(d => d.chromosome);
+    const simplifiedCoodrs: Sparse1DNumericData = []
+
+
+    for (let chromosome of choromsomes) {
+        const coords = new Map<number, number[]>();
+
+        for (const d of dataByChromosome[chromosome]) {
+            for (const coord of range(d.from, d.to)) {
+
+                if (coords.has(coord)) {
+                    coords.get(coord)?.push(d.value);
+                } else {
+                    coords.set(coord, [d.value]);
+                }
+
             }
         }
-    }
 
-    //recreate sparse data
-    const simplifiedCoodrs: Sparse1DNumericData = []
-    for (const [coord, values] of coords) {
-        simplifiedCoodrs.push({
-            from: coord,
-            to: coord,
-            value: simplificator(values)
-        })
-    }
+        //recreate sparse data
+        //todo? group adjacent to reduce array lenght
 
-    //todo? group adjacent to reduce array lenght
+
+        for (const [coord, values] of coords) {
+            simplifiedCoodrs.push({
+                chromosome: chromosome,
+                from: coord,
+                to: coord,
+                value: simplificator(values)
+            })
+        }
+    }
 
 
     return simplifiedCoodrs;

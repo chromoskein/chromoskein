@@ -1,4 +1,4 @@
-import { setMany, getMany, delMany } from 'idb-keyval';
+import { setMany, getMany, delMany, clear } from 'idb-keyval';
 import { ApplicationState } from './state';
 
 
@@ -29,8 +29,8 @@ export async function loadFromBrowser(states: Array<string>): Promise<Applicatio
         })
 }
 
-export async function clearBrowser(states: Array<string>): Promise<void> {
-    return delMany(states)
+export async function clearBrowser(): Promise<void> {
+    return clear()
         .catch(err => {
             console.error("Failed to delete app states from IndexDB")
             throw err

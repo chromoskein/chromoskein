@@ -438,7 +438,6 @@ export class Scene {
 
         passEncoder.setBindGroup(1, this.bufferBindGroup);
         for (let typeIndex = 0; typeIndex < 5; typeIndex++) {
-
             if (renderObjects == RenderObjects.Opaque) {
                 switch (typeIndex) {
                     case 0: passEncoder.setPipeline(renderPipelines.spheresWriteDepth); break;

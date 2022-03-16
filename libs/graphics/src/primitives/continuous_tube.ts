@@ -297,6 +297,12 @@ export class ContinuousTube implements HighLevelStructure {
     public resetColorBorder(color: vec4): void {
         if (!this.buffer) return;
 
+        this._colors.fill(color);
+        this._colors2.fill(color);
+
+        this._borderColors.fill(color);
+        this._borderColors2.fill(color);
+
         const colorsArrayBuffer = new Uint8Array([
             color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
             color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
@@ -319,6 +325,24 @@ export class ContinuousTube implements HighLevelStructure {
         }
 
         this.setColors(this._colors);
+    }
+
+    public resetColors(color: vec4): void {
+        if (!this.buffer) return;
+
+        this._colors.fill(color);
+        this._colors2.fill(color);
+
+        const colorsArrayBuffer = new Uint8Array([
+            color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
+            color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
+        ]);
+
+        const u8view = this.buffer.u8view;
+
+        for (let i = 0; i < this._points.length - 1; i++) {
+            u8view.set(colorsArrayBuffer, (this._roundedConesPosition + i) * LL_STRUCTURE_SIZE_BYTES + 64);
+        }
     }
 
     public setColor(color: vec4, i: number): void {
@@ -347,7 +371,7 @@ export class ContinuousTube implements HighLevelStructure {
             this.setColor(colors[i], i);
         }
 
-        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._colors.length - 1) * LL_STRUCTURE_SIZE_BYTES });
+        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._colors.length) * LL_STRUCTURE_SIZE_BYTES });
     }
 
     public resetColor2(color: vec4): void {
@@ -387,6 +411,24 @@ export class ContinuousTube implements HighLevelStructure {
         this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._colors.length - 1) * LL_STRUCTURE_SIZE_BYTES });
     }
 
+    public resetBorderColors(color: vec4): void {
+        if (!this.buffer) return;
+
+        this._borderColors.fill(color);
+        this._borderColors2.fill(color);
+
+        const colorsArrayBuffer = new Uint8Array([
+            color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
+            color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255,
+        ]);
+
+        const u8view = this.buffer.u8view;
+
+        for (let i = 0; i < this._points.length - 1; i++) {
+            u8view.set(colorsArrayBuffer, (this._roundedConesPosition + i) * LL_STRUCTURE_SIZE_BYTES + 72);
+        }
+    }
+
     public setBorderColors(borderColors: Array<vec4>): void {
         this._borderColors = borderColors;
 
@@ -421,13 +463,6 @@ export class ContinuousTube implements HighLevelStructure {
         }
 
         this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length) * LL_STRUCTURE_SIZE_BYTES });
-    }
-
-
-    public resetBorderColors(color: vec4): void {
-        this._borderColors.fill(color);
-
-        this.setBorderColors(this._borderColors);
     }
 
     public resetBorderColors2(color: vec4): void {
@@ -475,7 +510,6 @@ export class ContinuousTube implements HighLevelStructure {
             this._borderColors2[i] = color2;
 
             u8view.set([color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255, color2[0] * 255, color2[1] * 255, color2[2] * 255, color2[3] * 255], offsetBytes + 72);
-            // u8view.set([color2[0] * 255, color2[1] * 255, color2[2] * 255, color2[3] * 255], offsetBytes + 76);
         }
 
         this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });

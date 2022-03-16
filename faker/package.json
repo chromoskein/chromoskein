@@ -1,0 +1,11 @@
+{
+  "name": "@chromaskein/faker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "generate": "node index.js"
+  },
+  "author": "",
+  "license": "ISC"
+}

@@ -25,7 +25,7 @@ import { ApplicationState, APPLICATION_STATE_VERSION } from './modules/storage/s
 import { ForceGraphViewport } from './components/viewports/ForceGraphViewport';
 import { ToolsList } from './components/Tools/ToolsList';
 import { ToolOptions } from './components/Tools/ToolOptions';
-import { CoordinatePreview } from './components/Tools/CoordinatePreview';
+import { CoordinatePreview } from './components/viewports/CoordinatePreview';
 import { NewGenomicDataDialog } from './components/dialogs/NewGenomicDataDialog';
 import { coordinatePreviewReducer } from './modules/storage/models/coordinatePreview';
 
@@ -124,7 +124,8 @@ function App(): JSX.Element {
 
   function setCurrentState(state: ApplicationState) {
     if (state.version == null || state.version < APPLICATION_STATE_VERSION) {
-      throw "The workspace you are trying to load was created in a version of Chromazoom that is no longer supported."
+      clearBrowser() //not awaiting on purpouse
+      throw "The workspace you are trying to load was created in a version of Chromazoom that is no longer supported. Your saved workspace has been deleted. Sorry, hopefully it was nothing important ^_^;)"
     }
     if (state.data)
       dispatchData({
@@ -208,6 +209,7 @@ function App(): JSX.Element {
       mappingIds: [],
       visible: false,
       from: 0,
+      chromosomeName: "",
       to: 0
     },
   );
@@ -400,9 +402,7 @@ function App(): JSX.Element {
           onNewForceGraphViewport={addForceGraphViewport}
           onNewWorkspace={() => setCurrentState(initialState)}
           onSaveState={async () => await saveToBrowser(getCurrentState())}
-          onResetState={() => clearBrowser(Object.keys(getCurrentState())
-          ).then(() => window.location.reload())
-          }
+          onResetState={() => clearBrowser().then(() => window.location.reload())}
           onFileExport={async () => {
             await saveToFile(getCurrentState())
           }}
@@ -453,11 +453,11 @@ function App(): JSX.Element {
         onClose={() => { setWorkspaceFileImportDialogHidden(true) }}
         onFileImported={setCurrentState}
       />
-      <NewGenomicDataDialog
+      {!newGenomicDataDialogHidden && (<NewGenomicDataDialog
         hidden={newGenomicDataDialogHidden}
         onClose={() => setNewGenomicDataDialogHidden(true)}
         dataReducer={[data, dispatchData]}
-      ></NewGenomicDataDialog>
+      ></NewGenomicDataDialog>)}
       {/* <New1DDataDialog hidden={new1DDataDialogHidden} closeFunction={() => { setNew1DDataDialogHidden(true) }} ></New1DDataDialog>
       <NewDistanceMatrixDialog hidden={newDistanceDataDialogHidden} closeFunction={() => { setNewDistanceDataDialogHidden(true) }} ></NewDistanceMatrixDialog> */}
     </div>

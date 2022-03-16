@@ -18,6 +18,7 @@ export type ChromatinRepresentationType = ContinuousTube | Spheres;
 
 export class ChromatinPart {
   private _chromatinViewport: ChromatinViewport;
+  private _name: string;
   private _structure: ChromatinRepresentationType;
   private _highLevelID: number;
   private _dataId: number;
@@ -25,7 +26,8 @@ export class ChromatinPart {
   private _binsPositions: Array<vec3>;
   private _binsColor: Array<vec4>;
 
-  constructor(chromatinViewport: ChromatinViewport, structure: ChromatinRepresentationType, highLevelID: number, dataId: number, chromosomeIndex: number, binsPositions: Array<vec3>) {
+  constructor(chromatinViewport: ChromatinViewport, name: string, structure: ChromatinRepresentationType, highLevelID: number, dataId: number, chromosomeIndex: number, binsPositions: Array<vec3>) {
+    this._name = name;
     this._chromatinViewport = chromatinViewport;
     this._structure = structure;
     this._highLevelID = highLevelID;
@@ -93,6 +95,29 @@ export class ChromatinPart {
     }
   }
 
+  public cacheColorArray(colors: Array<vec4>): Array<vec4> {    
+    const binsLength = this._binsPositions.length;
+    const finalColorsArray: Array<vec4> = new Array(2 * this._binsPositions.length + 2);
+
+    if (this._structure instanceof ContinuousTube) for (let i = 0; i < this._binsPositions.length; i++) {
+        if (i == 0) {
+            finalColorsArray[0] = colors[0];
+            finalColorsArray[1] = colors[0];
+            finalColorsArray[2] = colors[0];
+        } else if (i == binsLength - 1) {
+            finalColorsArray[2 * i + 1] = colors[i];
+            finalColorsArray[2 * i + 2] = colors[i];
+            finalColorsArray[2 * i + 3] = colors[i];
+        }
+        else {
+            finalColorsArray[2 * i + 1] = colors[i];
+            finalColorsArray[2 * i + 2] = colors[i];
+        }
+    }
+
+    return finalColorsArray;
+  }
+
   public setBinColor(binIndex: number, color: GPUColorDict): void {
     const c = vec4.fromValues(color.r, color.g, color.b, color.a);
 
@@ -137,6 +162,10 @@ export class ChromatinPart {
 
   public get dataId(): number {
     return this._dataId;
+  }
+
+  public get name(): string {
+    return this._name;
   }
 
   public get highLevelID(): number {
@@ -225,7 +254,7 @@ export class ChromatinViewport extends Viewport3D {
    * 
    * @returns created structure
    */
-  public addPart(bins: Array<{ x: number, y: number, z: number }>, center = false, dataId: number, chromosomeIndex: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
+  public addPart(chromosomeName: string, bins: Array<{ x: number, y: number, z: number }>, center = false, dataId: number, chromosomeIndex: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
     const pointsVec3 = bins.map(p => vec3.fromValues(p.x, p.y, p.z));
 
     this.binPositions = pointsVec3.map(p => vec3.clone(p));
@@ -257,6 +286,7 @@ export class ChromatinViewport extends Viewport3D {
 
     this._chromatin.push(new ChromatinPart(
       this,
+      chromosomeName,
       structure,
       highLevelID,
       dataId,

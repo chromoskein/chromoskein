@@ -27,6 +27,24 @@ export function ChromatinViewportConfigurationPanel(props: {
 
     const [viewportName, setViewportName] = useViewportName(props.node, props.configurationsReducer);
 
+    const colorMappingModes1D = [
+        { key: 'none', id: 'none', text: 'None' },
+        {
+            key: 'centromers',
+            id: 'centromers',
+            text: 'Centromers from 3D postions'
+        },
+        {
+            key: '1d-numerical',
+            id: '1d-numerical',
+            text: 'Signals'
+        },
+        {
+            key: '1d-density',
+            id: '1d-density',
+            text: 'Denisity of annotations'
+        }
+    ]
     const data3DOptions = data.data
         .filter(d => d.type == '3d-positions')
         // .filter(d => configuration.data ? !viewportDataIDs.includes(configuration.data.id) : true)
@@ -37,7 +55,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                 text: d.name,
             } as IComboBoxOption;
         });
-    const data1DOptions = data.data
+    const centromerDataOptions = data.data
         .filter(d => d.type == '3d-positions')
         .map(d => {
             return {
@@ -47,7 +65,7 @@ export function ChromatinViewportConfigurationPanel(props: {
             } as IComboBoxOption;
         });
 
-    const otherData1DOptions = data.data
+    const densityDataOptions = data.data
         .filter(d => d.type == "sparse-1d-data-text" || d.type == "sparse-1d-data-numerical")
         .map(d => {
             return {
@@ -57,7 +75,33 @@ export function ChromatinViewportConfigurationPanel(props: {
             }
         })
 
+    const numericDataOptions = data.data
+        .filter(d => d.type == "sparse-1d-data-numerical")
+        .map(d => {
+            return {
+                key: isoDataID.unwrap(d.id),
+                id: isoDataID.unwrap(d.id).toString(),
+                text: d.name,
+            }
+        })
 
+    const tooltipDataOptions = data.data
+        .filter(d => d.type == "sparse-1d-data-text" || d.type == "sparse-1d-data-numerical")
+        .map(d => {
+            return {
+                key: isoDataID.unwrap(d.id),
+                id: isoDataID.unwrap(d.id).toString(),
+                text: d.name,
+            }
+        })
+
+    const aggregationFunctionOptions = [
+        { key: 'mean', id: 'mean', text: 'Mean' },
+        { key: 'median', id: 'median', text: 'Median' },
+        { key: 'max', id: 'max', text: 'Maximum' },
+        { key: 'min', id: 'min', text: 'Minimum' },
+
+    ]
 
     const [isCalloutVisible, setIsCalloutVisible] = useState<boolean>(false);
 
@@ -73,6 +117,18 @@ export function ChromatinViewportConfigurationPanel(props: {
         })
 
     };
+
+    const setColorMappingMode = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+        if (!configuration || !option) return;
+        updateConfiguration({
+            ...configuration,
+            colorMappingMode: option.key as "none" | "centromers" | "1d-numerical" | "1d-density",
+            mapValues: {
+                ...configuration.mapValues,
+                id: -1,
+            },
+        })
+    }
 
     const setSSAORadius = (radius: number) => {
         if (!configuration) return;
@@ -115,19 +171,19 @@ export function ChromatinViewportConfigurationPanel(props: {
                 id: selectedDataId,
 
                 representation: ChromatinRepresentation.ContinuousTube,
-                radius: 0.01,
+                radius: 0.0,
 
                 selections: [],
             },
             chromosomes: new Array(selectedData.chromosomes.length).fill(true),
             mapValues: {
                 id: -1,
+                aggregationFunction: 'mean'
             }
         });
     };
 
-    const setData1D = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
-        console.log('set data 1d');
+    const setColorMappingData = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
         if (option) {
             const selectedDataId: number = option.key as number;
 
@@ -141,15 +197,27 @@ export function ChromatinViewportConfigurationPanel(props: {
         }
     };
 
-    const setOtherData1D = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+    const setAggragationFunction = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+        if (option) {
+            updateConfiguration({
+                ...configuration,
+                mapValues: {
+                    ...configuration.mapValues,
+                    aggregationFunction: String(option.key) as "min" | "max" | "median" | "mean",
+                },
+            });
+        }
+    };
+
+    const setTooltipData = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
 
         const selected = option?.selected;
         if (option) {
             updateConfiguration({
                 ...configuration,
-                otherMapValues: selected
-                    ? [...configuration.otherMapValues, isoDataID.wrap(Number(option!.key))]
-                    : configuration.otherMapValues.filter(id => id != isoDataID.wrap(Number(option!.key)))
+                tooltipData: selected
+                    ? [...configuration.tooltipData, isoDataID.wrap(Number(option!.key))]
+                    : configuration.tooltipData.filter(id => id != isoDataID.wrap(Number(option!.key)))
             });
         }
     }
@@ -246,7 +314,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                     />
                 </Callout>
             )}
-            {/* <Slider label="SSAO Radius" min={0.0} max={1.0} step={0.01} value={configuration.ssao.radius} showValue onChange={setSSAORadius} /> */}
+            <Slider label="SSAO Radius" min={0.01} max={1.0} step={0.01} value={configuration.ssao.radius} showValue onChange={setSSAORadius} />
         </Stack>
 
         {/* List of 3D data */}
@@ -276,7 +344,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                         onMouseDown={(e) => handleChromosomeMouseEvent(e, i)}
                         onMouseEnter={(e) => handleChromosomeMouseEvent(e, i)}>
                         <Checkbox
-                            label={"Chromosome " + i.toString()}
+                            label={(data.data.filter(d => d.id == configuration.data?.id)[0] as BinPositionsData).chromosomes[i].name}
                             checked={v}
                         />
                     </div>
@@ -324,38 +392,101 @@ export function ChromatinViewportConfigurationPanel(props: {
         {/*  */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
-        <Text nowrap block variant='large'>Map 1D data</Text>
-        {data1DOptions.length <= 0 && ("No more data available.")}
-        {
-            data1DOptions.length > 0 && (<ComboBox
-                label=""
-                allowFreeform={false}
-                autoComplete={'on'}
-                options={data1DOptions}
-                onChange={setData1D}
-                onItemClick={setData1D}
-                style={{ marginTop: '8px', padding: '4px' }}
-                shouldRestoreFocus={false}
-                selectedKey={
-                    (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
-                }
-            />)
+        <Text nowrap block variant='large'>Color by</Text>
+
+        <ComboBox
+            style={{ marginTop: '8px', padding: '4px' }}
+            options={colorMappingModes1D}
+            onChange={setColorMappingMode}
+            selectedKey={configuration.colorMappingMode}
+        />
+
+
+        {configuration.colorMappingMode == 'centromers' && <>
+            {centromerDataOptions.length <= 0 && ("No more data available.")}
+            {
+                centromerDataOptions.length > 0 && (<ComboBox
+                    label="Data"
+                    allowFreeform={false}
+                    autoComplete={'on'}
+                    options={centromerDataOptions}
+                    onChange={setColorMappingData}
+                    style={{ marginTop: '8px', padding: '4px' }}
+                    shouldRestoreFocus={false}
+                    selectedKey={
+                        (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
+                    }
+                />)
+            }</>
         }
-        <Text nowrap block variant='large'>The other map 1D data</Text>
-        {otherData1DOptions.length <= 0 && ("No more data available.")}
+
+        {configuration.colorMappingMode == '1d-density' && <>
+            {densityDataOptions.length <= 0 && ("No more data available.")}
+            {
+                densityDataOptions.length > 0 && (<ComboBox
+                    label="Data"
+                    allowFreeform={false}
+                    autoComplete={'on'}
+                    options={densityDataOptions}
+                    onChange={setColorMappingData}
+                    style={{ marginTop: '8px', padding: '4px' }}
+                    shouldRestoreFocus={false}
+                    selectedKey={
+                        (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
+                    }
+                />)
+            }</>
+
+        }
+
+        {configuration.colorMappingMode == '1d-numerical' && <>
+            {numericDataOptions.length <= 0 && ("No more data available.")}
+            {
+                numericDataOptions.length > 0 && (<><ComboBox
+                    label="Data"
+                    allowFreeform={false}
+                    autoComplete={'on'}
+                    options={numericDataOptions}
+                    onChange={setColorMappingData}
+                    style={{ marginTop: '8px', padding: '4px' }}
+                    shouldRestoreFocus={false}
+                    selectedKey={
+                        (configuration.mapValues.id >= 0) ? configuration.mapValues.id : null
+                    }
+                />
+                    <ComboBox
+                        label="Aggregation function"
+                        allowFreeform={false}
+                        autoComplete={'on'}
+                        options={aggregationFunctionOptions}
+                        onChange={setAggragationFunction}
+                        style={{ marginTop: '8px', padding: '4px' }}
+                        shouldRestoreFocus={false}
+                        selectedKey={configuration.mapValues.aggregationFunction}
+                    />
+                </>)
+            }</>
+
+        }
+        <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
+        <Separator></Separator>
+
+
+
+        <Text nowrap block variant='large'>Show on tooltip</Text>
+        {tooltipDataOptions.length <= 0 && ("No more data available.")}
         {
-            otherData1DOptions.length > 0 && (<ComboBox
+            tooltipDataOptions.length > 0 && (<ComboBox
                 label=""
                 allowFreeform={false}
                 autoComplete={'on'}
                 multiSelect
-                options={otherData1DOptions}
-                onChange={setOtherData1D}
-                // onItemClick={setData1D}
+                options={tooltipDataOptions}
+                onChange={setTooltipData}
                 style={{ marginTop: '8px', padding: '4px' }}
                 shouldRestoreFocus={false}
                 selectedKey={
-                    configuration.otherMapValues.map(k => isoDataID.unwrap(k))
+                    configuration.tooltipData.map(k => isoDataID.unwrap(k))
                 }
             />)
         }

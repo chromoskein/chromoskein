@@ -36,9 +36,9 @@ export class Residue {
   atoms: Array<Atom> = [];
 }
 
-export type ChromosomeModel = {
+export type ChromatinModel = {
   atoms: Array<{x: number, y: number, z: number}>;
-  ranges: Array<{ from: number, to: number }>;
+  ranges: Array<{ name: string, from: number, to: number }>;
 
   normalizeCenter: vec3;
   normalizeScale: number;
@@ -49,13 +49,13 @@ export type ChromosomeModel = {
  * @param {String} pdb
  * @returns {Object}
  */
-export function parsePdb(pdb: string): Array<ChromosomeModel> {
+export function parsePdb(pdb: string): Array<ChromatinModel> {
   const pdbLines = pdb.split('\n');
   let atoms: Array<{x: number, y: number, z: number}> = [];
 
   // Connectivity
   let connectivityBitset: Array<0 | 1> = new Array(pdbLines.length).fill(0);
-
+  let names: Array<string> = [];
   // Iterate each line looking for atoms
   let stop = false;
   pdbLines.forEach((pdbLine) => {
@@ -72,6 +72,7 @@ export function parsePdb(pdb: string): Array<ChromosomeModel> {
           z: parseFloat(pdbLine.substring(46, 54))
         });
       }
+      names.push(`chr${pdbLine.substring(17,21).trim()}`)
       // http://www.wwpdb.org/documentation/file-format-content/format33/sect9.html#ATOM
       // if (!stop) {
       //   atoms.push({
@@ -103,7 +104,7 @@ export function parsePdb(pdb: string): Array<ChromosomeModel> {
     }
   });
 
-  const ranges: Array<{ from: number, to: number }> = [];
+  const ranges: Array<{ name: string, from: number, to: number }> = [];
 
   connectivityBitset = connectivityBitset.slice(0, atoms.length);
   let expandingRange = false;
@@ -121,6 +122,7 @@ export function parsePdb(pdb: string): Array<ChromosomeModel> {
     if (currentValue === 1 && !expandingRange) {
       // Start new range
       ranges.push({
+        name: names[i],
         from: i,
         to: i + 1
       });
