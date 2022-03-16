@@ -75,7 +75,7 @@ export class SmoothCamera extends Camera {
         lastFramePosition: vec3.fromValues(0, 0, 0),
     }
 
-    constructor(device: GPUDevice, width: number, height: number, near = 0.01, fieldOfView = 45.0) {
+    constructor(device: GPUDevice, width: number, height: number, near = 0.001, fieldOfView = 45.0) {
         super(device, width, height, near, fieldOfView);
 
 
