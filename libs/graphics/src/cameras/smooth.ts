@@ -167,8 +167,8 @@ export class SmoothCamera extends Camera {
         // quat.setAxisAngle(horizRot, this.up(), deg_to_rad(-rotIncrementY));
         quat.setAxisAngle(horizRot, vec3.fromValues(0, 1, 0), deg_to_rad(-rotIncrementY));
         const vertRot = quat.create();
-        // quat.setAxisAngle(vertRot, this.right(), deg_to_rad(rotIncrementX));
-        quat.setAxisAngle(vertRot, vec3.fromValues(1, 0, 0), deg_to_rad(rotIncrementX));
+        quat.setAxisAngle(vertRot, this.right(), deg_to_rad(rotIncrementX));
+        // quat.setAxisAngle(vertRot, vec3.fromValues(1, 0, 0), deg_to_rad(rotIncrementX));
         const newRot = quat.create();
         quat.mul(newRot, horizRot, vertRot);
         const v = vec3.create();
