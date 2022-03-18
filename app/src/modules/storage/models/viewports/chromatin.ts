@@ -35,6 +35,9 @@ export interface IChromatinDataConfiguration extends IDataConfiguration {
     radius: number,
 }
 
+export type ChromatinViewportAggregationFunction = "min" | "max" | "median" | "mean";
+export type ChromatinViewportColorMappingMode = 'none' | 'centromers' | '1d-numerical' | '1d-density' | 'linear-order';
+
 export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     type: ViewportConfigurationType.Chromatin,
     tag: "3D",
@@ -46,7 +49,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
 
     mapValues: {
         id: number;
-        aggregationFunction: "min" | "max" | "median" | "mean";
+        aggregationFunction: ChromatinViewportAggregationFunction;
     },
 
     tooltipData: Array<DataID>,
@@ -71,7 +74,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
         showDebugIntersections: boolean;
     }
 
-    colorMappingMode: 'none' | 'centromers' | '1d-numerical' | '1d-density'
+    colorMappingMode: ChromatinViewportColorMappingMode;
 
     tool?: ChromatinViewportTool;
 

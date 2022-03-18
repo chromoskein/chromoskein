@@ -161,7 +161,7 @@ export function ChromatinViewport(props: {
             const chromosomeInfo = datum.chromosomes[chromosomeIndex];
             const positions = datum.values.slice(chromosomeInfo.from, chromosomeInfo.to);
 
-            const center = positions.reduce((l, r) => {return { x: l.x + r.x, y: l.y + r.y, z: l.z + r.z}});
+            const center = positions.reduce((l, r) => { return { x: l.x + r.x, y: l.y + r.y, z: l.z + r.z } });
             center.x = configuration.explodedViewScale * (center.x / positions.length);
             center.y = configuration.explodedViewScale * (center.y / positions.length);
             center.z = configuration.explodedViewScale * (center.z / positions.length);
@@ -225,7 +225,7 @@ export function ChromatinViewport(props: {
         const datum = configuration.data;
         const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
         const chromatineSlices = data3D.chromosomes;
-        
+
         if (configuration.colorMappingMode == "none") {
             setInnerColors(() => []);
         }
@@ -372,6 +372,18 @@ export function ChromatinViewport(props: {
             const colorScale = chroma.scale('YlGnBu');
 
             setInnerColors(() => mapScaleToChromatin(distances, colorScale));
+        }
+
+        if (configuration.colorMappingMode == "linear-order") {
+            const order: Array<number> = [];
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const partInfo = chromatineSlices[chromosomeIndex];
+                for (let o = 0; o < partInfo.to - partInfo.from; o++) {
+                    order.push(o);
+                }
+            }
+            const colorScale = chroma.scale('YlGnBu'); //pick better color scale
+            setInnerColors(() => mapScaleToChromatin(order, colorScale));
         }
 
 

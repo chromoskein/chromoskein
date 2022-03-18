@@ -7,7 +7,7 @@ import { Delete16Regular } from '@fluentui/react-icons';
 import { ChromatinRepresentation } from "../../modules/graphics";
 import { Text } from '@fluentui/react/lib/Text';
 
-import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, ViewportConfigurationType } from '../../modules/storage/models/viewports';
+import { ChromatinViewportAggregationFunction, ChromatinViewportColorMappingMode, ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, ViewportConfigurationType } from '../../modules/storage/models/viewports';
 import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration, useSelections, useViewportName } from "../hooks";
@@ -27,24 +27,36 @@ export function ChromatinViewportConfigurationPanel(props: {
 
     const [viewportName, setViewportName] = useViewportName(props.node, props.configurationsReducer);
 
-    const colorMappingModes1D = [
-        { key: 'none', id: 'none', text: 'None' },
+    const colorMappingModes1D: Array<
         {
-            key: 'centromers',
-            id: 'centromers',
-            text: 'Centromers from 3D postions'
-        },
-        {
-            key: '1d-numerical',
-            id: '1d-numerical',
-            text: 'Signals'
-        },
-        {
-            key: '1d-density',
-            id: '1d-density',
-            text: 'Denisity of annotations'
+            key: ChromatinViewportColorMappingMode,
+            id: string,
+            text: string
         }
-    ]
+
+    > = [
+            { key: 'none', id: 'none', text: 'None' },
+            {
+                key: 'centromers',
+                id: 'centromers',
+                text: 'Proximity from 3D postions'
+            },
+            {
+                key: '1d-numerical',
+                id: '1d-numerical',
+                text: 'Signals'
+            },
+            {
+                key: '1d-density',
+                id: '1d-density',
+                text: 'Denisity of annotations'
+            },
+            {
+                key: 'linear-order',
+                id: 'linear-order',
+                text: 'Linear order'
+            }
+        ]
     const data3DOptions = data.data
         .filter(d => d.type == '3d-positions')
         // .filter(d => configuration.data ? !viewportDataIDs.includes(configuration.data.id) : true)
@@ -95,13 +107,18 @@ export function ChromatinViewportConfigurationPanel(props: {
             }
         })
 
-    const aggregationFunctionOptions = [
-        { key: 'mean', id: 'mean', text: 'Mean' },
-        { key: 'median', id: 'median', text: 'Median' },
-        { key: 'max', id: 'max', text: 'Maximum' },
-        { key: 'min', id: 'min', text: 'Minimum' },
+    const aggregationFunctionOptions: Array<
+        {
+            key: ChromatinViewportAggregationFunction,
+            id: string,
+            text: string
+        }> = [
+            { key: 'mean', id: 'mean', text: 'Mean' },
+            { key: 'median', id: 'median', text: 'Median' },
+            { key: 'max', id: 'max', text: 'Maximum' },
+            { key: 'min', id: 'min', text: 'Minimum' },
 
-    ]
+        ]
 
     const [isCalloutVisible, setIsCalloutVisible] = useState<boolean>(false);
 
@@ -122,7 +139,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         if (!configuration || !option) return;
         updateConfiguration({
             ...configuration,
-            colorMappingMode: option.key as "none" | "centromers" | "1d-numerical" | "1d-density",
+            colorMappingMode: option.key as ChromatinViewportColorMappingMode,
             mapValues: {
                 ...configuration.mapValues,
                 id: -1,
@@ -203,7 +220,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                 ...configuration,
                 mapValues: {
                     ...configuration.mapValues,
-                    aggregationFunction: String(option.key) as "min" | "max" | "median" | "mean",
+                    aggregationFunction: String(option.key) as ChromatinViewportAggregationFunction,
                 },
             });
         }
