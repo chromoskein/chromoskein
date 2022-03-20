@@ -74,6 +74,8 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     colorMappingMode: 'none' | 'centromers' | '1d-numerical' | '1d-density'
 
     tool?: ChromatinViewportTool;
+
+    explodedViewScale: number;
 }
 
 export function chromatinDataConfigurationEqual(d1: IChromatinDataConfiguration, d2: IChromatinDataConfiguration): boolean {
@@ -130,5 +132,7 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         colorMappingMode: 'none',
 
         tool: {} as ChromatinPointSelection,
+
+        explodedViewScale: 0.0,
     } as ChromatinViewportConfiguration;
 }

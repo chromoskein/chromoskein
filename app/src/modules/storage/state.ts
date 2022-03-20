@@ -14,6 +14,5 @@ export interface ApplicationState {
     selections?: SelectionState;
     version?: number;
     [key: string]: unknown;
-
 }
 

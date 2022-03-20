@@ -161,12 +161,27 @@ export function ChromatinViewport(props: {
             const chromosomeInfo = datum.chromosomes[chromosomeIndex];
             const positions = datum.values.slice(chromosomeInfo.from, chromosomeInfo.to);
 
-            const chromatinPart = viewport.addPart(chromosomeInfo.name, positions as Positions3D, true, isoDataID.unwrap(datum.id), chromosomeIndex, ChromatinRepresentation.ContinuousTube, false);
+            const center = positions.reduce((l, r) => {return { x: l.x + r.x, y: l.y + r.y, z: l.z + r.z}});
+            center.x = configuration.explodedViewScale * (center.x / positions.length);
+            center.y = configuration.explodedViewScale * (center.y / positions.length);
+            center.z = configuration.explodedViewScale * (center.z / positions.length);
+
+            console.log(configuration.explodedViewScale, center);
+
+            const explodedPositions = positions.map(v => {
+                return {
+                    x: v.x + center.x,
+                    y: v.y + center.y,
+                    z: v.z + center.z,
+                }
+            });
+
+            const chromatinPart = viewport.addPart(chromosomeInfo.name, explodedPositions as Positions3D, true, isoDataID.unwrap(datum.id), chromosomeIndex, ChromatinRepresentation.ContinuousTube, false);
             configurePart(chromatinPart, configuration.data);
         }
 
         viewport.rebuild();
-    }, [viewport, configuration.data, configuration.chromosomes, data.data]);
+    }, [viewport, configuration.explodedViewScale, configuration.data, configuration.chromosomes, data.data]);
 
     // Find closest intersection
     useEffect(() => {
@@ -210,32 +225,6 @@ export function ChromatinViewport(props: {
         const datum = configuration.data;
         const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
         const chromatineSlices = data3D.chromosomes;
-
-        // const clearInnerColor = () => {
-        //     //setting inner colors to empty [] doesn't do anything
-        //     const defaultColor: vec4 = [1.0, 1.0, 1.0, 1.0];
-        //     const allColors: Array<Array<vec4>> = [];
-
-        //     for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-        //         const partInfo = chromatineSlices[chromosomeIndex];
-        //         const part = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-        //         if (!part) {
-        //             continue;
-        //         }
-        //         const chromosomeColors: Array<vec4> = [];
-        //         for (let binIndex = partInfo.from; binIndex < partInfo.to; binIndex++) {
-        //             chromosomeColors.push(defaultColor);
-        //         }
-
-        //         allColors[chromosomeIndex] = part.cacheColorArray(chromosomeColors);
-        //     }
-
-        //     setInnerColors(() => allColors)
-        // }
-
-        // if (!configuration.mapValues || configuration.mapValues.id < 0 || configuration.colorMappingMode == "none") {
-        //     clearInnerColor()
-        // }
         
         if (configuration.colorMappingMode == "none") {
             setInnerColors(() => []);

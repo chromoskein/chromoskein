@@ -233,6 +233,13 @@ export function ChromatinViewportConfigurationPanel(props: {
             }
         });
     }
+
+    const setExplodedViewScale = (scale: number) => {
+        updateConfiguration({
+            ...configuration,
+            explodedViewScale: scale,
+        });
+    }
     //#endregion
 
     const setCutawayAxis = (ev?: FormEvent<HTMLElement | HTMLInputElement> | undefined, option?: IChoiceGroupOption | undefined) => {
@@ -353,6 +360,16 @@ export function ChromatinViewportConfigurationPanel(props: {
             </Stack>
         )
         }
+
+        <Slider
+            label="Exploded view scale"
+            min={0.0}
+            max={2.0}
+            step={0.01}
+            value={configuration.explodedViewScale}
+            showValue={false}
+            onChange={(value) => setExplodedViewScale(value)}
+        />
 
         {/* 3D DATA REPRESENTATION */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
