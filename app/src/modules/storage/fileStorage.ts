@@ -9,7 +9,7 @@ export async function saveToFile(states: ApplicationState): Promise<void> {
         }
     );
     const datetime = new Date();
-    saveAs(content, `workspace-${datetime.toISOString().substring(0, 10)}.chromazoom`);
+    saveAs(content, `workspace-${datetime.toISOString().substring(0, 10)}.chromoskein`);
 }
 
 export type TextFile = { name: string, content: string };

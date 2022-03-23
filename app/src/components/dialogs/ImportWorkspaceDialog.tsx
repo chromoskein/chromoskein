@@ -38,7 +38,7 @@ export function ImportWorkspaceDialog(props: {
                 <UploadTextFilesButton
                     displayAs={PrimaryButton}
                     text="Select Workspace File"
-                    accept=".chromazoom"
+                    accept=".chromoskein"
                     onFilesSelected={previewFile}
                 />
             </form>

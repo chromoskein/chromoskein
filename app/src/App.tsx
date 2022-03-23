@@ -125,7 +125,7 @@ function App(): JSX.Element {
   function setCurrentState(state: ApplicationState) {
     if (state.version == null || state.version < APPLICATION_STATE_VERSION) {
       clearBrowser() //not awaiting on purpouse
-      throw "The workspace you are trying to load was created in a version of Chromazoom that is no longer supported. Your saved workspace has been deleted. Sorry, hopefully it was nothing important ^_^;)"
+      throw "The workspace you are trying to load was created in a version of ChromoSkein that is no longer supported. Your saved workspace has been deleted. Sorry, hopefully it was nothing important ^_^;)"
     }
     if (state.data)
       dispatchData({
