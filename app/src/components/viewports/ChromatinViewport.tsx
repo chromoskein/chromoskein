@@ -16,6 +16,16 @@ import _ from "lodash";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
+const median: (values: Array<number>) => number = values => {
+    const sorted = values.sort((a, b) => a - b);
+    const half = Math.floor(sorted.length / 2);
+    if (sorted.length % 2) {
+        return sorted[half];
+    } else {
+        return (sorted[half - 1] + sorted[half]) / 2.0;
+    }
+}
+
 export function ChromatinViewport(props: {
     graphicsLibrary: GraphicsModule.GraphicsLibrary,
     configurationID: number,
@@ -209,7 +219,9 @@ export function ChromatinViewport(props: {
             visible: true,
             type: "bin-coordinates-single",
             dataId: iso<DataID>().wrap(closestIntersection.chromatinPart.dataId),
-            mappingIds: configuration.tooltipData,
+            mappingIds: configuration.tooltip.tooltipDataIDs,
+            textAggregation: configuration.tooltip.tooltipTextAggregation,
+            numericAggregation: configuration.tooltip.tooltipNumericAggregation,
             from: closestIntersection.binIndex,
             chromosomeName: closestIntersection.chromatinPart.name
         })
@@ -303,11 +315,14 @@ export function ChromatinViewport(props: {
                 }
             }
 
-            const aggregationFunction: (n: ArrayLike<number>) => number | undefined = {
+
+
+            const aggregationFunction: (n: Array<number>) => number | undefined = {
                 "min": _.min,
                 "max": _.max,
                 "mean": _.mean,
-                "median": _.mean //pshhh, will anybody notice?
+                "median": median,
+                "sum": _.sum
             }[configuration.mapValues.aggregationFunction]
             const aggregatedValuesPerBin = valuesPerBin.map((vs) => {
                 const result = aggregationFunction(vs)

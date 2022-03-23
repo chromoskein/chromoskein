@@ -35,8 +35,10 @@ export interface IChromatinDataConfiguration extends IDataConfiguration {
     radius: number,
 }
 
-export type ChromatinViewportAggregationFunction = "min" | "max" | "median" | "mean";
+export type ChromatinViewportAggregationFunction = "min" | "max" | "median" | "mean" | 'sum';
 export type ChromatinViewportColorMappingMode = 'none' | 'centromers' | '1d-numerical' | '1d-density' | 'linear-order';
+export type TooltipTextAggregation = 'none' | 'count';
+export type TooltipNumericAggregation = 'none' | 'min' | 'max' | 'median' | 'mean' | 'sum';
 
 export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     type: ViewportConfigurationType.Chromatin,
@@ -52,7 +54,11 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
         aggregationFunction: ChromatinViewportAggregationFunction;
     },
 
-    tooltipData: Array<DataID>,
+    tooltip: {
+        tooltipDataIDs: Array<DataID>,
+        tooltipTextAggregation: TooltipTextAggregation,
+        tooltipNumericAggregation: TooltipNumericAggregation,
+    }
     showTooltip: boolean;
     ssao: {
         radius: number;
@@ -109,8 +115,11 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
             id: -1,
             aggregationFunction: 'mean'
         },
-
-        tooltipData: [],
+        tooltip: {
+            tooltipDataIDs: [],
+            tooltipTextAggregation: 'none',
+            tooltipNumericAggregation: 'none',
+        },
         showTooltip: true,
         ssao: {
             radius: 0.25,

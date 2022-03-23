@@ -5,7 +5,7 @@ import { WorkspaceStorage } from "./models/workspace";
 
 // increment when the current application 
 // can no longer correctly load previously created application states
-export const APPLICATION_STATE_VERSION = 2;
+export const APPLICATION_STATE_VERSION = 3;
 
 export interface ApplicationState {
     data?: DataState;

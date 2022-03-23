@@ -207,6 +207,8 @@ function App(): JSX.Element {
       type: "bin-coordinates-single",
       dataId: undefined,
       mappingIds: [],
+      textAggregation: 'none',
+      numericAggregation: 'none',
       visible: false,
       from: 0,
       chromosomeName: "",

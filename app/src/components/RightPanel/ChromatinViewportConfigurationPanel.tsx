@@ -7,7 +7,7 @@ import { Delete16Regular } from '@fluentui/react-icons';
 import { ChromatinRepresentation } from "../../modules/graphics";
 import { Text } from '@fluentui/react/lib/Text';
 
-import { ChromatinViewportAggregationFunction, ChromatinViewportColorMappingMode, ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, ViewportConfigurationType } from '../../modules/storage/models/viewports';
+import { ChromatinViewportAggregationFunction, ChromatinViewportColorMappingMode, ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, TooltipNumericAggregation, TooltipTextAggregation, ViewportConfigurationType } from '../../modules/storage/models/viewports';
 import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration, useSelections, useViewportName } from "../hooks";
@@ -113,12 +113,38 @@ export function ChromatinViewportConfigurationPanel(props: {
             id: string,
             text: string
         }> = [
+            { key: 'sum', id: 'sum', text: 'Sum' },
             { key: 'mean', id: 'mean', text: 'Mean' },
             { key: 'median', id: 'median', text: 'Median' },
             { key: 'max', id: 'max', text: 'Maximum' },
             { key: 'min', id: 'min', text: 'Minimum' },
 
         ]
+
+    const tooltipNumericalAggregationFunctionOptions: Array<
+        {
+            key: TooltipNumericAggregation,
+            id: string,
+            text: string
+        }> = [
+            { key: 'mean', id: 'mean', text: 'Mean' },
+            { key: 'median', id: 'median', text: 'Median' },
+            { key: 'max', id: 'max', text: 'Maximum' },
+            { key: 'min', id: 'min', text: 'Minimum' },
+            { key: 'none', id: 'none', text: 'None' },
+            { key: 'sum', id: 'sum', text: 'Sum' }
+        ]
+
+    const tooltipTextAggregationFunctionOptions: Array<
+        {
+            key: TooltipTextAggregation,
+            id: string,
+            text: string
+        }> = [
+            { key: 'none', id: 'none', text: 'None' },
+            { key: 'count', id: 'count', text: 'Count' },
+        ]
+
 
     const [isCalloutVisible, setIsCalloutVisible] = useState<boolean>(false);
 
@@ -232,9 +258,37 @@ export function ChromatinViewportConfigurationPanel(props: {
         if (option) {
             updateConfiguration({
                 ...configuration,
-                tooltipData: selected
-                    ? [...configuration.tooltipData, isoDataID.wrap(Number(option!.key))]
-                    : configuration.tooltipData.filter(id => id != isoDataID.wrap(Number(option!.key)))
+                tooltip: {
+                    ...configuration.tooltip,
+                    tooltipDataIDs: selected
+                        ? [...configuration.tooltip.tooltipDataIDs, isoDataID.wrap(Number(option!.key))]
+                        : configuration.tooltip.tooltipDataIDs.filter(id => id != isoDataID.wrap(Number(option!.key)))
+                }
+            });
+        }
+    }
+
+    const setTooltipNumericalAggregationFunction = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+        if (option) {
+            updateConfiguration({
+                ...configuration,
+                tooltip: {
+                    ...configuration.tooltip,
+                    tooltipNumericAggregation: String(option.key) as TooltipNumericAggregation,
+                },
+            });
+        }
+    }
+
+
+    const setTooltipTextAggregationFunction = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+        if (option) {
+            updateConfiguration({
+                ...configuration,
+                tooltip: {
+                    ...configuration.tooltip,
+                    tooltipTextAggregation: String(option.key) as TooltipTextAggregation,
+                },
             });
         }
     }
@@ -507,24 +561,50 @@ export function ChromatinViewportConfigurationPanel(props: {
 
 
 
-        <Text nowrap block variant='large'>Show on tooltip</Text>
-        {tooltipDataOptions.length <= 0 && ("No more data available.")}
-        {
-            tooltipDataOptions.length > 0 && (<ComboBox
-                label=""
-                allowFreeform={false}
-                autoComplete={'on'}
-                multiSelect
-                options={tooltipDataOptions}
-                onChange={setTooltipData}
-                style={{ marginTop: '8px', padding: '4px' }}
-                shouldRestoreFocus={false}
-                selectedKey={
-                    configuration.tooltipData.map(k => isoDataID.unwrap(k))
-                }
-            />)
-        }
+        <Text nowrap block variant='large'>Tooltip</Text>
         <Checkbox label="Show tooltip" checked={configuration.showTooltip} onChange={handleShowTooltipChange} />
+        {configuration.showTooltip && <>
+            {tooltipDataOptions.length <= 0 && ("No more data available.")}
+            {
+                tooltipDataOptions.length > 0 && (<ComboBox
+                    label="Data"
+                    allowFreeform={false}
+                    autoComplete={'on'}
+                    multiSelect
+                    options={tooltipDataOptions}
+                    onChange={setTooltipData}
+                    style={{ marginTop: '8px', padding: '4px' }}
+                    shouldRestoreFocus={false}
+                    selectedKey={
+                        configuration.tooltip.tooltipDataIDs.map(k => isoDataID.unwrap(k))
+                    }
+                />)
+            }
+            {
+                <ComboBox
+                    label="Aggregate numerical data by"
+                    allowFreeform={false}
+                    autoComplete={'on'}
+                    options={tooltipNumericalAggregationFunctionOptions}
+                    onChange={setTooltipNumericalAggregationFunction}
+                    style={{ marginTop: '8px', padding: '4px' }}
+                    shouldRestoreFocus={false}
+                    selectedKey={configuration.tooltip.tooltipNumericAggregation}
+                />
+            }
+            {
+                <ComboBox
+                    label="Aggregate text data by"
+                    allowFreeform={false}
+                    autoComplete={'on'}
+                    options={tooltipTextAggregationFunctionOptions}
+                    onChange={setTooltipTextAggregationFunction}
+                    style={{ marginTop: '8px', padding: '4px' }}
+                    shouldRestoreFocus={false}
+                    selectedKey={configuration.tooltip.tooltipTextAggregation}
+                />
+            }
+        </>}
 
         {/* SELECTIONS */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
