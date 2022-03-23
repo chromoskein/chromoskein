@@ -1,13 +1,13 @@
 import { OrthoCameraConfiguration, CameraConfigurationType } from "../../../graphics";
 import { DataID } from "../data";
 import { SelectionID } from "../selections";
-import { blackBackground, IDataConfiguration, IViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "./shared";
+import { blackBackground, IDataConfiguration, IViewportConfiguration, NoViewportTool, ViewportConfigurationType, ViewportSelectionOptions } from "./shared";
 
 export enum DistanceViewportToolType {
-  PointSelection = 0,
-  SquareSelection = 1,
-  TriangleSelection = 2,
-  TADSelection = 3,
+  PointSelection = 'point-selection',
+  SquareSelection = 'square-selection',
+  TriangleSelection = 'triangle-selection',
+  TADSelection = 'tad-selection',
 }
 
 export type DistancePointSelection = {
@@ -43,36 +43,38 @@ export class DistanceSelectionConfiguration implements IDataConfiguration {
 }
 
 export interface DistanceViewportConfiguration extends IViewportConfiguration {
+  type: ViewportConfigurationType.TAD,
+  tag: "TAD",
+
+  data: DistanceDataConfiguration | DistanceSelectionConfiguration | null,
+
+  camera: OrthoCameraConfiguration,
+
+  tool: DistanceMapTool | NoViewportTool,
+}
+
+export function defaultDistanceViewportConfiguration(): DistanceViewportConfiguration {
+  return {
     type: ViewportConfigurationType.TAD,
     tag: "TAD",
+    tabName: "Unnamed TAD",
 
-    data: DistanceDataConfiguration | DistanceSelectionConfiguration | null,
-  
-    camera: OrthoCameraConfiguration,
+    data: null,
 
-    tool?: DistanceMapTool,
-  }
-  
-  export function defaultDistanceViewportConfiguration(): DistanceViewportConfiguration {
-    return {
-      type: ViewportConfigurationType.TAD,
-      tag: "TAD",
-      tabName: "Unnamed TAD",
-  
-      data: null,
-      
-      selectedDataIndex: 0,
-      selectedSelectionID: null,
-  
-      backgroundColor: blackBackground,
-  
-      camera: {
-        type: CameraConfigurationType.Ortho,
-  
-        maxZoom: 1.0,
-        zoom: 1.0,
-        translateX: 0.0,
-        translateY: 0.0,
-      } as OrthoCameraConfiguration
-    } as DistanceViewportConfiguration;
-  }
+    selectedDataIndex: 0,
+    selectedSelectionID: null,
+
+    backgroundColor: blackBackground,
+
+    tool: { type: 'no-tool' },
+
+    camera: {
+      type: CameraConfigurationType.Ortho,
+
+      maxZoom: 1.0,
+      zoom: 1.0,
+      translateX: 0.0,
+      translateY: 0.0,
+    } as OrthoCameraConfiguration
+  } as DistanceViewportConfiguration;
+}

@@ -64,26 +64,7 @@ export function useConfiguration<T extends ViewportConfiguration>(id: number, co
     return [viewportConfiguration, ((newConfiuration) => updateViewportConfiguration(newConfiuration, configuration))]
 }
 
-export function useConfigurationTypeless(id: number, configurationsReducer: [ConfigurationState, Dispatch<ConfigurationAction>]): [ViewportConfiguration, (newConfiguration: ViewportConfiguration) => void] {
-    const [configurations, setConfigurations] = configurationsReducer;
-    const configuration = configurations.configurations.find(e => e.id == id);
-
-    // todo: can't easily dynamically check for type - this assumes the type is correct
-    if (!configuration) {
-        throw Error("Can not find viewport configuration.")
-    }
-    const viewportConfiguration = configuration.viewportConfiguration;
-
-    function updateViewportConfiguration(newConfiguration: ViewportConfiguration, previousConfiguration: { id: number }) {
-        setConfigurations({
-            type: ConfigurationActionKind.UPDATE,
-            id: previousConfiguration.id,
-            viewportConfiguration: newConfiguration
-        })
-    }
-
-    return [viewportConfiguration, ((newConfiuration) => updateViewportConfiguration(newConfiuration, configuration))]
-}
+export const useConfigurationTypeless = (id: number, configurationsReducer: [ConfigurationState, Dispatch<ConfigurationAction>]) => useConfiguration<ViewportConfiguration>(id, configurationsReducer);
 
 export function useSelections<T extends ConfigurationsWithSelections>(
     dataPartIndex: dataIndex | null,

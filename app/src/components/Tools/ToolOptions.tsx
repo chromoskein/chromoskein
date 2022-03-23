@@ -18,10 +18,6 @@ export function ToolOptions(props: {
     const isMac = new UAParser().getOS().name == 'Mac OS';
 
 
-    if (!tool) {
-        return <div></div>
-    }
-
     const setSphereSelectionRadius = (radius: number) => {
         updateConfiguration({
             ...configuration,
@@ -33,8 +29,21 @@ export function ToolOptions(props: {
     }
 
 
-    const toolOptionsMenuFactory = (tool: ToolConfiguration | undefined): JSX.Element => {
-        if (!tool) {
+    const toolOptionsMenuFactory = (tool: ToolConfiguration): JSX.Element => {
+        if (tool.type == 'no-tool') {
+            if (configuration.type == ViewportConfigurationType.Chromatin) {
+                return <Stack.Item align="center">
+                    <Text nowrap variant='medium'><strong>Left-click & drag</strong>: rotate
+                        | <strong>{isMac ? "Middle-click (option + Left-click) & drag" : "Middle-click (Alt + Left-click) & drag"}</strong>: pan
+                        | <strong>Scroll</strong>: zoom</Text>
+                </Stack.Item>
+            }
+            if (configuration.type == ViewportConfigurationType.TAD) {
+                return <Stack.Item align="center">
+                    <Text nowrap variant='medium'><strong>Left-click & drag</strong>: pan
+                        | <strong>Scroll</strong>: zoom</Text>
+                </Stack.Item>
+            }
             return <></>
         }
 

@@ -1,31 +1,30 @@
-import React, { Dispatch } from "react";
+import { Dispatch } from "react";
 import './Tools.scss';
 
-import { ChromatinViewportTool, ChromatinViewportToolType, ConfigurationAction, ConfigurationState, ViewportConfigurationType } from '../../modules/storage/models/viewports';
-import { useConfigurationTypeless } from "../hooks";
+import { ChromatinViewportTool, ChromatinViewportToolType, ConfigurationAction, ConfigurationState, ViewportConfiguration, ViewportConfigurationType, NoViewportTool, ToolConfiguration, DistanceViewportToolType } from '../../modules/storage/models/viewports';
+import { useConfiguration } from "../hooks";
 
 import { CursorClick24Regular, Lasso24Regular, Flow20Regular } from '@fluentui/react-icons';
 
-const chromatinToolsIcons = [
-    { icon: <CursorClick24Regular></CursorClick24Regular> },
-    { icon: <Lasso24Regular></Lasso24Regular> },
-    { icon: <Flow20Regular></Flow20Regular> },
-];
+const chromatinToolsIcons: Array<{ type: ChromatinViewportToolType, icon: JSX.Element }> = [
+    { type: ChromatinViewportToolType.PointSelection, icon: <CursorClick24Regular></CursorClick24Regular> },
+    { type: ChromatinViewportToolType.SphereSelection, icon: <Lasso24Regular></Lasso24Regular> },
+    { type: ChromatinViewportToolType.JoinSelection, icon: <Flow20Regular></Flow20Regular> },
+]
 
 export function ToolsList(props: {
     configurationID: number,
     configurationsReducer: [ConfigurationState, Dispatch<ConfigurationAction>],
 }): JSX.Element {
-    const configurationReducer = useConfigurationTypeless(props.configurationID, props.configurationsReducer);
+    const configurationReducer = useConfiguration<ViewportConfiguration>(props.configurationID, props.configurationsReducer);
     const [configuration, updateConfiguration] = configurationReducer;
 
-    const selectTool = (index: number) => {
-        if (configuration.tool && configuration.tool.type == index) {
-            updateConfiguration({                
+    const selectTool = (type: ChromatinViewportToolType | DistanceViewportToolType) => {
+        if (configuration.tool.type == type) {
+            updateConfiguration({
                 ...configuration,
-                tool: undefined,
+                tool: { type: "no-tool" },
             });
-
             return;
         }
 
@@ -33,10 +32,10 @@ export function ToolsList(props: {
             case ViewportConfigurationType.Chromatin: {
                 let tool: ChromatinViewportTool = { type: ChromatinViewportToolType.PointSelection };
 
-                switch (index) {
-                    case 0: tool = { type: ChromatinViewportToolType.PointSelection }; break;
-                    case 1: tool = { type: ChromatinViewportToolType.SphereSelection, radius: 0.05 }; break;
-                    case 2: tool = { type: ChromatinViewportToolType.JoinSelection, from: null, to: null }; break;
+                switch (type) {
+                    case ChromatinViewportToolType.PointSelection: tool = { type: ChromatinViewportToolType.PointSelection }; break;
+                    case ChromatinViewportToolType.SphereSelection: tool = { type: ChromatinViewportToolType.SphereSelection, radius: 0.25 }; break;
+                    case ChromatinViewportToolType.JoinSelection: tool = { type: ChromatinViewportToolType.JoinSelection, from: null, to: null }; break;
                 }
 
                 updateConfiguration({
@@ -50,8 +49,8 @@ export function ToolsList(props: {
 
     switch (configuration.type) {
         case ViewportConfigurationType.Chromatin: return <div className="toolsPanel">
-            {chromatinToolsIcons.map((t, index) => {
-                return <div key={index} className={(configuration.tool && configuration.tool.type == index) ? "toolsPanel--icon selected" : "toolsPanel--icon"} onClick={() => selectTool(index)}>{t.icon}</div>;
+            {chromatinToolsIcons.map((tool) => {
+                return <div key={tool.type} className={(configuration.tool.type == tool.type) ? "toolsPanel--icon selected" : "toolsPanel--icon"} onClick={() => selectTool(tool.type)}>{tool.icon}</div>;
             })}
         </div>
         default: return <div className="toolsPanel"></div>

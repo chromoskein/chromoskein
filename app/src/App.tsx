@@ -387,9 +387,10 @@ function App(): JSX.Element {
   };
   //#endregion
 
+
   const activeTabSet = localModel.getActiveTabset();
-  const activeTabSetChildren = activeTabSet != undefined ? activeTabSet.getChildren() : undefined;
-  const activeTab = (activeTabSetChildren != undefined && activeTabSetChildren.length > 0 && activeTabSetChildren[0] instanceof FlexLayout.TabNode) ? activeTabSetChildren[0] as FlexLayout.TabNode : undefined;
+  const activeTabSetChildren = activeTabSet?.getChildren() ?? [];
+  const activeTab = activeTabSetChildren[activeTabSet?.getSelected() ?? -1] as FlexLayout.TabNode | undefined;
 
   return (
     <div className="App">

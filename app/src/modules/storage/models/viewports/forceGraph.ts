@@ -20,9 +20,10 @@ export function defaultForceGraphViewportConfiguration(): ForceGraphViewportConf
     tabName: "Unnamed Force Graph",
 
     data: null,
-    
+
     selectedSelectionID: null,
 
     backgroundColor: blackBackground,
+    tool: { type: 'no-tool' }
   }
 }

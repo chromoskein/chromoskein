@@ -19,7 +19,11 @@ export enum ViewportConfigurationType {
   ForceGraph
 }
 
-export interface IDataConfiguration {}
+export type NoViewportTool = {
+  type: "no-tool";
+};
+
+export interface IDataConfiguration { }
 
 export type ViewportSelectionOptions = {
   selectionID: SelectionID,
@@ -28,12 +32,12 @@ export type ViewportSelectionOptions = {
 
 export function getDefaultViewportSelectionOptions(selectionID: SelectionID): ViewportSelectionOptions {
   return {
-      selectionID,
-      visible: true,
+    selectionID,
+    visible: true,
   };
 }
 
-export type ToolConfiguration = ChromatinViewportTool | DistanceMapTool;
+export type ToolConfiguration = ChromatinViewportTool | DistanceMapTool | NoViewportTool;
 
 export interface IViewportConfiguration {
   type: ViewportConfigurationType,
@@ -45,5 +49,5 @@ export interface IViewportConfiguration {
 
   backgroundColor: IColor,
 
-  tool?: ToolConfiguration,
+  tool: ToolConfiguration,
 }

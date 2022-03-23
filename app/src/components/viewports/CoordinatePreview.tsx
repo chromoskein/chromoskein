@@ -1,13 +1,9 @@
-import { DetailsList, DetailsListLayoutMode, IColumn, Separator, Stack, Text } from "@fluentui/react";
-import { identity } from "lodash";
-import { Dispatch, useRef, useState } from "react";
+import { Separator, Stack, Text } from "@fluentui/react";
+import { Dispatch } from "react";
 import ReactTooltip from "react-tooltip";
-import { useDimensionsRef, useMouse, useWindowSize } from "rooks";
 import { binToGenomicCoordinate } from "../../modules/coordniatesUtils";
 import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
 import { BinPositionsData, DataAction, DataState, Sparse1DTextData, Sparse1DNumericData } from "../../modules/storage/models/data";
-import { ConfigurationAction, ConfigurationState } from "../../modules/storage/models/viewports";
-import { useConfigurationTypeless, useResizeObserverRef } from "../hooks";
 import './Viewports.scss'
 export function CoordinatePreview(props: {
     coordinatePreviewReducer: [CoordinatePreviewState, React.Dispatch<CoordinatePreviewAction>],
@@ -17,13 +13,6 @@ export function CoordinatePreview(props: {
 }) {
     const [coordinatePreview, dispatchCoordinatePreview] = props.coordinatePreviewReducer;
     const [data, dispatchData] = props.dataReducer;
-    const { clientX, clientY } = useMouse();
-    const [contentBoxSize, setContentBoxSize] = useState({
-        blockSize: 0,
-        inlineSize: 0
-    })
-    const [ref] = useResizeObserverRef((e, a) => setContentBoxSize(e[0]?.devicePixelContentBoxSize[0] ?? { blockSize: 0, inlineSize: 0 }));
-
 
     if (!coordinatePreview.visible || coordinatePreview.dataId == null) {
         return <></>
@@ -167,8 +156,6 @@ export function CoordinatePreview(props: {
         </table>
 
     }
-
-    ReactTooltip.rebuild();
 
     if (dataModel.type == '3d-positions') {
         const dataModel3d = dataModel as BinPositionsData;

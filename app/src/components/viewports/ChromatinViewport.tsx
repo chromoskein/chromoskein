@@ -176,8 +176,6 @@ export function ChromatinViewport(props: {
             center.y = configuration.explodedViewScale * (center.y / positions.length);
             center.z = configuration.explodedViewScale * (center.z / positions.length);
 
-            console.log(configuration.explodedViewScale, center);
-
             const explodedPositions = positions.map(v => {
                 return {
                     x: v.x + center.x,

@@ -1,11 +1,11 @@
 import { ChromatinRepresentation, OrbitCameraConfiguration, SmoothCameraConfiguration } from "../../../graphics";
 import { DataID } from "../data";
-import { IDataConfiguration, IViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions, blackBackground } from "./shared";
+import { IDataConfiguration, IViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions, blackBackground, NoViewportTool } from "./shared";
 
 export enum ChromatinViewportToolType {
-    PointSelection = 0,
-    SphereSelection = 1,
-    JoinSelection = 2,
+    PointSelection = "point-selection",
+    SphereSelection = "sphere-selection",
+    JoinSelection = "join-selection",
 }
 
 export type ChromatinPointSelection = {
@@ -24,6 +24,7 @@ export type ChromatinJoinSelection = {
     from: number | null;
     to: number | null;
 }
+
 
 export type ChromatinViewportTool = ChromatinPointSelection | ChromatinSphereSelection | ChromatinJoinSelection;
 
@@ -82,7 +83,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
 
     colorMappingMode: ChromatinViewportColorMappingMode;
 
-    tool?: ChromatinViewportTool;
+    tool: ChromatinViewportTool | NoViewportTool;
 
     explodedViewScale: number;
 }
@@ -143,7 +144,9 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         },
         colorMappingMode: 'none',
 
-        tool: {} as ChromatinPointSelection,
+        tool: {
+            type: 'no-tool',
+        },
 
         explodedViewScale: 0.0,
     } as ChromatinViewportConfiguration;
