@@ -288,7 +288,7 @@ export class SmoothCamera extends Camera {
 
         if (this.ignoreEvents) return;
 
-        if (event.buttons == 1) //~ => Left button => Orbiting
+        if (event.buttons == 1 && !event.altKey) //~ => Left button => Orbiting
         {
             const delta = { x: event.screenX - this.lastMousePos.x, y: event.screenY - this.lastMousePos.y };
 
@@ -304,7 +304,7 @@ export class SmoothCamera extends Camera {
 
             this.lastMousePos = { x: event.screenX, y: event.screenY };
         }
-        else if (event.buttons == 4) //~ => Middle button => Panning
+        else if ((event.buttons == 4) || (event.buttons == 1 && event.altKey)) //~ => Middle button => Panning
         {
             const delta = { x: event.screenX - this.lastMousePos.x, y: event.screenY - this.lastMousePos.y };
 
