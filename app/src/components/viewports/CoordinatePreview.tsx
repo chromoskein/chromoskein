@@ -1,6 +1,7 @@
 import { DetailsList, DetailsListLayoutMode, IColumn, Separator, Stack, Text } from "@fluentui/react";
 import { identity } from "lodash";
 import { Dispatch, useRef, useState } from "react";
+import ReactTooltip from "react-tooltip";
 import { useDimensionsRef, useMouse, useWindowSize } from "rooks";
 import { binToGenomicCoordinate } from "../../modules/coordniatesUtils";
 import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
@@ -152,51 +153,39 @@ export function CoordinatePreview(props: {
 
         return <table style={{}}>
             {/* row for every data map key */}
-            {Array.from(dataMap.keys()).map((key, i) => {
-                return <>
-                    {i != 0 && <Separator className="table-separator"></Separator>}
-                    <tr>
-                        <td style={{ verticalAlign: 'top', paddingRight: '12px' }}>{key}</td>
-                        <td> {dataMap.get(key)!.values.map(value => <p>{value}</p>)}</td>
-                    </tr>
-                </>
-            })}
+            <tbody>
+                {Array.from(dataMap.keys()).map((key, i) => {
+                    return <>
+                        {i != 0 && <Separator className="table-separator"></Separator>}
+                        <tr>
+                            <td style={{ verticalAlign: 'top', paddingRight: '12px' }}>{key}</td>
+                            <td> {dataMap.get(key)!.values.map(value => <p>{value}</p>)}</td>
+                        </tr>
+                    </>
+                })}
+            </tbody>
         </table>
 
     }
 
-    // shift element if out of window
-    let horizontalShift = (clientX ?? 0);
-    let verticalShift = (clientY ?? 0);
-    const elementWidth = contentBoxSize.inlineSize
-    const elementHeight = contentBoxSize.blockSize
-    if (elementWidth + horizontalShift >= (innerWidth ?? 0)) {
-        horizontalShift -= elementHeight;
-    }
-    if (elementHeight + verticalShift >= (innerHeight ?? 0)) {
-        verticalShift -= elementHeight;
-    }
+    ReactTooltip.rebuild();
+
     if (dataModel.type == '3d-positions') {
         const dataModel3d = dataModel as BinPositionsData;
         const [genomicFrom, genomicTo] = binToGenomicCoordinate(coordinatePreview.from, dataModel3d.basePairsResolution)
         const mappedData = getMappedDataMap(coordinatePreview.chromosomeName, genomicFrom, genomicTo);
 
-        return <div ref={ref} className="coordinatePreview" style={{ ...props.style, top: verticalShift, left: horizontalShift }}>
-            <Stack tokens={{ childrenGap: '4px', padding: '8px' }}>
+        return <ReactTooltip id="tooltip" place="bottom">
+            <Stack tokens={{ childrenGap: '4px' }}>
                 <Text style={{ fontWeight: 600 }}>Chromosome: {coordinatePreview.chromosomeName} | Bin: {coordinatePreview.from} | Genomic: {genomicFrom} - {genomicTo} </Text>
-
-                {mappedData.size > 0
-                    ? <>
-                        <Separator></Separator>
-                        {renderMapped(mappedData)}
-                    </>
-                    : <></>
+                {mappedData.size > 0 && <>
+                    <Separator></Separator>
+                    {renderMapped(mappedData)}
+                </>
                 }
             </Stack>
-        </div>
-
+        </ReactTooltip>
     }
 
     return <></>
-
 }
