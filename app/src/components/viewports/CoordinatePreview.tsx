@@ -165,6 +165,9 @@ export function CoordinatePreview(props: {
         return <ReactTooltip id="tooltip" place="bottom">
             <Stack tokens={{ childrenGap: '4px' }}>
                 <Text style={{ fontWeight: 600 }}>Chromosome: {coordinatePreview.chromosomeName} | Bin: {coordinatePreview.from} | Genomic: {genomicFrom} - {genomicTo} </Text>
+                {coordinatePreview.additionalInfo.length > 0 && coordinatePreview.additionalInfo.map((info, i) => {
+                    return <Text key={i}>{info}</Text>
+                })}
                 {mappedData.size > 0 && <>
                     <Separator></Separator>
                     {renderMapped(mappedData)}

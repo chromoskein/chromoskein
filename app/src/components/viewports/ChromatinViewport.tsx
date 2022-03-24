@@ -12,7 +12,7 @@ import * as chroma from "chroma-js";
 import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
 import { iso } from "newtype-ts";
 import { quantile } from "simple-statistics";
-import _ from "lodash";
+import _, { identity } from "lodash";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
@@ -213,10 +213,17 @@ export function ChromatinViewport(props: {
             return;
         }
 
+        const additionalInfo: Array<String> = []
+        const rulerInfo = makeRulerTooltipInfo(closestIntersection);
+        if (rulerInfo) {
+            additionalInfo.push(rulerInfo);
+        }
+
         dispatchCoordinatePreview({
             visible: true,
             type: "bin-coordinates-single",
             dataId: iso<DataID>().wrap(closestIntersection.chromatinPart.dataId),
+            additionalInfo: additionalInfo,
             mappingIds: configuration.tooltip.tooltipDataIDs,
             textAggregation: configuration.tooltip.tooltipTextAggregation,
             numericAggregation: configuration.tooltip.tooltipNumericAggregation,
@@ -581,6 +588,16 @@ export function ChromatinViewport(props: {
                     }
                 }
             }
+        } else if (tool.type == ChromatinViewportToolType.Ruler) {
+            // color bin where the ruler is from
+            if (tool.from != null) {
+                const from = tool.from;
+                const fromChromosomeSliceIndex = chromosomeSlices.findIndex(c => c.name == from.chrom);
+
+                const fromChromosomePart = viewport.getChromatinPartByChromosomeIndex(fromChromosomeSliceIndex);
+
+                fromChromosomePart?.setBinColor(tool.from.bin, { r: 1.0, g: 0, b: 0, a: 1.0 });
+            }
         }
         // console.timeEnd('colorBins::intersection');
         // console.timeEnd('colorBins');
@@ -624,6 +641,22 @@ export function ChromatinViewport(props: {
         viewport.addCullObject(new CullPlane(planeNormal, planePoint));
         viewport.updateCullObjects();
     }, [viewport, configuration.cutaway.axis, configuration.cutaway.length]);
+
+    function makeRulerTooltipInfo(closestIntersection: ChromatinIntersection): string | null {
+        if (configuration.tool.type == 'ruler' && configuration.tool.from) {
+            const measuringChromosomeName = configuration.tool.from.chrom;
+            const datum = data.data.find((d: Data) => configuration.data && d.id == configuration.data.id) as BinPositionsData;
+            const hoverChromosome = datum.chromosomes.find((c) => c.name == closestIntersection.chromatinPart.name);
+            const measuringChromosome = datum.chromosomes.find((c) => c.name == measuringChromosomeName);
+            if (hoverChromosome && measuringChromosome) {
+                const from3D = datum.values[measuringChromosome.from + configuration.tool.from.bin];
+                const to3D = datum.values[hoverChromosome.from + closestIntersection.binIndex];
+                const distance = vec3.distance(vec3.fromValues(from3D.x, from3D.y, from3D.z), vec3.fromValues(to3D.x, to3D.y, to3D.z));
+                return `Distance from bin #${configuration.tool.from.bin} on ${configuration.tool.from.chrom} is ${Math.round(distance * 1000) / 1000} units`;
+            }
+        }
+        return null;
+    }
 
     const onClick = () => {
         if (!viewport || !configuration.data || !closestIntersection || !isPrimaryModPressed || !configuration.tool || !configuration.selectedSelectionID) {
@@ -709,6 +742,23 @@ export function ChromatinViewport(props: {
                     }
                 });
             }
+        } else if (tool.type == ChromatinViewportToolType.Ruler) {
+            let ruler = { ...tool };
+
+            if (!isSecondaryModPressed) {
+                ruler.from = {
+                    bin: closestIntersection.binIndex,
+                    chrom: closestIntersection.chromatinPart.name,
+                };
+            } else {
+                ruler.from = null;
+            }
+
+
+            updateConfiguration({
+                ...configuration,
+                tool: ruler
+            });
         }
 
         globalSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selectionId, name: null, color: null, bins: newBins });
@@ -717,4 +767,6 @@ export function ChromatinViewport(props: {
     return (
         <canvas data-tip data-for='tooltip' ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden' }} tabIndex={1} onClick={() => onClick()}></canvas>
     );
+
+
 }

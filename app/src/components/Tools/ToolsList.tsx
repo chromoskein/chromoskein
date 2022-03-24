@@ -4,12 +4,13 @@ import './Tools.scss';
 import { ChromatinViewportTool, ChromatinViewportToolType, ConfigurationAction, ConfigurationState, ViewportConfiguration, ViewportConfigurationType, NoViewportTool, ToolConfiguration, DistanceViewportToolType } from '../../modules/storage/models/viewports';
 import { useConfiguration } from "../hooks";
 
-import { CursorClick24Regular, Lasso24Regular, Flow20Regular } from '@fluentui/react-icons';
+import { CursorClick24Regular, Lasso24Regular, Flow20Regular, Ruler24Regular } from '@fluentui/react-icons';
 
 const chromatinToolsIcons: Array<{ type: ChromatinViewportToolType, icon: JSX.Element }> = [
     { type: ChromatinViewportToolType.PointSelection, icon: <CursorClick24Regular></CursorClick24Regular> },
     { type: ChromatinViewportToolType.SphereSelection, icon: <Lasso24Regular></Lasso24Regular> },
     { type: ChromatinViewportToolType.JoinSelection, icon: <Flow20Regular></Flow20Regular> },
+    { type: ChromatinViewportToolType.Ruler, icon: <Ruler24Regular></Ruler24Regular> },
 ]
 
 export function ToolsList(props: {
@@ -36,6 +37,7 @@ export function ToolsList(props: {
                     case ChromatinViewportToolType.PointSelection: tool = { type: ChromatinViewportToolType.PointSelection }; break;
                     case ChromatinViewportToolType.SphereSelection: tool = { type: ChromatinViewportToolType.SphereSelection, radius: 0.25 }; break;
                     case ChromatinViewportToolType.JoinSelection: tool = { type: ChromatinViewportToolType.JoinSelection, from: null, to: null }; break;
+                    case ChromatinViewportToolType.Ruler: tool = { type: ChromatinViewportToolType.Ruler, from: null }; break;
                 }
 
                 updateConfiguration({

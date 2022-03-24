@@ -206,6 +206,7 @@ function App(): JSX.Element {
     {
       type: "bin-coordinates-single",
       dataId: undefined,
+      additionalInfo: [],
       mappingIds: [],
       textAggregation: 'none',
       numericAggregation: 'none',

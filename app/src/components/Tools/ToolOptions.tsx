@@ -16,7 +16,17 @@ export function ToolOptions(props: {
     const [configuration, updateConfiguration] = configurationReducer;
     const tool = configuration.tool;
     const isMac = new UAParser().getOS().name == 'Mac OS';
+    const hasSelectedSelection = configuration.selectedSelectionID != null;
 
+
+    const enforceSelectedSelection = (element: JSX.Element): JSX.Element => {
+        if (hasSelectedSelection) {
+            return element;
+        }
+        return <Stack.Item align="center">
+            <Text nowrap variant='medium'>Ensure a selection is chosen in the Viewport Options</Text>
+        </Stack.Item>;
+    }
 
     const setSphereSelectionRadius = (radius: number) => {
         updateConfiguration({
@@ -28,6 +38,9 @@ export function ToolOptions(props: {
         } as ChromatinViewportConfiguration);
     }
 
+
+    const primaryClick = <strong>{isMac ? "command + click" : "Ctrl + click"}</strong>;
+    const secondaryClick = <strong>{isMac ? "command + option + click" : "Ctrl + Alt + click"}</strong>;
 
     const toolOptionsMenuFactory = (tool: ToolConfiguration): JSX.Element => {
         if (tool.type == 'no-tool') {
@@ -48,12 +61,12 @@ export function ToolOptions(props: {
         }
 
         if (tool.type == ChromatinViewportToolType.PointSelection) {
-            return <Stack.Item align="center">
-                <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: add to selection | <strong>{isMac ? "command + option + click" : "Ctrl + Alt + click"}</strong>: remove from selection.</Text>
-            </Stack.Item>
+            return enforceSelectedSelection(<Stack.Item align="center">
+                <Text nowrap variant='medium'>{primaryClick}: add to selection | {secondaryClick}: remove from selection.</Text>
+            </Stack.Item>)
         }
         if (tool.type == ChromatinViewportToolType.SphereSelection) {
-            return <>
+            return enforceSelectedSelection(<>
                 <Stack.Item align="center">
                     <Label>Spherical Selection</Label>
                 </Stack.Item>
@@ -70,24 +83,32 @@ export function ToolOptions(props: {
                     <Separator vertical></Separator>
                 </Stack.Item>
                 <Stack.Item align="center">
-                    <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: add to selection | <strong>{isMac ? "command + option + click" : "Ctrl + Alt + click"}</strong>: remove from selection.</Text>
+                    <Text nowrap variant='medium'>{primaryClick}: add to selection | {secondaryClick}: remove from selection.</Text>
                 </Stack.Item>
-            </>
+            </>)
         }
         if (tool.type == ChromatinViewportToolType.JoinSelection) {
-            return <>
+            return enforceSelectedSelection(<>
                 <Stack.Item align="center">
                     {tool.from == null && (<Text nowrap variant='medium'>Select a bin as starting point for a path.</Text>)}
                 </Stack.Item>
                 <Stack.Item align="center">{tool.from != null && (<Text nowrap variant='medium'># of starting bin is {tool.from}.</Text>)}</Stack.Item>
-                <Stack.Item align="center">{tool.from != null && (<Text nowrap variant='medium'>Now select a bin to be the end point of a path.</Text>)}</Stack.Item>
                 <Stack.Item align="center">
                     <Separator vertical></Separator>
                 </Stack.Item>
                 <Stack.Item align="center">
-                    {tool.from == null ? <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: start adding to selection | <strong>{isMac ? "command + option + click" : "Ctrk + Alt + click"}</strong>: start removing from selection.</Text> : <Text nowrap variant='medium'><strong>{isMac ? "command + click" : "Ctrl + click"}</strong>: end adding to selection | <strong>{isMac ? "command + option + click" : "Ctrk + alt + click"}</strong>: end removing from selection.</Text>}
+                    {tool.from == null
+                        ? <Text nowrap variant='medium'>{primaryClick}: start adding to selection | {secondaryClick}: start removing from selection.</Text>
+                        : <Text nowrap variant='medium'>{primaryClick}: end adding to selection | {secondaryClick}: end removing from selection.</Text>}
                 </Stack.Item>
-            </>
+            </>)
+        }
+
+        if (tool.type == ChromatinViewportToolType.Ruler) {
+            return <Stack.Item align="center">
+                {tool.from == null && <Text nowrap variant='medium'>{primaryClick}: choose first bin</Text>}
+                {tool.from != null && <Text nowrap variant='medium'>Measuring distance from bin #{tool.from.bin} on chromosome {tool.from.chrom}. {primaryClick}: choose other first bin | {secondaryClick}: reset chosen bins</Text>}
+            </Stack.Item>
         }
 
         return <></>

@@ -6,6 +6,7 @@ export enum ChromatinViewportToolType {
     PointSelection = "point-selection",
     SphereSelection = "sphere-selection",
     JoinSelection = "join-selection",
+    Ruler = "ruler",
 }
 
 export type ChromatinPointSelection = {
@@ -25,8 +26,16 @@ export type ChromatinJoinSelection = {
     to: number | null;
 }
 
+export type ChromatinRuler = {
+    type: ChromatinViewportToolType.Ruler,
 
-export type ChromatinViewportTool = ChromatinPointSelection | ChromatinSphereSelection | ChromatinJoinSelection;
+    from: {
+        bin: number;
+        chrom: string;
+    } | null;
+}
+
+export type ChromatinViewportTool = ChromatinPointSelection | ChromatinSphereSelection | ChromatinJoinSelection | ChromatinRuler;
 
 export interface IChromatinDataConfiguration extends IDataConfiguration {
     id: DataID,

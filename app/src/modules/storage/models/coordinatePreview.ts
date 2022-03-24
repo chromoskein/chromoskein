@@ -8,6 +8,8 @@ export type CoordinatePreviewState = {
     type: CoordinatePreviewType,
 
     dataId?: DataID,
+
+    additionalInfo: Array<String>,
     mappingIds: Array<DataID>,
     textAggregation: TooltipTextAggregation,
     numericAggregation: TooltipNumericAggregation,
@@ -21,6 +23,7 @@ export type CoordinatePreviewState = {
 export type CoordinatePreviewAction = {
     type?: CoordinatePreviewType,
     dataId?: DataID,
+    additionalInfo?: Array<String>,
     mappingIds?: Array<DataID>,
     textAggregation?: TooltipTextAggregation,
     numericAggregation?: TooltipNumericAggregation,
