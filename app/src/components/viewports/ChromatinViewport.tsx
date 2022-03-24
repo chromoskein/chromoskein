@@ -398,7 +398,7 @@ export function ChromatinViewport(props: {
             const order: Array<number> = [];
             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                 const partInfo = chromatineSlices[chromosomeIndex];
-                for (let o = 0; o < partInfo.to - partInfo.from; o++) {
+                for (let o = 0; o < partInfo.to - partInfo.from + 1; o++) {
                     order.push(o);
                 }
             }
