@@ -106,7 +106,7 @@ export function ToolOptions(props: {
 
         if (tool.type == ChromatinViewportToolType.Ruler) {
             return <Stack.Item align="center">
-                {tool.from == null && <Text nowrap variant='medium'>{primaryClick}: choose first bin</Text>}
+                {tool.from == null && <Text nowrap variant='medium'>{primaryClick}: choose bin to measure distance from</Text>}
                 {tool.from != null && <Text nowrap variant='medium'>Measuring distance from bin #{tool.from.bin} on chromosome {tool.from.chrom}. {primaryClick}: choose other first bin | {secondaryClick}: reset chosen bins</Text>}
             </Stack.Item>
         }
