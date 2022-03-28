@@ -299,7 +299,9 @@ export function ChromatinViewport(props: {
                 }
             }
 
-            setInnerColors(() => mapScaleToChromatin(countPerBin, scale));
+            const logCountPerBin = countPerBin.map(v => Math.log(v) + 1);
+
+            setInnerColors(() => mapScaleToChromatin(logCountPerBin, scale));
         }
 
         if (configuration.colorMappingMode == '1d-numerical') {
