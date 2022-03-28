@@ -3,7 +3,7 @@ import { GraphicsLibrary } from "..";
 import { LinearImmutableArray } from "../allocators";
 import { LowLevelStructure, HighLevelStructure, LL_STRUCTURE_SIZE_BYTES, LL_STRUCTURE_SIZE } from "./shared";
 
-class QuadraticBezier {
+export class QuadraticBezier {
     p0: vec3;
     p1: vec3;
     p2: vec3;

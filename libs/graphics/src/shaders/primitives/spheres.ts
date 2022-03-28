@@ -122,7 +122,7 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
     discard;
   }
 
-  var outputColor = color;
+  var outputColor = vec4(1.0);
 
   ${writeDepth ? `` : `
   let intersection2: vec3<f32> = camera.position.xyz + t.y * ray.direction.xyz;
@@ -163,7 +163,7 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
   return FragmentOutput(
     ${writeDepth ? 'depth.z,' : ''}
     outputColor,
-    ${writeDepth ? 'vec4<f32>(normal, 1.0),' : ''}
+    ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
   );  
 }
 `};

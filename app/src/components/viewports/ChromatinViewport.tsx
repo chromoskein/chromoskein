@@ -13,6 +13,7 @@ import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/s
 import { iso } from "newtype-ts";
 import { quantile } from "simple-statistics";
 import _, { identity } from "lodash";
+import { Spline } from "../../modules/graphics/primitives/spline";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
@@ -120,6 +121,9 @@ export function ChromatinViewport(props: {
             part.structure.radius = configuration.radius;
         } else if (part.structure instanceof Spheres) {
             part.structure.setRadiusAll(configuration.radius);
+        } else if (part.structure instanceof Spline) {
+            console.log('ok?');
+            part.structure.radius = configuration.radius;
         }
     };
 

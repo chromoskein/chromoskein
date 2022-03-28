@@ -6,15 +6,17 @@ import { Viewport3D } from ".";
 import { vec2, vec3, vec4, quat } from "gl-matrix";
 import { BoundingBox, BoundingBoxEmpty, BoundingBoxExtendByPoint, Hit, Ray } from "../shared";
 import { quantile } from 'simple-statistics'
+import { Spline } from "../primitives/spline";
 
 const CHROMATIN_OBJECT_NAME = 'CHROMATIN';
 
 export enum ChromatinRepresentation {
   ContinuousTube = 0,
   Spheres = 1,
+  Spline = 2,
 }
 
-export type ChromatinRepresentationType = ContinuousTube | Spheres;
+export type ChromatinRepresentationType = ContinuousTube | Spheres | Spline;
 
 export class ChromatinPart {
   private _chromatinViewport: ChromatinViewport;
@@ -280,6 +282,10 @@ export class ChromatinViewport extends Viewport3D {
       }
       case ChromatinRepresentation.Spheres: {
         [highLevelID, structure] = this._scene.addSpheres(CHROMATIN_OBJECT_NAME + this.maxId, pointsVec3, null, null, true, update);
+        break;
+      }
+      case ChromatinRepresentation.Spline: {
+        [highLevelID, structure] = this._scene.addSpline(CHROMATIN_OBJECT_NAME + this.maxId, pointsVec3, null, null, true, update);
         break;
       }
     }

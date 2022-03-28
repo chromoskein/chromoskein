@@ -6,6 +6,7 @@ import { BoundingVolumeHierarchy } from "./bvh";
 import { BoundingBox } from "./shared";
 import { vec3, vec4 } from "gl-matrix";
 import { NODE_SIZE_BYTES, BOUNDING_BOX_SIZE_BYTES } from "./bvh";
+import { Spline } from "./primitives/spline";
 
 function enumValues<T extends string>(enumObj: { [key: string]: T }): IterableIterator<T>;
 function enumValues<T extends string | number>(enumObj: { [key: string]: T }): IterableIterator<Exclude<T, string>>;
@@ -307,12 +308,26 @@ export class Scene {
     }
 
     public addContinuousTube(structureName: string, points: Array<vec3>, radius: number | null = null, colors: Array<vec4> | null = null, partOfBVH = true, update = true): [number, ContinuousTube] {
+        this.removeStructureByName(structureName);
+
         this.lastStructureID += 1;
 
         const continuousTube = new ContinuousTube(this.graphicsLibrary, this.lastStructureID, partOfBVH, points, radius ?? 1.0, colors);
         const continuousTubeIndex = this.addStructure(structureName, continuousTube, update);
 
         return [continuousTubeIndex, continuousTube];
+    }
+
+    public addSpline(structureName: string, points: Array<vec3>, radius: number | null = null, colors: Array<vec4> | null = null, partOfBVH = true, update = true): [number, Spline] {
+        this.removeStructureByName(structureName);
+
+        this.lastStructureID += 1;
+
+        // const continuousTube = new ContinuousTube(this.graphicsLibrary, this.lastStructureID, false, points, radius ?? 1.0, colors);
+        const spline = new Spline(this.graphicsLibrary, this.lastStructureID, partOfBVH, points, radius ?? 1.0, colors);
+        const splineIndex = this.addStructure(structureName, spline, update);
+
+        return [splineIndex, spline];
     }
 
     private addStructure(structureName: string, structure: HighLevelStructure, update = true): number {
@@ -441,6 +456,7 @@ export class Scene {
             if (renderObjects == RenderObjects.Opaque) {
                 switch (typeIndex) {
                     case 0: passEncoder.setPipeline(renderPipelines.spheresWriteDepth); break;
+                    case 2: passEncoder.setPipeline(renderPipelines.quadraticBeziersWriteDepth); break;
                     case 4: passEncoder.setPipeline(renderPipelines.roundedConesWriteDepth); break;
                     default: continue;
                 }

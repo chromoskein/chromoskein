@@ -54,13 +54,20 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
 
   let colorOpaque = textureLoad(gBufferColorsOpaque, vec2<i32>(coordinates), 0).xyz;
   let colorTransparent = textureLoad(gBufferColorsTransparent, vec2<i32>(coordinates), 0).rgba;
+  let worldNormalUnit = textureLoad(gBufferWorldNormals, vec2<i32>(coordinates), 0).xyz;
 
   let ao = 1.0 - textureLoad(gBufferAmbientOcclusion, vec2<i32>(coordinates), 0).x;
 //   let ao = textureLoad(gBufferAmbientOcclusion, vec2<i32>(coordinates), 0).x;
+
+  // if (all(worldNormalUnit == vec3<f32>(0.0))) {
+  //   return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+  // } else {
+  //   return vec4<f32>(1.0);
+  // }
 
   return vec4<f32>((ao * colorOpaque) * (1.0 - colorTransparent.a) + colorTransparent.rgb * colorTransparent.a, 1.0);
   // let gamma = 1.0 / 2.2;
   // return vec4<f32>(pow(ao * colorOpaque.rgb, vec3<f32>(gamma)), 1.0);
   // return vec4<f32>(ao, ao, ao, 1.0);
-  // return vec4<f32>(ao * colorOpaque.rgb, 1.0);
+  // return vec4<f32>(ao * colorOpaque.rgb, 1.0);  
 }

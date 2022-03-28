@@ -136,16 +136,16 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 ) -> VertexOutput {
   let curveBuffer: BufferQuadraticBezierCurve = curvesBuffer.curves[InstanceIndex];
 
-  if (curveBuffer.ty != 2) {
-    return VertexOutput(
-      vec4<f32>(0.0, 0.0, 0.0, 0.0), 
-      vec3<f32>(0.0, 0.0, 0.0),
-      vec3<f32>(0.0, 0.0, 0.0),
-      vec3<f32>(0.0, 0.0, 0.0),
-      0.0,
-      vec3<f32>(0.0, 0.0, 0.0),
-    );
-  }
+  // if (curveBuffer.ty != 2) {
+  //   return VertexOutput(
+  //     vec4<f32>(0.0, 0.0, 0.0, 0.0), 
+  //     vec3<f32>(0.0, 0.0, 0.0),
+  //     vec3<f32>(0.0, 0.0, 0.0),
+  //     vec3<f32>(0.0, 0.0, 0.0),
+  //     0.0,
+  //     vec3<f32>(0.0, 0.0, 0.0),
+  //   );
+  // }
 
   let curve: QuadraticBezierCurve = QuadraticBezierCurve(
     curveBuffer.p0.xyz,
@@ -278,7 +278,7 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
   return FragmentOutput(
     ${writeDepth ? 'depth.z,' : ''}
     vec4<f32>(color.xyz, 1.0),    
-    ${writeDepth ? 'vec4<f32>(normal, 1.0),' : ''}    
+    ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
   );  
 }
 `};
