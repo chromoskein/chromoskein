@@ -166,3 +166,55 @@ export function aoBlurPipelineDescriptor(pipelineLayouts: PipelineLayouts, shade
         }
     };
 }
+
+
+export function ssaoJoinBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        entries: [
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                texture: {
+                    sampleType: 'unfilterable-float',
+                    viewDimension: '2d',
+                    multisampled: false,
+                }
+            },
+            {
+                binding: 1,
+                visibility: GPUShaderStage.COMPUTE,
+                texture: {
+                    sampleType: 'unfilterable-float',
+                    viewDimension: '2d',
+                    multisampled: false,
+                }
+            },
+            {
+                binding: 2,
+                visibility: GPUShaderStage.COMPUTE,
+                storageTexture: {
+                    access: 'write-only',
+                    format: 'r32float',
+                    viewDimension: '2d',
+                }
+            },
+        ],
+    };
+}
+export function ssaoJoinPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
+    return {
+        bindGroupLayouts: [
+            bindGroupLayouts.ssaoJoin
+        ],
+    }
+}
+
+export function ssaoJoinPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPUComputePipelineDescriptor {
+    return {
+        layout: pipelineLayouts.ssaoJoin,
+        compute: {
+            module: shaderModules.ssaoJoin,
+            entryPoint: "main",
+        }
+    };
+}

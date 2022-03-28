@@ -4,7 +4,7 @@ import { cameraBindGroupLayout, primitivesBindGroupLayout, primitivesPipelineLay
 import { BindGroupLayouts, PipelineLayouts, RenderPipelines, ComputePipelines } from "./shared";
 import { distanceMapBindGroupLayout, distanceMapPipelineDescriptor, tadmapPipelineDescriptor, distanceMapPipelineLayout } from "./2d";
 import { boundingVolumeHierarchyBindGroupLayout, rayTracingGBufferOutputBindGroupLayout, rayTracingAmbientOcclusionOutputBindGroupLayout, rayTracingAmbientOcclusionPipelineLayout, rayTracingGBufferPipelineLayout, rayTracingGBufferPipelineDescriptor, rayTracingAmbientOcclusionPipelineDescriptor } from "./ray_tracing";
-import { ssaoGBufferBindGroupLayout, ssaoGlobalsBindGroupLayout, ssaoPipelineLayout, ssaoPipelineDescriptor, aoBlurPipelineDescriptor, aoBlurParametersBindGroupLayout, aoBlurIOBindGroupLayout, aoBlurPipelineLayout } from "./postprocess";
+import { ssaoGBufferBindGroupLayout, ssaoGlobalsBindGroupLayout, ssaoPipelineLayout, ssaoJoinPipelineLayout, ssaoPipelineDescriptor, aoBlurPipelineDescriptor, aoBlurParametersBindGroupLayout, aoBlurIOBindGroupLayout, aoBlurPipelineLayout, ssaoJoinBindGroupLayout, ssaoJoinPipelineDescriptor } from "./postprocess";
 
 export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderModules): [BindGroupLayouts, PipelineLayouts, RenderPipelines, ComputePipelines] {
     // console.time('createRenderPipelines');
@@ -19,10 +19,13 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         rayTracingAmbientOcclusionOutput: device.createBindGroupLayout(rayTracingAmbientOcclusionOutputBindGroupLayout()),
         passthrough: device.createBindGroupLayout(passthroughBindGroupLayout()),
         renderGBuffer: device.createBindGroupLayout(renderGBufferBindGroupLayout()),
+
         ssaoGBuffer: device.createBindGroupLayout(ssaoGBufferBindGroupLayout()),
         ssaoGlobals: device.createBindGroupLayout(ssaoGlobalsBindGroupLayout()),
+        ssaoJoin: device.createBindGroupLayout(ssaoJoinBindGroupLayout()),
         aoBlurParameters: device.createBindGroupLayout(aoBlurParametersBindGroupLayout()),
         aoBlurIO: device.createBindGroupLayout(aoBlurIOBindGroupLayout()),
+
         gBufferWorldPositionsBindGroupLayout: device.createBindGroupLayout(gBufferWorldPositionsBindGroupLayout()),
 
         distanceMap: device.createBindGroupLayout(distanceMapBindGroupLayout()),
@@ -36,6 +39,7 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         passthrough: device.createPipelineLayout(passthroughPipelineLayout(bindGroupLayouts)),
         renderGBuffer: device.createPipelineLayout(renderGBufferPipelineLayout(bindGroupLayouts)),
         ssao: device.createPipelineLayout(ssaoPipelineLayout(bindGroupLayouts)),
+        ssaoJoin: device.createPipelineLayout(ssaoJoinPipelineLayout(bindGroupLayouts)),
         aoBlurParameters: device.createPipelineLayout(aoBlurPipelineLayout(bindGroupLayouts)),
 
         distanceMap: device.createPipelineLayout(distanceMapPipelineLayout(bindGroupLayouts)),
@@ -65,6 +69,7 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         rayTracingAmbientOcclusion: device.createComputePipeline(rayTracingAmbientOcclusionPipelineDescriptor(pipelineLayouts, shaderModules)),
         screenSpaceAmbientOcclusion: device.createComputePipeline(ssaoPipelineDescriptor(pipelineLayouts, shaderModules)),
         ambientOcclusionBlur: device.createComputePipeline(aoBlurPipelineDescriptor(pipelineLayouts, shaderModules)),
+        ssaoJoin: device.createComputePipeline(ssaoJoinPipelineDescriptor(pipelineLayouts, shaderModules)),
     };
 
     // console.timeEnd('createRenderPipelines');

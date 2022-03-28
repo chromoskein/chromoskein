@@ -24,7 +24,7 @@ export class Viewport3D {
     colorsOpaque: GPUTexture,
     colorsTransparent: GPUTexture,
     worldNormals: GPUTexture,
-    ambientOcclusion: [GPUTexture, GPUTexture],
+    ambientOcclusion: [GPUTexture, GPUTexture, GPUTexture],
     currentAmbientOcclusion: number,
     globals: {
       ambientOcclusionTaps: number,
@@ -55,6 +55,7 @@ export class Viewport3D {
   };
   protected _ssaoGlobalsBuffer: Float32Array;
   protected _ssaoGlobalsGPU: GPUBuffer;
+  protected _ssaoGlobalsFarGPU: GPUBuffer;
   protected _ssaoNoiseTexure: GPUTexture;
   //#endregion
 
@@ -132,6 +133,10 @@ export class Viewport3D {
     };
     this._ssaoGlobalsBuffer = new Float32Array(64 * 4 + 16);
     this._ssaoGlobalsGPU = this.graphicsLibrary.device.createBuffer({
+      size: this._ssaoGlobalsBuffer.byteLength,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    this._ssaoGlobalsFarGPU = this.graphicsLibrary.device.createBuffer({
       size: this._ssaoGlobalsBuffer.byteLength,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
@@ -340,6 +345,11 @@ export class Viewport3D {
         size,
         format: "r32float",
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+      }),
+      this.graphicsLibrary.device.createTexture({
+        size,
+        format: "r32float",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
       })],
       currentAmbientOcclusion: 0,
       globals: {
@@ -408,8 +418,21 @@ export class Viewport3D {
     const dirty = true; // this.dirty || this._camera.dirty;
 
     this._camera.updateGPU(device.queue);
+    this._ssaoGlobalsBuffer.set(
+      [this._ssaoGlobals.kernelSize, 0.10, this._ssaoGlobals.bias],
+      64 * 4);
     device.queue.writeBuffer(
       this._ssaoGlobalsGPU,
+      0,
+      this._ssaoGlobalsBuffer.buffer,
+      this._ssaoGlobalsBuffer.byteOffset,
+      this._ssaoGlobalsBuffer.byteLength,
+    );
+    this._ssaoGlobalsBuffer.set(
+      [this._ssaoGlobals.kernelSize, 1.0, this._ssaoGlobals.bias],
+      64 * 4);
+    device.queue.writeBuffer(
+      this._ssaoGlobalsFarGPU,
       0,
       this._ssaoGlobalsBuffer.buffer,
       this._ssaoGlobalsBuffer.byteOffset,
@@ -583,14 +606,53 @@ export class Viewport3D {
         }),
         passEncoder: computePassEncoder,
       });
+
+      this._scene.renderScreenSpaceAmbientOcclusion({
+        width: this.width,
+        height: this.height,
+        cameraBindGroup: cameraBindGroup,
+        gBufferBindGroup: device.createBindGroup({
+          layout: this.graphicsLibrary.bindGroupLayouts.ssaoGBuffer,
+          entries: [
+            { binding: 0, resource: this.depthTexture.createView() },
+            { binding: 1, resource: this.gBuffer.worldNormals.createView() },
+            { binding: 2, resource: this.gBuffer.ambientOcclusion[1].createView() }
+          ]
+        }),
+        ssaoBindGroup: device.createBindGroup({
+          layout: this.graphicsLibrary.bindGroupLayouts.ssaoGlobals,
+          entries: [
+            { binding: 0, resource: { buffer: this._ssaoGlobalsFarGPU } },
+            { binding: 1, resource: this.graphicsLibrary.nearestRepeatSampler },
+            { binding: 2, resource: this._ssaoNoiseTexure.createView() }
+          ]
+        }),
+        passEncoder: computePassEncoder,
+      });
     }
+
+    computePassEncoder.setPipeline(this.graphicsLibrary.computePipelines.ssaoJoin);
+    computePassEncoder.setBindGroup(0,
+      device.createBindGroup({
+        layout: this.graphicsLibrary.bindGroupLayouts.ssaoJoin,
+        entries: [
+          { binding: 0, resource: this.gBuffer.ambientOcclusion[0].createView() },          
+          { binding: 1, resource: this.gBuffer.ambientOcclusion[1].createView() },
+          { binding: 2, resource: this.gBuffer.ambientOcclusion[2].createView() },
+        ],
+      })
+    );
+    computePassEncoder.dispatch(
+      Math.ceil((this.width + 7) / 8),
+      Math.ceil((this.height + 7) / 8),
+    );
 
     computePassEncoder.setPipeline(this.graphicsLibrary.computePipelines.ambientOcclusionBlur);
     computePassEncoder.setBindGroup(0,
       device.createBindGroup({
         layout: this.graphicsLibrary.bindGroupLayouts.aoBlurIO,
         entries: [
-          { binding: 0, resource: this.gBuffer.ambientOcclusion[0].createView() },          
+          { binding: 0, resource: this.gBuffer.ambientOcclusion[2].createView() },          
           { binding: 1, resource: this.gBuffer.worldNormals.createView() },
           { binding: 2, resource: this.depthTexture.createView() },
           { binding: 3, resource: this.gBuffer.ambientOcclusion[1].createView() },

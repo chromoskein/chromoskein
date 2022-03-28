@@ -20,6 +20,7 @@ import distanceMap from "./2d/distance_map.wgsl";
 
 import ssao from "./postprocess/ssao.wgsl";
 import aoBlur from "./postprocess/ssao_blur.wgsl";
+import ssaoJoin from "./postprocess/ssao_join.wgsl";
 
 export interface ShaderModules {
     [key: string]: GPUShaderModule;
@@ -58,6 +59,7 @@ export function createShaderModules(device: GPUDevice): ShaderModules {
         passthrough: device.createShaderModule({ code: passthrough }),
         renderGBuffer: device.createShaderModule({ code: renderGBuffer }),
         ssao: device.createShaderModule({ code: ssao }),
+        ssaoJoin: device.createShaderModule({ code: ssaoJoin }),
         aoBlur: device.createShaderModule({ code: aoBlur }),
         //#endregion
     };
