@@ -546,7 +546,7 @@ export function ChromatinViewport(props: {
             const selectionColor = vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a);
             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                 const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-                if (!chromatinPart) return;
+                if (!chromatinPart || !configuration.chromosomes) continue;
 
                 const binsPositions = chromatinPart.getBinsPositions();
                 for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
@@ -697,7 +697,7 @@ export function ChromatinViewport(props: {
 
             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                 const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-                if (!chromatinPart || !configuration.chromosomes[chromosomeIndex]) return;
+                if (!chromatinPart || !configuration.chromosomes[chromosomeIndex]) continue;
 
                 const binsPositions = chromatinPart.getBinsPositions();
                 const offset = binPositions.chromosomes[chromosomeIndex].from;
@@ -727,7 +727,7 @@ export function ChromatinViewport(props: {
                 const value = isSecondaryModPressed ? 0 : 1;
                 for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                     const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-                    if (!chromatinPart) return;
+                    if (!chromatinPart) continue;
 
                     const binsPositions = chromatinPart.getBinsPositions();
                     const binOffset = chromosomeSlices[chromosomeIndex].from;
