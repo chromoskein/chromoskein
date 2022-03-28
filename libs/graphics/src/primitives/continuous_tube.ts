@@ -93,7 +93,7 @@ export class ContinuousTube implements HighLevelStructure {
         // }), 0, this._points.length - 1);
 
         this._radius = radius;
-        this._borderRadius = 0.50;
+        this._borderRadius = 0.33;
     }
 
     public deallocate(): void {

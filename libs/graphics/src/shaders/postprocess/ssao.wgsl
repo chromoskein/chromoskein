@@ -52,7 +52,8 @@ main(@builtin(global_invocation_id) GlobalInvocationID
   ndcCoordinates.y = (1.0 - textureCoordinates.y) * 2.0 - 1.0;
 
   let depth = textureLoad(gBufferDepth, vec2<i32>(coordinates), 0);
-  let worldNormal = 2.0 * textureLoad(gBufferWorldNormals, vec2<i32>(coordinates), 0).xyz - vec3<f32>(1.0);
+  let worldNormalUnit = textureLoad(gBufferWorldNormals, vec2<i32>(coordinates), 0).xyz;
+  let worldNormal = 2.0 * worldNormalUnit - vec3<f32>(1.0);
 
   let viewSpacePosition = ndcToViewSpace(vec4<f32>(ndcCoordinates, depth, 1.0));
   let viewSpaceNormal = normalize((camera.normalMatrix * vec4<f32>(worldNormal, 1.0)).xyz);
@@ -96,6 +97,12 @@ main(@builtin(global_invocation_id) GlobalInvocationID
   }
   occlusion = occlusion / f32(numberOfSamples);
 
+if (all(worldNormalUnit == vec3<f32>(0.0))){
+  textureStore(gBufferAmbientOcclusion, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+} else {
+  textureStore(gBufferAmbientOcclusion, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(occlusion, 0.0, 0.0, 0.0));
+}
+
   // textureStore(gBufferAmbientOcclusion, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(occlusion, 0.0, 0.0, 0.0));
-  textureStore(gBufferAmbientOcclusion, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(occlusion, 0.0, .0, 0.0));
+
 }

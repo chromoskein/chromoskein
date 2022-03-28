@@ -389,7 +389,8 @@ export function ChromatinViewport(props: {
             }
 
             // Color inside with mapping
-            const colorScale = chroma.scale('YlGnBu');
+            // const colorScale = chroma.scale('YlGnBu');
+            const colorScale = chroma.scale(['white', 'blue']);
 
             setInnerColors(() => mapScaleToChromatin(distances, colorScale));
         }
@@ -407,7 +408,7 @@ export function ChromatinViewport(props: {
         }
 
 
-    }, [viewport, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes]);
+    }, [viewport, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
 
     // Calculate/Cache border colors (selections)
     useEffect(() => {
@@ -462,7 +463,7 @@ export function ChromatinViewport(props: {
 
         setBorderColors(allBorderColors);
         // console.timeEnd('colorBins::selections');
-    }, [viewport, globalSelections.selections, configuration.data, data.data, configuration.chromosomes]);
+    }, [viewport, globalSelections.selections, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
 
     // Color bins
     useEffect(() => {
