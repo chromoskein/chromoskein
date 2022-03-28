@@ -172,18 +172,6 @@ export function ChromatinViewportConfigurationPanel(props: {
             },
         })
     }
-
-    const setSSAORadius = (radius: number) => {
-        if (!configuration) return;
-
-        updateConfiguration({
-            ...configuration,
-            ssao: {
-                ...configuration.ssao,
-                radius: toNumber(radius)
-            }
-        });
-    }
     //#endregion
 
     //#region Data Parts
@@ -365,13 +353,10 @@ export function ChromatinViewportConfigurationPanel(props: {
 
     return <div className="section">
         <TextField label="Name" value={viewportName} onChange={(e, v) => setViewportName(v)} />
-
-
-        <Text nowrap block variant='large' style={{ marginTop: '16px', }}>Visual Options</Text>
         <Stack tokens={{ childrenGap: '8px' }}>
             <Label>Background: </Label>
             <DefaultButton id="backgroundButton"
-                text={String('#' + configuration.backgroundColor.hex)}
+                onRenderText={(p) => <span> <div style={{ display: "inline-block", width: '1.2rem', height: '1.2rem', backgroundColor: `#${configuration.backgroundColor.hex}` }}></div> #{configuration.backgroundColor.hex}</span>}
                 onClick={() => setIsCalloutVisible(true)}
             />
             {isCalloutVisible && (
@@ -392,7 +377,6 @@ export function ChromatinViewportConfigurationPanel(props: {
                     />
                 </Callout>
             )}
-            <Slider label="SSAO Radius" min={0.01} max={1.0} step={0.01} value={configuration.ssao.radius} showValue onChange={setSSAORadius} />
         </Stack>
 
         {/* List of 3D data */}
