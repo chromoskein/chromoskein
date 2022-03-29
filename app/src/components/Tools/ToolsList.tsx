@@ -41,9 +41,9 @@ const chromatinViewportTools: Array<ToolDescription & { type: ChromatinViewportT
 
 const tadViewportTools: Array<ToolDescription & { type: DistanceViewportToolType, default: DistanceMapTool }> = [
     {
-        type: DistanceViewportToolType.PointSelection,
+        type: DistanceViewportToolType.PairSelection,
         icon: <ChevronUp24Regular style={{ transform: "scale(1.4)" }} ></ChevronUp24Regular>,
-        default: { type: DistanceViewportToolType.PointSelection }
+        default: { type: DistanceViewportToolType.PairSelection }
     },
     {
         type: DistanceViewportToolType.TriangleSelection,

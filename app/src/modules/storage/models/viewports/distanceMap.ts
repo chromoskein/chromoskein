@@ -4,13 +4,13 @@ import { SelectionID } from "../selections";
 import { blackBackground, IDataConfiguration, IViewportConfiguration, NoViewportTool, ViewportConfigurationType, ViewportSelectionOptions } from "./shared";
 
 export enum DistanceViewportToolType {
-  PointSelection = 'point-selection',
+  PairSelection = 'pair-selection',
   SquareSelection = 'square-selection',
   TriangleSelection = 'triangle-selection',
 }
 
 export type DistancePointSelection = {
-  type: DistanceViewportToolType.PointSelection,
+  type: DistanceViewportToolType.PairSelection,
 }
 
 export type DistanceSquareSelection = {

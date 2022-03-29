@@ -302,7 +302,7 @@ export function TADViewport(props: {
                     const minFrom = hoveredBins.from * lodUnit;
                     const minTo = hoveredBins.to * lodUnit;
 
-                    if (configuration.tool.type == DistanceViewportToolType.PointSelection) {
+                    if (configuration.tool.type == DistanceViewportToolType.PairSelection) {
                         if (i >= minFrom && i < minFrom + lodUnit) {
                             finalColorIndices[i] = selectionColorIndex;
                         }
@@ -372,7 +372,7 @@ export function TADViewport(props: {
         const newBins: Uint16Array = selection.bins.slice();
 
 
-        if (tool.type == DistanceViewportToolType.PointSelection) {
+        if (tool.type == DistanceViewportToolType.PairSelection) {
             const binsLength = Math.pow(2, viewport.currentLoD);
             for (const bin of [hoveredBins.from, hoveredBins.to]) {
                 const from = bin * binsLength;
