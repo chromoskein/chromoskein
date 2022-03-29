@@ -7,7 +7,6 @@ export enum DistanceViewportToolType {
   PointSelection = 'point-selection',
   SquareSelection = 'square-selection',
   TriangleSelection = 'triangle-selection',
-  TADSelection = 'tad-selection',
 }
 
 export type DistancePointSelection = {
@@ -22,11 +21,8 @@ export type DistanceTriangleSelection = {
   type: DistanceViewportToolType.TriangleSelection,
 }
 
-export type DistanceTADSelection = {
-  type: DistanceViewportToolType.TADSelection,
-}
 
-export type DistanceMapTool = DistancePointSelection | DistanceSquareSelection | DistanceTriangleSelection | DistanceTADSelection;
+export type DistanceMapTool = DistancePointSelection | DistanceSquareSelection | DistanceTriangleSelection;
 
 export enum DistanceMapDataConfiguration { Data, Selection }
 
