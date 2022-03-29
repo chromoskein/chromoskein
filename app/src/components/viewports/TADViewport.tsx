@@ -3,7 +3,7 @@ import { vec2, vec4 } from "gl-matrix";
 import React, { Dispatch, Fragment, useEffect, useRef, useState } from "react";
 import { useDeepCompareEffect, useHoverDirty, useMouseWheel } from "react-use";
 import { useKey, usePrevious, usePreviousImmediate } from "rooks";
-import { ConfigurationAction, ConfigurationState, DistanceDataConfiguration, DistanceMapDataConfiguration, DistanceSelectionConfiguration, DistanceViewportConfiguration } from "../../modules/storage/models/viewports";
+import { ConfigurationAction, ConfigurationState, DistanceDataConfiguration, DistanceMapDataConfiguration, DistanceSelectionConfiguration, DistanceViewportConfiguration, DistanceViewportToolType } from "../../modules/storage/models/viewports";
 import * as GraphicsModule from "../../modules/graphics";
 import { BinPosition, binsToCenterVec4, CameraConfigurationType, OrthoCameraConfiguration } from "../../modules/graphics";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
@@ -332,6 +332,8 @@ export function TADViewport(props: {
 
         const dataID = configuration.data.id;
         const selectionID = configuration.selectedSelectionID;
+        const tool = configuration.tool;
+
 
         if (selections.length <= 0 || !selectionID) {
             return;
@@ -340,15 +342,28 @@ export function TADViewport(props: {
         const selection = selections.filter(s => s[0].id == selectionID)[0][0];
         const newBins: Uint16Array = selection.bins.slice();
 
-        const binsLength = Math.pow(2, viewport.currentLoD);
-        for (const bin of [hoveredBins.from, hoveredBins.to]) {
-            const from = bin * binsLength;
-            const to = from + binsLength;
 
-            for (let i = from; i < to; i++) {
+        if (tool.type == DistanceViewportToolType.PointSelection) {
+            const binsLength = Math.pow(2, viewport.currentLoD);
+            for (const bin of [hoveredBins.from, hoveredBins.to]) {
+                const from = bin * binsLength;
+                const to = from + binsLength;
+
+                for (let i = from; i < to; i++) {
+                    newBins[i] = isAltPressed ? 0 : 1;
+                }
+            }
+        }
+
+        if (tool.type == DistanceViewportToolType.TriangleSelection) {
+            const binsLength = Math.pow(2, viewport.currentLoD);
+            const minFrom = hoveredBins.from * binsLength;
+            const maxTo = hoveredBins.to * binsLength + binsLength;
+            for (let i = minFrom; i < maxTo; i++) {
                 newBins[i] = isAltPressed ? 0 : 1;
             }
         }
+
 
         allSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selection.id, name: null, color: null, bins: newBins });
     };
