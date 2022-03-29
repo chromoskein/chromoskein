@@ -1,7 +1,7 @@
 import React, { Dispatch } from "react";
 import './Tools.scss';
 
-import { ChromatinViewportConfiguration, ChromatinViewportToolType, ConfigurationAction, ConfigurationState, ToolConfiguration, ViewportConfigurationType } from '../../modules/storage/models/viewports';
+import { ChromatinViewportConfiguration, ChromatinViewportToolType, ConfigurationAction, ConfigurationState, DistanceViewportToolType, ToolConfiguration, ViewportConfigurationType } from '../../modules/storage/models/viewports';
 import { useConfigurationTypeless } from "../hooks";
 import { Label, Separator, Slider, Stack } from "@fluentui/react";
 import { Text } from '@fluentui/react/lib/Text';
@@ -43,6 +43,7 @@ export function ToolOptions(props: {
     const secondaryClick = <strong>{isMac ? "command + option + click" : "Ctrl + Alt + click"}</strong>;
 
     const toolOptionsMenuFactory = (tool: ToolConfiguration): JSX.Element => {
+
         if (tool.type == 'no-tool') {
             if (configuration.type == ViewportConfigurationType.Chromatin) {
                 return <Stack.Item align="center">
@@ -109,6 +110,18 @@ export function ToolOptions(props: {
                 {tool.from == null && <Text nowrap variant='medium'>{primaryClick}: choose bin to measure distance from</Text>}
                 {tool.from != null && <Text nowrap variant='medium'>Measuring distance from bin #{tool.from.bin} on chromosome {tool.from.chrom}. {primaryClick}: choose other first bin | {secondaryClick}: reset chosen bins</Text>}
             </Stack.Item>
+        }
+
+        if (tool.type == DistanceViewportToolType.PairSelection) {
+            return enforceSelectedSelection(<Stack.Item align="center">
+                <Text nowrap variant='medium'>{primaryClick}: add bin pair to selection | {secondaryClick}: remove bin pair from selection.</Text>
+            </Stack.Item>)
+        }
+
+        if (tool.type == DistanceViewportToolType.TriangleSelection) {
+            return enforceSelectedSelection(<Stack.Item align="center">
+                <Text nowrap variant='medium'>{primaryClick}: add TAD to selection | {secondaryClick}: remove TAD from selection.</Text>
+            </Stack.Item>)
         }
 
         return <></>
