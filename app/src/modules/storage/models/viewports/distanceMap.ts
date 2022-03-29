@@ -40,7 +40,7 @@ export class DistanceSelectionConfiguration implements IDataConfiguration {
 
 export interface DistanceViewportConfiguration extends IViewportConfiguration {
   type: ViewportConfigurationType.TAD,
-  tag: "TAD",
+  tag: "DIST",
 
   data: DistanceDataConfiguration | DistanceSelectionConfiguration | null,
 
@@ -52,8 +52,8 @@ export interface DistanceViewportConfiguration extends IViewportConfiguration {
 export function defaultDistanceViewportConfiguration(): DistanceViewportConfiguration {
   return {
     type: ViewportConfigurationType.TAD,
-    tag: "TAD",
-    tabName: "Unnamed TAD",
+    tag: "DIST",
+    tabName: "Unnamed Distance Map",
 
     data: null,
 
