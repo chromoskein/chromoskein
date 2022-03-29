@@ -280,7 +280,11 @@ export function TADViewport(props: {
         if (configuration.data.type == DistanceMapDataConfiguration.Selection) return;
 
         // console.time('tadViewport::selections');
-        const colors = [vec4.fromValues(1.0, 1.0, 1.0, 1.0)];
+        const selectionColorIndex = 1;
+        const colors = [
+            vec4.fromValues(1.0, 1.0, 1.0, 1.0),
+            vec4.fromValues(1.0, 0.0, 0.0, 1.0)
+        ];
         const binsLength = viewport.sizes[0];
         const finalColorIndices = new Uint16Array(binsLength);
         for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
@@ -289,14 +293,39 @@ export function TADViewport(props: {
             colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
             const colorIndex = colors.length - 1;
 
+
             for (let i = 0; i < binsLength; i++) {
                 finalColorIndices[i] = selection.bins[i] * colorIndex + (1 - selection.bins[i]) * finalColorIndices[i];
+
+                if (hoveredBins) {
+                    const lodUnit = Math.pow(2, viewport.currentLoD);
+                    const minFrom = hoveredBins.from * lodUnit;
+                    const minTo = hoveredBins.to * lodUnit;
+
+                    if (configuration.tool.type == DistanceViewportToolType.PointSelection) {
+                        if (i >= minFrom && i < minFrom + lodUnit) {
+                            finalColorIndices[i] = selectionColorIndex;
+                        }
+                        if (i >= minTo && i < minTo + lodUnit) {
+                            finalColorIndices[i] = selectionColorIndex;
+                        }
+                    }
+
+                    if (configuration.tool.type == DistanceViewportToolType.TriangleSelection) {
+                        if (i >= minFrom && i < minTo + lodUnit) {
+                            finalColorIndices[i] = selectionColorIndex;
+                        }
+                    }
+
+                }
+
+
             }
         }
 
         viewport.setColors(colors, finalColorIndices);
         // console.timeEnd('tadViewport::selections');
-    }, [selections]);
+    }, [selections, hoveredBins]);
 
     // Compute hovered bins
     useEffect(() => {
