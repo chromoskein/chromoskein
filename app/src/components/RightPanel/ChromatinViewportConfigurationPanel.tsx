@@ -356,7 +356,16 @@ export function ChromatinViewportConfigurationPanel(props: {
         <Stack tokens={{ childrenGap: '8px' }}>
             <Label>Background: </Label>
             <DefaultButton id="backgroundButton"
-                onRenderText={(p) => <span> <div style={{ display: "inline-block", width: '1.2rem', height: '1.2rem', backgroundColor: `#${configuration.backgroundColor.hex}` }}></div> #{configuration.backgroundColor.hex}</span>}
+                onRenderText={(p) => <span>
+                    <div style={{
+                        display: "inline-block",
+                        width: '1.2rem',
+                        height: '1.2rem',
+                        margin: '0px 4px',
+                        backgroundColor: `#${configuration.backgroundColor.hex}`
+                    }}></div>
+                    #{configuration.backgroundColor.hex}
+                </span>}
                 onClick={() => setIsCalloutVisible(true)}
             />
             {isCalloutVisible && (

@@ -62,7 +62,8 @@ export const config = {
     plugins: [
         new HtmlWebpackPlugin({
             inject: false,
-            template: resolve(__dirname, "public", "index.html")
+            template: resolve(__dirname, "public", "index.html"),
+            favicon: resolve(__dirname, "public", "favicon.ico"),
         }),
         new ForkTsCheckerWebpackPlugin()
     ],
