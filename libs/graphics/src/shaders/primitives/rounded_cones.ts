@@ -37,32 +37,32 @@ fn isSphereIntersected(ro: vec3<f32>, rd: vec3<f32>, ce: vec3<f32>, ra: f32) -> 
 //
 struct BufferRoundedCone {
     // 
-    from: vec3<f32>;
+    from: vec3<f32>,
     //
-    radius: f32;
+    radius: f32,
     // 
-    to: vec3<f32>;
+    to: vec3<f32>,
     //
-    leftPlane: vec4<f32>;
+    leftPlane: vec4<f32>,
     //
-    rightPlane: vec4<f32>;
+    rightPlane: vec4<f32>,
     //
-    colors: vec4<u32>;
+    colors: vec4<u32>,
     // color: u32;
     // color2: u32;
     // //
     // borderColor: u32;
     // borderColor2: u32;
     //
-    borderRatio: f32;
+    borderRatio: f32,
 
-    padding: array<f32, 10>;
+    padding: array<f32, 10>,
 
-    ty: i32;
+    ty: i32,
 };
 
 struct RoundedConesBuffer {
-    roundedCones: array<BufferRoundedCone>;
+    roundedCones: array<BufferRoundedCone>,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -70,22 +70,22 @@ struct RoundedConesBuffer {
 @group(2) @binding(0) var<storage, read> cullObjectsBuffer: CullObjectsBuffer;
 
 struct VertexOutput {
-  @builtin(position) Position : vec4<f32>;
+  @builtin(position) Position: vec4<f32>,
 
-  @location(0) from : vec3<f32>;
-  @location(1) to : vec3<f32>;
+  @location(0) from : vec3<f32>,
+  @location(1) to : vec3<f32>,
 
-  @location(2) leftCap : vec3<f32>;
-  @location(3) rightCap : vec3<f32>;
+  @location(2) leftCap : vec3<f32>,
+  @location(3) rightCap : vec3<f32>,
 
-  @location(4) radius: f32;
+  @location(4) radius: f32,
 
-  @location(5) color: vec4<f32>;
-  @location(6) color2: vec4<f32>;
-  @location(7) borderColor: vec4<f32>;
-  @location(8) borderColor2: vec4<f32>;
+  @location(5) color: vec4<f32>,
+  @location(6) color2: vec4<f32>,
+  @location(7) borderColor: vec4<f32>,
+  @location(8) borderColor2: vec4<f32>,
 
-  @location(9) borderRatio: f32;
+  @location(9) borderRatio: f32,
 };
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32>
@@ -166,9 +166,9 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 }
 
 struct FragmentOutput {
-  ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32;' : ''}
-  @location(0) color : vec4<f32>;
-  ${writeDepth ? '@location(1) worldNormal : vec4<f32>;' : ''}
+  ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32,' : ''}
+  @location(0) color : vec4<f32>,
+  ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}
 };
 
 @stage(fragment)
@@ -273,7 +273,7 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
 
   var depth: vec4<f32> = camera.projectionView * vec4<f32>(intersection, 1.0);
   depth = depth * (1.0 / depth.w);
-  var color: vec4<f32> = vec4(1.0); // vertexOutput.color;
+  var color: vec4<f32> = vec4<f32>(1.0); // vertexOutput.color;
 
   let totalLength = length(vertexOutput.to - vertexOutput.from);
   let lengthOnIntersection = length(vertexOutput.from - (intersection - vertexOutput.radius * normal));

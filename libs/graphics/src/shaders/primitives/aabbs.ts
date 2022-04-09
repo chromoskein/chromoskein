@@ -2,18 +2,18 @@ export const aabbs = (writeDepth: boolean) => { return /*wgsl */`
 //
 struct BufferAABB {
     // 
-    from: vec4<f32>;
+    from: vec4<f32>,
     // 
-    to: vec4<f32>;
+    to: vec4<f32>,
 
-    padding: array<f32, 23>;
+    padding: array<f32, 23>,
 
-    ty: i32;
+    ty: i32,
 };
 
 
 struct AabbsBuffer {
-    aabbs:  array<BufferAABB>;
+    aabbs:  array<BufferAABB>,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -21,9 +21,9 @@ struct AabbsBuffer {
 @group(2) @binding(0) var<storage, read> cullObjectsBuffer: CullObjectsBuffer;
 
 struct VertexOutput {
-  @builtin(position) Position : vec4<f32>;
-  @location(0) from : vec3<f32>;
-  @location(1) to : vec3<f32>;
+  @builtin(position) Position : vec4<f32>,
+  @location(0) from : vec3<f32>,
+  @location(1) to : vec3<f32>,
 };
 
 @stage(vertex)
@@ -75,9 +75,9 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 }
 
 struct FragmentOutput {
-  ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32;' : ''}
-  @location(0) color : vec4<f32>;  
-  ${writeDepth ? '@location(1) worldNormal : vec4<f32>;' : ''}  
+  ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32,' : ''}
+  @location(0) color : vec4<f32>,  
+  ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}  
 };
 
 @stage(fragment)

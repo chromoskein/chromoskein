@@ -1,20 +1,20 @@
  struct Camera {
-  projection : mat4x4<f32>;
-  projectionInverse : mat4x4<f32>;
-  view : mat4x4<f32>;
-  viewInverse : mat4x4<f32>;
-  projectionView : mat4x4<f32>;
-  projectionViewInverse : mat4x4<f32>;
-  normalMatrix: mat4x4<f32>;
-  position : vec4<f32>;
-  viewportSize : vec2<f32>;
+  projection : mat4x4<f32>,
+  projectionInverse : mat4x4<f32>,
+  view : mat4x4<f32>,
+  viewInverse : mat4x4<f32>,
+  projectionView : mat4x4<f32>,
+  projectionViewInverse : mat4x4<f32>,
+  normalMatrix: mat4x4<f32>,
+  position : vec4<f32>,
+  viewportSize : vec2<f32>,
 };
 
  struct Globals {
-  noiseSamples : array<vec4<f32>, 64>;
-  kernelSize : i32;
-  radius : f32;
-  bias : f32;
+  noiseSamples : array<vec4<f32>, 64>,
+  kernelSize : i32,
+  radius : f32,
+  bias : f32,
 };
 
 // Camera

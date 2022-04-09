@@ -1,22 +1,22 @@
 
 struct Camera {
-    projection: mat4x4<f32>;
-    projectionInverse: mat4x4<f32>;
-    view: mat4x4<f32>;
-    viewInverse: mat4x4<f32>;
-    projectionView: mat4x4<f32>;
-    projectionViewInverse: mat4x4<f32>;
-    normalMatrix: mat4x4<f32>;
-    position: vec4<f32>;
-    viewportSize: vec2<f32>;
+    projection: mat4x4<f32>,
+    projectionInverse: mat4x4<f32>,
+    view: mat4x4<f32>,
+    viewInverse: mat4x4<f32>,
+    projectionView: mat4x4<f32>,
+    projectionViewInverse: mat4x4<f32>,
+    normalMatrix: mat4x4<f32>,
+    position: vec4<f32>,
+    viewportSize: vec2<f32>,
 };
 
 
 struct Globals {
   // Number of columns/rows of weights  
-  size: i32;
+  size: i32,
   // Number of mip levels in weights buffer
-  mipLevels: i32;
+  mipLevels: i32,
 };
 
 
@@ -24,12 +24,12 @@ struct WeightsBuffer {
   // Length must be at least (size * (size + 1) / 2)
   // Longer length indicates that there are mip levels. Each mip level must 
   // have length floor(previous size / 4)
-  weights: array<f32>;
+  weights: array<f32>,
 };
 
 
 struct ColorsBuffer {
-  colors: array<vec4<f32>>;
+  colors: array<vec4<f32>>,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -38,10 +38,10 @@ struct ColorsBuffer {
 @group(0) @binding(3) var<storage, read> colorsBuffer: ColorsBuffer;
 
 struct VertexOutput {
-  @builtin(position) Position : vec4<f32>;
-  @location(0) uv: vec2<f32>;
-  @location(1) weight : f32;
-  @location(2) color : vec3<f32>;
+  @builtin(position) Position : vec4<f32>,
+  @location(0) uv: vec2<f32>,
+  @location(1) weight : f32,
+  @location(2) color : vec3<f32>,
 };
 
 @stage(vertex)
@@ -150,7 +150,7 @@ fn rand(co: vec2<f32>) -> f32 {
 }
 
 struct FragmentOutput {
-  @location(0) color : vec4<f32>;
+  @location(0) color : vec4<f32>,
 };
 
 @stage(fragment)

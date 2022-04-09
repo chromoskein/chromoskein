@@ -13,23 +13,23 @@ fn cylinderBoundingSphere(pa: vec3<f32>, pb: vec3<f32>, ra: f32) -> Sphere
 //
 struct BufferCylinder {
     // 
-    from: vec3<f32>;
+    from: vec3<f32>,
     //
-    radius: f32;
+    radius: f32,
     // 
-    to: vec3<f32>;
+    to: vec3<f32>,
     //
-    color: vec3<f32>;
+    color: vec3<f32>,
 
-    padding: array<f32, 20>;
+    padding: array<f32, 20>,
 
-    ty: i32;
+    ty: i32,
 };
 
 
 
 struct CylindersBuffer {
-    cylinders:  array<BufferCylinder>;
+    cylinders:  array<BufferCylinder>,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -37,11 +37,11 @@ struct CylindersBuffer {
 @group(2) @binding(0) var<storage, read> cullObjectsBuffer: CullObjectsBuffer;
 
 struct VertexOutput {
-  @builtin(position) Position : vec4<f32>;
-  @location(0) cylinderFrom : vec3<f32>;
-  @location(1) cylinderTo : vec3<f32>;
-  @location(2) cylinderRadius: f32;
-  @location(3) cylinderColor: vec3<f32>;
+  @builtin(position) Position : vec4<f32>,
+  @location(0) cylinderFrom : vec3<f32>,
+  @location(1) cylinderTo : vec3<f32>,
+  @location(2) cylinderRadius: f32,
+  @location(3) cylinderColor: vec3<f32>,
 };
 
 @stage(vertex)
@@ -97,10 +97,10 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 }
 
 struct FragmentOutput {
-  ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32;' : ''}
-  @location(0) color : vec4<f32>;
+  ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32,' : ''}
+  @location(0) color : vec4<f32>,
   
-  ${writeDepth ? '@location(1) worldNormal : vec4<f32>;' : ''}
+  ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}
   
 };
 

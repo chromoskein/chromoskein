@@ -7,10 +7,10 @@
 
 //
 struct QuadraticBezierCurve {
-    p0: vec3<f32>;    
-    p1: vec3<f32>;
-    p2: vec3<f32>;
-    radius: f32;
+    p0: vec3<f32>,    
+    p1: vec3<f32>,
+    p2: vec3<f32>,
+    radius: f32,
 };
 
 fn evaluateQuadraticBezier(curve: QuadraticBezierCurve, t: f32) -> vec3<f32> {
@@ -138,14 +138,14 @@ fn transformToRayFrame(ray: Ray, curve: QuadraticBezierCurve) -> QuadraticBezier
 
 struct RayBezierIntersection
 {
-    co: vec3<f32>;
-    cd: vec3<f32>;
-    s: f32;
-    dt: f32;
-    dp: f32;
-    dc: f32;
-    sp: f32;
-    phantom: bool;
+    co: vec3<f32>,
+    cd: vec3<f32>,
+    s: f32,
+    dt: f32,
+    dp: f32,
+    dc: f32,
+    sp: f32,
+    phantom: bool,
 };
 
 fn rayBezierIntersect(intersectionIn: RayBezierIntersection, r: f32) -> RayBezierIntersection {

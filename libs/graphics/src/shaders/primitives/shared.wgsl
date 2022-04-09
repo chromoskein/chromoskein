@@ -1,25 +1,25 @@
 
 struct Camera {
-    projection: mat4x4<f32>;
-    projectionInverse: mat4x4<f32>;
-    view: mat4x4<f32>;
-    viewInverse: mat4x4<f32>;
-    projectionView: mat4x4<f32>;
-    projectionViewInverse: mat4x4<f32>;
-    normalMatrix: mat4x4<f32>;
-    position: vec4<f32>;
-    viewportSize: vec2<f32>;
+    projection: mat4x4<f32>,
+    projectionInverse: mat4x4<f32>,
+    view: mat4x4<f32>,
+    viewInverse: mat4x4<f32>,
+    projectionView: mat4x4<f32>,
+    projectionViewInverse: mat4x4<f32>,
+    normalMatrix: mat4x4<f32>,
+    position: vec4<f32>,
+    viewportSize: vec2<f32>,
 };
 
 // Bounding rectangle in NDC/Screen-space coordinates.
 struct BoundingRectangle {
     //
-    center: vec2<f32>;
+    center: vec2<f32>,
     
     // Half of the width and height that the bounding rectangle covers.
     // You can use this to quickly calculate all 4 points of the rectangle while 
     // this structure remains small in size.
-    half_size: vec2<f32>;
+    half_size: vec2<f32>,
 };
 
 let D: mat4x4<f32> = mat4x4<f32>(
@@ -64,13 +64,13 @@ fn sphereBoundingRectangle(sphere: Sphere, projectionView: mat4x4<f32>) -> Bound
 
 //
 struct CullObject {
-  ty: u32;
+  ty: u32,
 
-  content: array<u32, 31>;
+  content: array<u32, 31>,
 };
 
 
 struct CullObjectsBuffer {
-    @size(128) len: u32;
-    objects:  array<CullObject>;
+    @size(128) len: u32,
+    objects:  array<CullObject>,
 };

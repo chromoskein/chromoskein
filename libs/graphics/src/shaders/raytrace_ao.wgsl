@@ -37,35 +37,35 @@ fn RandomUnitVector(seed: u32) -> vec3<f32> {
 }
 
 struct BoundingBox {
-  min: vec3<f32>;
-  primitive: i32;
-  max: vec3<f32>;
+  min: vec3<f32>,
+  primitive: i32,
+  max: vec3<f32>,
 };
 
 
 struct Node {
-    boundingBox: BoundingBox;
-    firstChildOrPrimitive: i32;
-    primitiveCount: i32;
+    boundingBox: BoundingBox,
+    firstChildOrPrimitive: i32,
+    primitiveCount: i32,
 };
 
 struct BoundingVolumeHierarchyBuffer {
-  nodes:  array<Node>;
+  nodes:  array<Node>,
 };
 
 
 struct PrimitivesBuffer {
-    primitives: array<array<f32, 32>>;
+    primitives: array<array<f32, 32>>,
 };
 
 struct BoundingBoxesBuffer {
-    boundingBoxes:  array<BoundingBox>;
+    boundingBoxes:  array<BoundingBox>,
 };
 
 
 struct Globals {
-    ambientOcclusionTaps: i32;
-    resetAmbientOcclusion: i32;
+    ambientOcclusionTaps: i32,
+    resetAmbientOcclusion: i32,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;

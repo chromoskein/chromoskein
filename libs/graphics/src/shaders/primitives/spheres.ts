@@ -2,21 +2,21 @@ export const spheres = (writeDepth: boolean) => { return /* wgsl */`
 //
 struct BufferSphere {
     // Center of the sphere.
-    position: vec3<f32>;
+    position: vec3<f32>,
     
     // Radius of the sphere.
-    radius: f32;
+    radius: f32,
 
-    color: vec4<f32>;
+    color: vec4<f32>,
 
-    padding: array<f32, 23>;
+    padding: array<f32, 23>,
 
-    ty: i32;
+    ty: i32,
 };
 
 
 struct SpheresBuffer {
-    spheres:  array<BufferSphere>;
+    spheres:  array<BufferSphere>,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -26,9 +26,9 @@ struct SpheresBuffer {
 ${writeDepth ? '' : '@group(3) @binding(0) var gBufferDepth : texture_depth_2d;'} 
 
 struct VertexOutput {
-  @builtin(position) Position : vec4<f32>;
-  @location(0) sphere : vec4<f32>;
-  @location(1) color : vec4<f32>;
+  @builtin(position) Position : vec4<f32>,
+  @location(0) sphere : vec4<f32>,
+  @location(1) color : vec4<f32>,
 };
 
 @stage(vertex)
@@ -77,9 +77,9 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 }
 
 struct FragmentOutput {
-  ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32;' : ''}
-  @location(0) color : vec4<f32>;
-  ${writeDepth ? '@location(1) worldNormal : vec4<f32>;' : ''}
+  ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32,' : ''}
+  @location(0) color : vec4<f32>,
+  ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}
 };
 
 @stage(fragment)
@@ -122,7 +122,7 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
     discard;
   }
 
-  var outputColor = vec4(1.0);
+  var outputColor = vec4<f32>(1.0);
 
   ${writeDepth ? `` : `
   let intersection2: vec3<f32> = camera.position.xyz + t.y * ray.direction.xyz;

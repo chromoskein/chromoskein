@@ -1,10 +1,10 @@
 // Half line ray.
 struct Ray {
     // Origin of the ray.
-    origin: vec3<f32>;
+    origin: vec3<f32>,
 
     // Direction of the ray.
-    direction: vec3<f32>;
+    direction: vec3<f32>,
 };
 
 fn make_orthonormal_basis(n: vec3<f32>) -> array<vec3<f32>, 2>
@@ -42,58 +42,58 @@ fn inverseView(a: vec2<f32>) -> mat3x3<f32>
 //
 struct Sphere {
     // Center of the sphere.
-    position: vec3<f32>;
+    position: vec3<f32>,
     
     // Radius of the sphere.
-    radius: f32;
+    radius: f32,
 };
 
 //
 struct Cylinder {
     // 
-    from: vec3<f32>;
+    from: vec3<f32>,
     // 
-    to: vec3<f32>;
+    to: vec3<f32>,
     //
-    radius: f32;
+    radius: f32,
 };
 
 struct Plane {
-  origin: vec3<f32>;
-  normal: vec3<f32>;
+  origin: vec3<f32>,
+  normal: vec3<f32>,
 };
 
 struct Disk {
-  origin: vec3<f32>;
-  normal: vec3<f32>;
-  radius: f32;
+  origin: vec3<f32>,
+  normal: vec3<f32>,
+  radius: f32,
 };
 
 struct AABB {
-  from: vec3<f32>;
-  to: vec3<f32>;
+  from: vec3<f32>,
+  to: vec3<f32>,
 };
 
 struct RoundedCone {
       // 
-    from: vec3<f32>;
+    from: vec3<f32>,
     // 
-    to: vec3<f32>;
+    to: vec3<f32>,
     //
-    radius: f32;
+    radius: f32,
     //
-    leftPlane: vec4<f32>;
+    leftPlane: vec4<f32>,
     //
-    rightPlane: vec4<f32>;
+    rightPlane: vec4<f32>,
 };
 
 struct Capsule {
       // 
-    from: vec3<f32>;
+    from: vec3<f32>,
     // 
-    to: vec3<f32>;
+    to: vec3<f32>,
     //
-    radius: f32;
+    radius: f32,
 };
 
 fn rayCylinderInteresection(ray: Ray, cylinder: Cylinder) -> vec4<f32>

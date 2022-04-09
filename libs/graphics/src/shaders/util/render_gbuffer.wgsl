@@ -1,18 +1,18 @@
  struct Camera {
-  projection : mat4x4<f32>;
-  projectionInverse : mat4x4<f32>;
-  view : mat4x4<f32>;
-  viewInverse : mat4x4<f32>;
-  projectionView : mat4x4<f32>;
-  projectionViewInverse : mat4x4<f32>;
-  normalMatrix: mat4x4<f32>;
-  position : vec4<f32>;
-  viewportSize : vec2<f32>;
+  projection : mat4x4<f32>,
+  projectionInverse : mat4x4<f32>,
+  view : mat4x4<f32>,
+  viewInverse : mat4x4<f32>,
+  projectionView : mat4x4<f32>,
+  projectionViewInverse : mat4x4<f32>,
+  normalMatrix: mat4x4<f32>,
+  position : vec4<f32>,
+  viewportSize : vec2<f32>,
 };
 
 struct VertexOutput {
-  @builtin(position) Position : vec4<f32>;
-  @location(0) textureCoordinates : vec2<f32>;
+  @builtin(position) Position : vec4<f32>,
+  @location(0) textureCoordinates : vec2<f32>,
 };
 
 @stage(vertex)
@@ -33,8 +33,8 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32)
 
 
 struct Globals {
-    ambientOcclusionTaps: i32;
-    resetAmbientOcclusion: i32;
+    ambientOcclusionTaps: i32,
+    resetAmbientOcclusion: i32,
 };
 
 @group(0) @binding(0) var gBufferColorsOpaque : texture_2d<f32>;
