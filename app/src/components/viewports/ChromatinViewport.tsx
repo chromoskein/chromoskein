@@ -188,12 +188,12 @@ export function ChromatinViewport(props: {
                 }
             });
 
-            const chromatinPart = viewport.addPart(chromosomeInfo.name, explodedPositions as Positions3D, true, isoDataID.unwrap(datum.id), chromosomeIndex, ChromatinRepresentation.ContinuousTube, false);
+            const chromatinPart = viewport.addPart(chromosomeInfo.name, explodedPositions as Positions3D, true, isoDataID.unwrap(datum.id), chromosomeIndex, configuration.representation, false);
             configurePart(chromatinPart, configuration.data);
         }
 
         viewport.rebuild();
-    }, [viewport, configuration.explodedViewScale, configuration.data, configuration.chromosomes, data.data]);
+    }, [viewport, configuration.explodedViewScale, configuration.data, configuration.chromosomes, configuration.representation, data.data]);
 
     // Find closest intersection
     useEffect(() => {
@@ -217,7 +217,7 @@ export function ChromatinViewport(props: {
             return;
         }
 
-        const additionalInfo: Array<String> = []
+        const additionalInfo: Array<String> = [];
         const rulerInfo = makeRulerTooltipInfo(closestIntersection);
         if (rulerInfo) {
             additionalInfo.push(rulerInfo);
@@ -318,7 +318,7 @@ export function ChromatinViewport(props: {
                 const chromosomeData1d = data1d.filter(d => d.chromosome == partInfo.name);
                 const res = data3D.basePairsResolution;
                 for (let binIndex = 0; binIndex < partInfo.to - partInfo.from; binIndex++) {
-                    for (let datum of chromosomeData1d) {
+                    for (const datum of chromosomeData1d) {
                         if (datum.from <= (binIndex + 1) * res && datum.to >= binIndex * res) {
                             valuesPerBin[binIndex + partInfo.from].push(datum.value);
                         }
@@ -473,7 +473,7 @@ export function ChromatinViewport(props: {
 
     // Color bins
     useEffect(() => {
-        if (!viewport.canvas || !configuration.data) {
+        if (!viewport || !viewport.canvas || !configuration.data) {
             return;
         }
 
@@ -623,10 +623,14 @@ export function ChromatinViewport(props: {
     }, [viewport, configuration.backgroundColor]);
 
     useEffect(() => {
+        if (!viewport) return;
+
         viewport.ssaoKernelRadius = configuration.ssao.radius;
     }, [viewport, configuration.ssao.radius]);
 
     useEffect(() => {
+        if (!viewport) return;
+
         let planeNormal;
         switch (configuration.cutaway.axis) {
             case 'X': {
@@ -750,7 +754,7 @@ export function ChromatinViewport(props: {
                 });
             }
         } else if (tool.type == ChromatinViewportToolType.Ruler) {
-            let ruler = { ...tool };
+            const ruler = { ...tool };
 
             if (!isSecondaryModPressed) {
                 ruler.from = {

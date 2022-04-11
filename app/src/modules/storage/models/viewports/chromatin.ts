@@ -59,6 +59,8 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     data: IChromatinDataConfiguration | null,
     chromosomes: Array<boolean>,
 
+    representation: ChromatinRepresentation,
+
     mapValues: {
         id: number;
         aggregationFunction: ChromatinViewportAggregationFunction;
@@ -109,6 +111,8 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
 
         data: null,
         chromosomes: [],
+
+        representation: ChromatinRepresentation.ContinuousTube,
 
         selectedSelectionID: null,
 

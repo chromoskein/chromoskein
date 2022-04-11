@@ -347,6 +347,21 @@ export function ChromatinViewportConfigurationPanel(props: {
         });
     }
 
+    const representationDropdownOptions = [
+        { key: 1, text: 'Spheres' },
+        { key: 2, text: 'Continuous Tube' },
+        { key: 3, text: 'Spline' },
+      ];
+
+    const representationChanged = (event: FormEvent<HTMLDivElement>, option: IDropdownOption<any> | undefined, index: number | undefined): void => {
+        if (!option || typeof option.key != 'number') return;
+
+        updateConfiguration({
+            ...configuration,
+            representation: option.key - 1,
+        });
+    };
+
     if (configuration == null || configuration == undefined || configuration.type != ViewportConfigurationType.Chromatin) {
         return <div></div>;
     }
@@ -403,6 +418,15 @@ export function ChromatinViewportConfigurationPanel(props: {
             selectedKey={configuration.data ? isoDataID.unwrap(configuration.data.id) : null}
             style={{ marginTop: '8px', padding: '4px' }}
             shouldRestoreFocus={false}
+        />
+
+        <Dropdown
+            label="Representation"
+            selectedKey={configuration.representation + 1}
+            // eslint-disable-next-line react/jsx-no-bind
+            onChange={representationChanged}
+            placeholder="Select representation"
+            options={representationDropdownOptions}
         />
 
         {configuration.data != null && configuration.chromosomes.length != 0 && (

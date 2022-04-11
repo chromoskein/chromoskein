@@ -11,8 +11,8 @@ import { Spline } from "../primitives/spline";
 const CHROMATIN_OBJECT_NAME = 'CHROMATIN';
 
 export enum ChromatinRepresentation {
-  ContinuousTube = 0,
-  Spheres = 1,
+  Spheres = 0,
+  ContinuousTube = 1,  
   Spline = 2,
 }
 
