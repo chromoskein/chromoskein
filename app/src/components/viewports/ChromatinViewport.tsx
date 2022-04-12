@@ -56,6 +56,7 @@ export function ChromatinViewport(props: {
     const [isPrimaryModPressed, setPrimaryModPressed] = useState(false);
     const [isSecondaryModPressed, setSecondaryModPressed] = useState(false);
 
+    const [isShiftPressed, setShiftPressed] = useState(false);
 
     // Input
     useKey(["Control", "Meta"], () => setPrimaryModPressed(true), { eventTypes: ["keydown"] });
@@ -63,6 +64,9 @@ export function ChromatinViewport(props: {
 
     useKey(["Alt"], () => setSecondaryModPressed(true), { eventTypes: ["keydown"] });
     useKey(["Alt"], () => setSecondaryModPressed(false), { eventTypes: ["keyup"] });
+    
+    useKey(["Shift"], () => setShiftPressed(true), { eventTypes: ["keydown"] });
+    useKey(["Shift"], () => setShiftPressed(false), { eventTypes: ["keyup"] });
 
     // 
     const [innerColors, setInnerColors] = useState<Array<Array<vec4>>>([]);
@@ -532,7 +536,7 @@ export function ChromatinViewport(props: {
             const binPositions = closestIntersection.chromatinPart.getBinsPositions();
             const binPos = binPositions[binIdx];
 
-            const sphereCenter = isSecondaryModPressed ? binPos : intersectionExactPosition; //~ if ALT is pressed, snapping onto bin positions
+            const sphereCenter = isShiftPressed ? binPos : intersectionExactPosition; //~ if ALT is pressed, snapping onto bin positions
 
             // Update (create if not already created) the configuration of selection sphere
             const sphere = (viewport.getStructureByName(SphereSelectionName) ?? viewport.scene.addSphere(
