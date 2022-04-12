@@ -84,7 +84,7 @@ export function ToolOptions(props: {
                     <Separator vertical></Separator>
                 </Stack.Item>
                 <Stack.Item align="center">
-                    <Text nowrap variant='medium'>{primaryClick}: add to selection | {secondaryClick}: remove from selection.</Text>
+                    <Text nowrap variant='medium'>{primaryClick}: add to selection | {secondaryClick}: remove from selection | <strong>Alt</strong>: snap to bins.</Text>
                 </Stack.Item>
             </>)
         }
