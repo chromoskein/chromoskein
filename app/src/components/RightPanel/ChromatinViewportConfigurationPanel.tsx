@@ -1,4 +1,4 @@
-import { Callout, DefaultButton, TextField, ColorPicker, ComboBox, IComboBoxOption, IComboBox, Label, Slider, IColor, Dropdown, IDropdownOption, Stack, Separator, ChoiceGroup, IChoiceGroupOption, Checkbox } from "@fluentui/react";
+import { Callout, DefaultButton, TextField, ColorPicker, ComboBox, IComboBoxOption, IComboBox, Label, Slider, IColor, Dropdown, IDropdownOption, Stack, Separator, ChoiceGroup, IChoiceGroupOption, Checkbox, IButtonStyles } from "@fluentui/react";
 import { Model, TabNode } from "flexlayout-react";
 import React, { Dispatch, FormEvent, MouseEvent, MouseEventHandler, useEffect, useState } from "react";
 import { toNumber } from "lodash";
@@ -366,42 +366,54 @@ export function ChromatinViewportConfigurationPanel(props: {
         return <div></div>;
     }
 
+    const colorPickerButtonStyles: IButtonStyles = {
+        root: {
+            padding: 0,
+            minWidth: 0,
+        },
+    };
+
     return <div className="section">
-        <TextField label="Name" value={viewportName} onChange={(e, v) => setViewportName(v)} />
-        <Stack tokens={{ childrenGap: '8px' }}>
-            <Label>Background: </Label>
-            <DefaultButton id="backgroundButton"
-                onRenderText={(p) => <span>
-                    <div style={{
-                        display: "inline-block",
-                        width: '1.2rem',
-                        height: '1.2rem',
-                        margin: '0px 4px',
-                        backgroundColor: `#${configuration.backgroundColor.hex}`
-                    }}></div>
-                    #{configuration.backgroundColor.hex}
-                </span>}
-                onClick={() => setIsCalloutVisible(true)}
-            />
-            {isCalloutVisible && (
-                <Callout
-                    gapSpace={0}
-                    target={'#backgroundButton'}
-                    onDismiss={() => setIsCalloutVisible(false)}
-                    setInitialFocus
-                >
-                    <ColorPicker
-                        color={configuration.backgroundColor}
-                        onChange={setBackgroundColor}
-                        alphaType={'none'}
-                        showPreview={true}
-                        strings={{
-                            hueAriaLabel: 'Hue',
-                        }}
-                    />
-                </Callout>
-            )}
+        <Label>Name</Label>
+        <Stack horizontal tokens={{ childrenGap: '8px' }}>
+            <Stack.Item grow={3}>
+                <TextField value={viewportName} onChange={(e, v) => setViewportName(v)} />
+            </Stack.Item>
+            <Stack.Item>
+                <DefaultButton id="backgroundButton" styles={colorPickerButtonStyles}
+                    onRenderText={(p) => <span>
+                        <div style={{
+                            display: "inline-block",
+                            width: '1.2rem',
+                            height: '1.2rem',
+                            margin: '0px 4px',
+                            backgroundColor: `#${configuration.backgroundColor.hex}`
+                        }}></div>
+                    </span>}
+                    onClick={() => setIsCalloutVisible(true)}
+                />
+                {isCalloutVisible && (
+                    <Callout
+                        gapSpace={0}
+                        target={'#backgroundButton'}
+                        onDismiss={() => setIsCalloutVisible(false)}
+                        setInitialFocus
+                    >
+                        <ColorPicker
+                            color={configuration.backgroundColor}
+                            onChange={setBackgroundColor}
+                            alphaType={'none'}
+                            showPreview={true}
+                            strings={{
+                                hueAriaLabel: 'Hue',
+                            }}
+                        />
+                    </Callout>
+                )}
+            </Stack.Item>
+
         </Stack>
+
 
         {/* List of 3D data */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
