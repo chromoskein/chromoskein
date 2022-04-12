@@ -524,7 +524,15 @@ export function ChromatinViewport(props: {
             closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
         } else if (closestIntersection != null && tool.type == ChromatinViewportToolType.SphereSelection && configuration.selectedSelectionID) {
             // Only find position in space where the ray intersects
-            const sphereCenter = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
+            const intersectionExactPosition = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
+
+            //~ Snapping into bins (ALT)
+            //~ get ID of the intersected bin and the position of the intersected bin (not the tube but the point)
+            const binIdx = closestIntersection.binIndex;
+            const binPositions = closestIntersection.chromatinPart.getBinsPositions();
+            const binPos = binPositions[binIdx];
+
+            const sphereCenter = isSecondaryModPressed ? binPos : intersectionExactPosition; //~ if ALT is pressed, snapping onto bin positions
 
             // Update (create if not already created) the configuration of selection sphere
             const sphere = (viewport.getStructureByName(SphereSelectionName) ?? viewport.scene.addSphere(
