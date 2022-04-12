@@ -383,7 +383,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                 <DefaultButton id="backgroundButton" styles={colorPickerButtonStyles}
                     onRenderText={(p) => <span>
                         <div style={{
-                            display: "inline-block",
+                            display: "flex",
                             width: '1.2rem',
                             height: '1.2rem',
                             margin: '0px 4px',
