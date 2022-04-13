@@ -109,7 +109,8 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                 return <div
                     className={selection.id == configuration.selectedSelectionID ? "treeViewListItem selected" : "treeViewListItem"}
                     key={isoSelectionID.unwrap(selection.id)}
-                    onClick={() => selectSelection(selection.id)}>
+                    onClick={() => selectSelection(selection.id)}
+                    style={{ cursor: 'pointer'}}>
                     <span className='selectionColorbox' style={{ backgroundColor: `rgb(${selection.color.r * 255}, ${selection.color.g * 255}, ${selection.color.b * 255})` }}></span>
                     <span style={{ display: 'block', width: '4px' }}></span>
                     <span className='text'>{selection.name}</span>
