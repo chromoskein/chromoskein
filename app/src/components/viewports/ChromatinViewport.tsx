@@ -221,7 +221,7 @@ export function ChromatinViewport(props: {
             return;
         }
 
-        const additionalInfo: Array<String> = [];
+        const additionalInfo: Array<string> = [];
         const rulerInfo = makeRulerTooltipInfo(closestIntersection);
         if (rulerInfo) {
             additionalInfo.push(rulerInfo);
