@@ -181,7 +181,7 @@ fn rayPlaneIntersection(ray: Ray, plane: Plane) -> f32
     return -1.0; 
 } 
 
-fn rayDiskIntersection(ray: Ray, disk: Disk) -> vec4<f32>
+fn rayDiskIntersection(ray: Ray, disk: Disk) -> bool
 { 
     var t: f32 = rayPlaneIntersection(ray, Plane(disk.origin, disk.normal)); 
     if (t >= 0.0) { 
@@ -190,13 +190,34 @@ fn rayDiskIntersection(ray: Ray, disk: Disk) -> vec4<f32>
         let d2: f32 = dot(v, v); 
 
         if (sqrt(d2) <= disk.radius) {
-          return vec4<f32>(p, t);
+          return true;
         } 
         // or you can use the following optimisation (and precompute radius^2)
         // return d2 <= radius2; // where radius2 = radius * radius
      } 
  
-     return vec4<f32>(-1.0, -1.0, -1.0, -1.0); 
+     return false;
+} 
+
+fn rayDiskIntersectionBothSides(ray: Ray, disk: Disk) -> bool
+{ 
+  var planeDenom: f32 = dot(disk.normal, ray.direction);
+    if (abs(planeDenom) < 0.001) { 
+        return false;
+    } 
+
+    let planeRay: vec3<f32> = disk.origin - ray.origin; 
+    var t = dot(planeRay, disk.normal) / planeDenom; 
+ 
+    let p: vec3<f32> = ray.origin + ray.direction * t; 
+    let v: vec3<f32> = p - disk.origin; 
+    let d2: f32 = dot(v, v); 
+
+    if (sqrt(d2) <= disk.radius) {
+      return true;
+    } 
+ 
+    return false;
 } 
 
 fn rayAABBIntersection(ray: Ray, aabb: AABB) -> f32 {
