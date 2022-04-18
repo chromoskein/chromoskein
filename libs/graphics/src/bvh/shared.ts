@@ -1,6 +1,7 @@
 import { vec3, vec4 } from "gl-matrix";
 import { CullObject, CullPlane } from "../culling";
 import { LL_STRUCTURE_SIZE_BYTES, LowLevelStructure } from "../primitives";
+import { QuadraticBezier } from "../primitives/quadratic_bezier";
 import { BoundingBox, BoundingBoxEmpty, Ray } from "../shared";
 
 export const NODE_SIZE = 12;
@@ -39,6 +40,7 @@ export function intersectPrimitive(primitive: DataView, ray: Ray, offset: number
         case 'Cylinder': result = intersectCylinder(primitive, ray, offset); break;
         case 'AABB': result = intersectAABB(primitive, ray, offset); break;
         case 'RoundedCone': result = intersectRoundedConeWithCutPlanes(primitive, ray, offset, cullObjects); break;
+        case 'QuadraticBezierCurve': result = intersectQuadraticBezier(primitive, ray, offset, cullObjects); break;
         default: result = -1.0;
     }
 
@@ -285,4 +287,249 @@ export function intersectRoundedConeWithCutPlanes(roundedCone: DataView, ray: Ra
     }
 
     return t;
+}
+export class RayBezierIntersection {
+    co: vec3 = vec3.create();
+    cd: vec3 = vec3.create();
+    s: number = 0.0;
+    dt: number = 0.0;
+    dp: number = 0.0;
+    dc: number = 0.0;
+    sp: number = 0.0;
+    phantom = true;
+
+    constructor(
+        co: vec3,
+        cd: vec3,
+        s: number,
+        dt: number,
+        dp: number,
+        dc: number,
+        sp: number,
+        phantom: boolean,
+    ) {
+        this.co = co;
+        this.cd = cd;
+        this.s = s;
+        this.dt = dt;
+        this.dp = dp;
+        this.dc = dc;
+        this.sp = sp;
+        this.phantom = phantom;
+    }
+};
+
+export function rayBezierIntersectStep(intersectionIn: RayBezierIntersection, r: number): RayBezierIntersection {
+    let r2: number = r * r;
+    let drr: number = 0.0;
+
+    let intersectionOut: RayBezierIntersection = new RayBezierIntersection(
+        intersectionIn.co,
+        intersectionIn.cd,
+        intersectionIn.s,
+        intersectionIn.dt,
+        intersectionIn.dp,
+        intersectionIn.dc,
+        intersectionIn.sp,
+        intersectionIn.phantom
+    );
+
+    let co = intersectionIn.co;
+    let cd = intersectionIn.cd;
+
+    let ddd = cd[0] * cd[0] + cd[1] * cd[1];
+    intersectionOut.dp = co[0] * co[0] + co[1] * co[1];
+    let cdd = co[0] * cd[0] + co[1] * cd[1];
+    let cxd = co[0] * cd[1] - co[1] * cd[0];
+
+    let c = ddd;
+    let b = cd[2] * (drr - cdd);
+    let cdz2 = cd[2] * cd[2];
+    ddd = ddd + cdz2;
+    let a = 2.0 * drr * cdd + cxd * cxd - ddd * r2 + intersectionOut.dp * cdz2;
+
+    let discr = b * b - a * c;
+    if (discr > 0.0) {
+        intersectionOut.s = (b - Math.sqrt(discr)) / c;
+    } else {
+        intersectionOut.s = (b - 0.0) / c;
+    }
+    intersectionOut.dt = (intersectionOut.s * cd[2] - cdd) / ddd;
+    intersectionOut.dc = intersectionOut.s * intersectionOut.s + intersectionOut.dp;
+    intersectionOut.sp = cdd / cd[2];
+    intersectionOut.dp = intersectionOut.dp + intersectionOut.sp * intersectionOut.sp;
+    intersectionOut.phantom = discr > 0.0;
+
+    return intersectionOut;
+}
+
+export function make_orthonormal_basis(n: vec3): Array<vec3> {
+    let b1: vec3 = vec3.fromValues(0.0, 0.0, 0.0);
+    let b2: vec3 = vec3.fromValues(0.0, 0.0, 0.0);
+
+    if (n[2] < 0.0) {
+        let a = 1.0 / (1.0 - n[2]);
+        let b = n[0] * n[1] * a;
+
+        b1 = vec3.fromValues(1.0 - n[0] * n[0] * a, -b, n[0]);
+        b2 = vec3.fromValues(b, n[1] * n[1] * a - 1.0, -n[1]);
+    } else {
+        let a = 1.0 / (1.0 + n[2]);
+        let b = -n[0] * n[1] * a;
+
+        b1 = vec3.fromValues(1.0 - n[0] * n[0] * a, b, -n[0]);
+        b2 = vec3.fromValues(b, 1.0 - n[1] * n[1] * a, -n[1]);
+    }
+
+    return new Array(b1, b2);
+}
+
+export function transformToRayFramePoint(p: vec3, origin: vec3, u: vec3, v: vec3, w: vec3): vec3 {
+    let q: vec3 = vec3.sub(vec3.create(), p, origin);
+    return vec3.fromValues(vec3.dot(q, u), vec3.dot(q, v), vec3.dot(q, w));
+}
+
+export function transformToRayFrame(ray: Ray, curve: QuadraticBezier): QuadraticBezier {
+    const onb = make_orthonormal_basis(ray.direction);
+
+    return new QuadraticBezier(
+        transformToRayFramePoint(curve.p0, ray.origin, onb[0], onb[1], ray.direction),
+        transformToRayFramePoint(curve.p1, ray.origin, onb[0], onb[1], ray.direction),
+        transformToRayFramePoint(curve.p2, ray.origin, onb[0], onb[1], ray.direction),
+    );
+}
+
+export class CurveIntersectionResult {
+    rayT = 0.0;
+    curveT = 0.0;
+    hit = false;
+};
+
+export function rayQuadraticBezierIntersection(ray: Ray, curve: QuadraticBezier, r: number): CurveIntersectionResult {
+    let result: CurveIntersectionResult = new CurveIntersectionResult();
+
+    let tstart = 1.0;
+    if (vec3.dot(vec3.sub(vec3.create(), curve.p2, curve.p0), ray.direction) > 0.0) {
+        tstart = 0.0;
+    }
+
+    for (let ep = 0; ep < 2; ep = ep + 1) {
+        let t = tstart;
+
+        let rci: RayBezierIntersection = new RayBezierIntersection(
+            vec3.fromValues(0.0, 0.0, 0.0),
+            vec3.fromValues(0.0, 0.0, 0.0),
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            true
+        );
+
+        let told = 0.0;
+        let dt1 = 0.0;
+        let dt2 = 0.0;
+
+        for (let i = 0; i < 8; i = i + 1) {
+            rci.co = curve.evaluate(t);
+            rci.cd = curve.evaluateDifferential(t);
+      
+            rci = rayBezierIntersectStep(rci, r);
+
+            if (rci.phantom && Math.abs(rci.dt) < 0.01) {
+                rci.s = rci.s + rci.co[2];
+
+                result.rayT = rci.s;
+                result.curveT = t;
+                result.hit = true;
+
+                break;
+            }
+
+            rci.dt = Math.min(rci.dt, 0.5);
+            rci.dt = Math.max(rci.dt, -0.5);
+
+            dt1 = dt2;
+            dt2 = rci.dt;
+
+            // Regula falsi
+            if (dt1 * dt2 < 0.0) {
+                let tnext = 0.0;
+                if ((i & 3) == 0) {
+                    tnext = 0.5 * (told + t);
+                } else {
+                    tnext = (dt2 * told - dt1 * t) / (dt2 - dt1);
+                }
+                told = t;
+                t = tnext;
+            } else {
+                told = t;
+                t = t + rci.dt;
+            }
+
+            if (t < 0.0 || t > 1.0) {
+                break;
+            }
+        }
+
+        if (!result.hit) {
+            tstart = 1.0 - tstart;
+        } else {
+            break;
+        }
+    }
+
+    return result;
+}
+
+export function intersectQuadraticBezier(buffer: DataView, ray: Ray, offset: number, cullObjects: Array<CullObject> = []): number {
+    const byteOffset = offset * LL_STRUCTURE_SIZE_BYTES;
+
+    const p0 = vec3.fromValues(
+        buffer.getFloat32(byteOffset + 0, true),
+        buffer.getFloat32(byteOffset + 4, true),
+        buffer.getFloat32(byteOffset + 8, true),
+    );
+
+    const p1 = vec3.fromValues(
+        buffer.getFloat32(byteOffset + 16, true),
+        buffer.getFloat32(byteOffset + 20, true),
+        buffer.getFloat32(byteOffset + 24, true),
+    );
+
+    const p2 = vec3.fromValues(
+        buffer.getFloat32(byteOffset + 32, true),
+        buffer.getFloat32(byteOffset + 36, true),
+        buffer.getFloat32(byteOffset + 40, true),
+    );
+
+    const radius = buffer.getFloat32(byteOffset + 12, true);
+    
+    let curve = new QuadraticBezier(p0, p1, p2);
+    curve = transformToRayFrame(ray, curve);
+    const curveIntersection = rayQuadraticBezierIntersection(ray, curve, radius);
+
+    const intersection = vec3.add(vec3.create(), ray.origin, vec3.scale(vec3.create(), ray.direction, curveIntersection.rayT));
+
+    if (curveIntersection.hit && curveIntersection.rayT > 0.0) {
+        for (const cullObject of cullObjects) {
+            if (cullObject instanceof CullPlane && cullObject.cullsPoint(intersection)) {
+                const planeNormal = cullObject.normal;
+                const denom = vec3.dot(ray.direction, planeNormal);
+
+                const planeT = vec3.dot(vec3.sub(vec3.create(), cullObject.point, ray.origin), planeNormal) / denom;
+
+                if (planeT > 0.0 && planeT > curveIntersection.rayT) {
+                    return planeT;
+                } else {
+                    return -1.0;
+                }
+            }
+        }
+
+        return curveIntersection.rayT;
+    }
+
+    return -1.0;
 }

@@ -1,6 +1,6 @@
 import { vec3, vec4 } from "gl-matrix";
 import { GraphicsLibrary } from "..";
-import { LinearImmutableArray } from "../allocators";
+import { ArrayViews, LinearImmutableArray } from "../allocators";
 import { BoundingBox, BoundingBoxEmpty, BoundingBoxExtendByPoint } from "../shared";
 import { LowLevelStructure, HighLevelStructure, LL_STRUCTURE_SIZE_BYTES, LL_STRUCTURE_SIZE } from "./shared";
 
@@ -34,15 +34,15 @@ export function writeSphereToArrayBuffer(
     array.i32View.set([LowLevelStructure.Sphere], offsetWords + 31);
 }
 
-export function sphereToBoundingBox(view: DataView, offset: number): BoundingBox {
+export function sphereToBoundingBox(array: ArrayViews, offset: number): BoundingBox {
     const result = BoundingBoxEmpty();
 
     const spherePosition = vec3.fromValues(
-        view.getFloat32(offset * LL_STRUCTURE_SIZE_BYTES + 0, true),
-        view.getFloat32(offset * LL_STRUCTURE_SIZE_BYTES + 4, true),
-        view.getFloat32(offset * LL_STRUCTURE_SIZE_BYTES + 8, true)
+        array.f32View[offset * LL_STRUCTURE_SIZE + 0],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 4],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 8]
     );
-    const sphereRadius = view.getFloat32(offset * LL_STRUCTURE_SIZE_BYTES + 12, true);
+    const sphereRadius = array.f32View[offset * LL_STRUCTURE_SIZE + 12];
 
     BoundingBoxExtendByPoint(result, vec3.add(vec3.create(), spherePosition, vec3.fromValues(sphereRadius, sphereRadius, sphereRadius)));
     BoundingBoxExtendByPoint(result, vec3.add(vec3.create(), spherePosition, vec3.fromValues(-sphereRadius, -sphereRadius, -sphereRadius)));

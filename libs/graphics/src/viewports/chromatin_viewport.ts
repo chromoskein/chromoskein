@@ -13,7 +13,7 @@ const CHROMATIN_OBJECT_NAME = 'CHROMATIN';
 
 export enum ChromatinRepresentation {
   Spheres = 0,
-  ContinuousTube = 1,  
+  ContinuousTube = 1,
   Spline = 2,
 }
 
@@ -46,7 +46,7 @@ export class ChromatinPart {
 
       // Calculate Intersection
       const intersection = vec3.add(vec3.create(), ray.origin, vec3.scale(vec3.create(), ray.direction, hit.distance));
-      
+
 
       // Calculate normal
       const i = this._structure.localOffsetOf(LowLevelStructure.RoundedCone, hit.lowLevelIndex);
@@ -54,7 +54,7 @@ export class ChromatinPart {
       const from = this._structure.points[i];
       const to = this._structure.points[i + 1];
 
-      if (!from || !to) { 
+      if (!from || !to) {
         return null;
       }
 
@@ -85,6 +85,8 @@ export class ChromatinPart {
       }
     } else if (this._structure instanceof Spheres) {
       return this._structure.localOffsetOf(LowLevelStructure.Sphere, hit.lowLevelIndex);
+    } else if (this._structure instanceof Spline) {
+      return Math.floor(this._structure.localOffsetOf(LowLevelStructure.QuadraticBezierCurve, hit.lowLevelIndex) / 4);
     }
 
     return null;
@@ -95,27 +97,44 @@ export class ChromatinPart {
       this._structure.resetColorBorder(vec4.fromValues(color.r, color.g, color.b, color.a));
     } else if (this._structure instanceof Spheres) {
       this._structure.resetColor(vec4.fromValues(color.r, color.g, color.b, color.a));
+    } else if (this._structure instanceof Spline) {
+      this._structure.resetColorBorder(vec4.fromValues(color.r, color.g, color.b, color.a));
     }
   }
 
-  public cacheColorArray(colors: Array<vec4>): Array<vec4> {    
+  public cacheColorArray(colors: Array<vec4>): Array<vec4> {
     const binsLength = this._binsPositions.length;
-    const finalColorsArray: Array<vec4> = new Array(2 * this._binsPositions.length + 2);
+    let finalColorsArray: Array<vec4> = [];
 
-    if (this._structure instanceof ContinuousTube) for (let i = 0; i < this._binsPositions.length; i++) {
+    if (this._structure instanceof ContinuousTube) {
+      finalColorsArray = new Array(2 * this._binsPositions.length + 2);
+
+      for (let i = 0; i < this._binsPositions.length; i++) {
         if (i == 0) {
-            finalColorsArray[0] = colors[0];
-            finalColorsArray[1] = colors[0];
-            finalColorsArray[2] = colors[0];
+          finalColorsArray[0] = colors[0];
+          finalColorsArray[1] = colors[0];
+          finalColorsArray[2] = colors[0];
         } else if (i == binsLength - 1) {
-            finalColorsArray[2 * i + 1] = colors[i];
-            finalColorsArray[2 * i + 2] = colors[i];
-            finalColorsArray[2 * i + 3] = colors[i];
+          finalColorsArray[2 * i + 1] = colors[i];
+          finalColorsArray[2 * i + 2] = colors[i];
+          finalColorsArray[2 * i + 3] = colors[i];
         }
         else {
-            finalColorsArray[2 * i + 1] = colors[i];
-            finalColorsArray[2 * i + 2] = colors[i];
+          finalColorsArray[2 * i + 1] = colors[i];
+          finalColorsArray[2 * i + 2] = colors[i];
         }
+      }
+    } else if (this._structure instanceof Spheres) {
+      finalColorsArray = colors;
+    } else if (this._structure instanceof Spline) {
+      finalColorsArray = new Array(4 * this._binsPositions.length);
+
+      for (let i = 0; i < this._binsPositions.length; i++) {
+        finalColorsArray[4 * i + 0] = colors[i];
+        finalColorsArray[4 * i + 1] = colors[i];
+        finalColorsArray[4 * i + 2] = colors[i];
+        finalColorsArray[4 * i + 3] = colors[i];
+      }
     }
 
     return finalColorsArray;
@@ -123,34 +142,38 @@ export class ChromatinPart {
 
   public setBinColor(binIndex: number, color: GPUColorDict): void {
     const c = vec4.fromValues(color.r, color.g, color.b, color.a);
+    this._binsColor[binIndex] = c;
 
     if (this._structure instanceof ContinuousTube) {
       this.setBinColorVec4(binIndex, c);
     } else if (this._structure instanceof Spheres) {
-      this._binsColor[binIndex] = c;
+
       this._structure.setColor(binIndex, c);
+    } else if (this._structure instanceof Spline) {
+      this.setBinColorVec4(binIndex, c);
     }
   }
 
   public setBinColorVec4(binIndex: number, color: vec4): void {
-    if (this._structure instanceof ContinuousTube) {
-      this._binsColor[binIndex] = color;
+    this._binsColor[binIndex] = color;
 
+    if (this._structure instanceof ContinuousTube) {
       if (binIndex == 0) {
         this._structure.setColor(color, 0);
         this._structure.setColor2(color, 0);
         this._structure.setColor(color, 1);
       } else if (binIndex >= this._binsPositions.length - 1) {
         this._structure.setColor2(color, binIndex);
-        
+
         this._structure.setColor(color, binIndex + 1);
         this._structure.setColor2(color, binIndex + 1);
-      }  else {
+      } else {
         this._structure.setColor2(color, binIndex);
         this._structure.setColor(color, binIndex + 1);
       }
     } else if (this._structure instanceof Spheres) {
-      this._binsColor[binIndex] = color;
+      this._structure.setColor(binIndex, color);
+    } else if (this._structure instanceof Spline) {
       this._structure.setColor(binIndex, color);
     }
   }

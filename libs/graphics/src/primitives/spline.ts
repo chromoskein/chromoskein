@@ -9,12 +9,13 @@ import { LowLevelStructure, HighLevelStructure, LL_STRUCTURE_SIZE, LL_STRUCTURE_
  * 
  */
 export class Spline implements HighLevelStructure {
-    private splinesColors: Array<vec4>;
     private catmullRomPoints: Array<vec3>;
     private cubicBezierPoints: Array<vec3>;
     private quadraticBeziers: Array<QuadraticBezier>;
 
     private _points: Array<vec3>;
+    private _colors: Array<vec4>;
+    private _borderColors: Array<vec4>;
     private _radius: number;
 
     private graphicsLibrary: GraphicsLibrary;
@@ -60,8 +61,7 @@ export class Spline implements HighLevelStructure {
         id: number,
         partOfBVH = true,
         points: Array<vec3>,
-        radius = 0.01,
-        colors: Array<vec4> | null = null,) {
+        radius = 0.01,) {
         this.graphicsLibrary = graphicsLibrary;
         this.id = id;
         this._partOfBVH = partOfBVH;
@@ -80,18 +80,25 @@ export class Spline implements HighLevelStructure {
         this.catmullRomPoints.unshift(startPoint);
         this.catmullRomPoints.push(endPoint);
 
+        const newPoints = [];
+        for(let i = 0; i < this.catmullRomPoints.length - 1; i++) {
+            newPoints.push(this.catmullRomPoints[i]);
+            const newPoint = vec3.scale(vec3.create(), vec3.add(vec3.create(), this.catmullRomPoints[i], this.catmullRomPoints[i + 1]), 0.5);
+            newPoints.push(newPoint);
+        }
+        newPoints.push(endPoint);
+        this.catmullRomPoints = newPoints;
+
         // N points creates N - 3 catmull rom splines.
         // N - 3 catmull rom splines are approximated by N - 3 cubic beziers
         // N - 3 cubic beziers are approximated by 2 * (N - 3) quadratic beziers
         const cubicBeziersLength = (this.catmullRomPoints.length - 3)
         const quadraticBeziersLength = 2 * cubicBeziersLength;
 
-        if (colors) {
-            this.splinesColors = colors;
-        } else {
-            this.splinesColors = new Array(quadraticBeziersLength);
-            this.splinesColors.fill(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-        }
+        this._colors = new Array(quadraticBeziersLength);
+        this._colors.fill(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+        this._borderColors = new Array(quadraticBeziersLength);
+        this._borderColors.fill(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
 
         this.cubicBezierPoints = new Array(this.catmullRomPoints.length);
         this.quadraticBeziers = new Array(quadraticBeziersLength);
@@ -164,14 +171,14 @@ export class Spline implements HighLevelStructure {
 
         for (let i = 0; i < this.quadraticBeziers.length; i++) {
             const curve = this.quadraticBeziers[i];
-            const color = this.splinesColors[i];
             const offsetWords = (offset + i) * LL_STRUCTURE_SIZE;
 
             buffer.f32View.set([curve.p0[0], curve.p0[1], curve.p0[2], this._radius], offsetWords + 0);
             buffer.f32View.set([curve.p1[0], curve.p1[1], curve.p1[2], this._radius], offsetWords + 4);
             buffer.f32View.set([curve.p2[0], curve.p2[1], curve.p2[2], this._radius], offsetWords + 8);
 
-            buffer.f32View.set([color[0], color[1], color[2], 1.0], offsetWords + 12);
+            buffer.f32View.set(this._colors[i], offsetWords + 12);
+            buffer.f32View.set(this._borderColors[i], offsetWords + 16);
 
             buffer.i32View.set([this.id], offsetWords + 30);
             buffer.i32View.set([LowLevelStructure.QuadraticBezierCurve], offsetWords + 31);
@@ -232,7 +239,6 @@ export class Spline implements HighLevelStructure {
         if (!this.buffer) return;
 
         this._radius = Math.min(0.01, radius);
-        console.log(radius, this._radius);
 
         for (let i = 0; i < this.quadraticBeziers.length; i++) {
             const curve = this.quadraticBeziers[i];
@@ -247,24 +253,110 @@ export class Spline implements HighLevelStructure {
         this._dirtyBVH = true;
     }
 
-    // public setSplineSegmentColor(segment: number, color: vec3) {
-    //     this.splinesColors[segment] = color;
-    //     this.quadraticBeziers[segment].color = this.splinesColors[segment];
+    public resetColors(color: vec4): void {       
+        if (!this.buffer) return;
 
-    //     if (this.buffer != null && this.bufferView != null) {
-    //         this.writeToArrayBuffer(this.buffer, this.bufferView, this._bufferPosition, null);
-    //     }
-    // }
+        const f32View = this.buffer.f32View;
+        for (let i = 0; i < this.quadraticBeziers.length; i++) {            
+            const offsetWords = (this._bufferPosition + i) * LL_STRUCTURE_SIZE;
 
-    // public setSplineColor(color: vec3) {
-    //     for (let i = 0; i < this.quadraticBeziers.length; i++) {
-    //         this.splinesColors[i] = color;
-    //         this.quadraticBeziers[i].color = this.splinesColors[i];
-    //     }
+            this._colors[i] = color;
 
-    //     if (this.buffer != null && this.bufferView != null) {
-    //         this.writeToArrayBuffer(this.buffer, this.bufferView, this._bufferPosition, null);
-    //     }
-    // }
+            f32View.set(color, offsetWords + 12);
+        }
+
+        this.buffer.setModifiedBytes({ start: this._bufferPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + this.quadraticBeziers.length) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
+    public resetBorderColors(color: vec4): void {       
+        if (!this.buffer) return;
+
+        const f32View = this.buffer.f32View;
+        for (let i = 0; i < this.quadraticBeziers.length; i++) {            
+            const offsetWords = (this._bufferPosition + i) * LL_STRUCTURE_SIZE;
+
+            this._borderColors[i] = color;
+
+            f32View.set(color, offsetWords + 16);
+        }
+
+        this.buffer.setModifiedBytes({ start: this._bufferPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + this.quadraticBeziers.length) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
+    public resetColorBorder(color: vec4): void {       
+        if (!this.buffer) return;
+
+        const f32View = this.buffer.f32View;
+        for (let i = 0; i < this.quadraticBeziers.length; i++) {            
+            const offsetWords = (this._bufferPosition + i) * LL_STRUCTURE_SIZE;
+
+            this._colors[i] = color;
+            this._borderColors[i] = color;
+
+            f32View.set(color, offsetWords + 12);
+            f32View.set(color, offsetWords + 16);
+        }
+
+        this.buffer.setModifiedBytes({ start: this._bufferPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + this.quadraticBeziers.length) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
+    public setColor(segment: number, color: vec4): void {
+        if (!this.buffer) return;
+
+        for (let i = 0; i < 4; i++) {
+            const offsetWords = (this._bufferPosition + 4 * segment + i) * LL_STRUCTURE_SIZE;
+    
+            this._colors[4 * segment + i] = color;
+    
+            this.buffer.f32View.set(color, offsetWords + 12);
+        }
+
+        this.buffer.setModifiedBytes({ start: (this._bufferPosition + 4 * segment) * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + 4 * segment + 4) * LL_STRUCTURE_SIZE_BYTES, });
+    }
+
+    public setBorderColor(segment: number, color: vec4): void {
+        if (!this.buffer) return;
+
+        for (let i = 0; i < 4; i++) {
+            const offsetWords = (this._bufferPosition + 4 * segment + i) * LL_STRUCTURE_SIZE;
+    
+            this._borderColors[4 * segment + i] = color;
+    
+            this.buffer.f32View.set(color, offsetWords + 16);
+        }
+
+        this.buffer.setModifiedBytes({ start: (this._bufferPosition + 4 * segment) * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + 4 * segment + 4) * LL_STRUCTURE_SIZE_BYTES, });
+    }
+
+    public setColors(colors: Array<vec4>): void {
+        if (!this.buffer) return;
+
+        const f32View = this.buffer.f32View;
+        for (let i = 0; i < this.quadraticBeziers.length; i++) {            
+            const offsetWords = (this._bufferPosition + i) * LL_STRUCTURE_SIZE;
+
+            this._colors[i] = colors[i];
+
+            f32View.set(colors[i], offsetWords + 12);
+        }
+
+        this.buffer.setModifiedBytes({ start: this._bufferPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + this.quadraticBeziers.length) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
+    public setBorderColors(colors: Array<vec4>): void {
+        if (!this.buffer) return;
+
+        const f32View = this.buffer.f32View;
+        for (let i = 0; i < this.quadraticBeziers.length; i++) {            
+            const offsetWords = (this._bufferPosition + i) * LL_STRUCTURE_SIZE;
+
+            this._borderColors[i] = colors[i];
+
+            f32View.set(colors[i], offsetWords + 16);
+        }
+
+        this.buffer.setModifiedBytes({ start: this._bufferPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + this.quadraticBeziers.length) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
     //#endregion
 }

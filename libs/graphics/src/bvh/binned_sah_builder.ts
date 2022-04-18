@@ -7,8 +7,9 @@ import { Node, NodeEmpty } from "./shared";
 import { BoundingBox, BoundingBoxClone, BoundingBoxDiagonal, BoundingBoxEmpty, BoundingBoxExtendByBox, BoundingBoxHalfArea, BoundingBoxLargestAxis } from "../shared";
 import { vec3 } from "gl-matrix";
 import { partition } from "lodash";
-import { cylinderToBoundingBox, LL_STRUCTURE_SIZE, LL_STRUCTURE_SIZE_BYTES, LowLevelStructure, roundedConeToBoundingBox } from "../primitives";
+import { cylinderToBoundingBox, LL_STRUCTURE_SIZE, LL_STRUCTURE_SIZE_BYTES, LowLevelStructure, roundedConeToBoundingBox, sphereToBoundingBox } from "../primitives";
 import { ArrayViews } from "../allocators";
+import { quadraticBezierToBoundingBox } from "../primitives/quadratic_bezier";
 
 const binCount = 3;
 const maxDepth = 64;
@@ -247,9 +248,10 @@ ctx.onmessage = ({ data: { objectsBuffer } }) => {
 
         if (objectType != LowLevelStructure.None) {
             switch (objectType) {
-                // case LowLevelStructure.Sphere: bboxes.push(sphereToBoundingBox(this._buffer.data, i)); break;
+                // case LowLevelStructure.Sphere: bboxes.push(sphereToBoundingBox(arrayViews, i)); break;
                 case LowLevelStructure.Cylinder: bboxes.push(cylinderToBoundingBox(objectsBuffer, i)); break;
                 case LowLevelStructure.RoundedCone: bboxes.push(roundedConeToBoundingBox(arrayViews, i)); break;
+                case LowLevelStructure.QuadraticBezierCurve: bboxes.push(quadraticBezierToBoundingBox(arrayViews, i)); break;
                 default: continue;
             }
 

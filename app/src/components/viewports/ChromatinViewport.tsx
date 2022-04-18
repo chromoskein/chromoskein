@@ -126,7 +126,6 @@ export function ChromatinViewport(props: {
         } else if (part.structure instanceof Spheres) {
             part.structure.setRadiusAll(configuration.radius);
         } else if (part.structure instanceof Spline) {
-            console.log('ok?');
             part.structure.radius = configuration.radius;
         }
     };
@@ -501,6 +500,18 @@ export function ChromatinViewport(props: {
 
                 if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
                     chromatinPart.structure.setBorderColorsCombined(borderColors[chromosomeIndex]);
+                } else {
+                    chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+                }
+            } else if (chromatinPart.structure instanceof Spline) {
+                if (chromosomeIndex < innerColors.length && innerColors[chromosomeIndex] && innerColors[chromosomeIndex].length != 0) {
+                    chromatinPart.structure.setColors(innerColors[chromosomeIndex]);
+                } else {
+                    chromatinPart.structure.resetColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+                }
+
+                if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
+                    chromatinPart.structure.setBorderColors(borderColors[chromosomeIndex]);
                 } else {
                     chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                 }

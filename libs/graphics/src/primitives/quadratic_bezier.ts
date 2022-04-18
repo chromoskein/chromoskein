@@ -1,7 +1,61 @@
 import { vec3 } from "gl-matrix";
 import { GraphicsLibrary } from "..";
-import { LinearImmutableArray } from "../allocators";
+import { ArrayViews, LinearImmutableArray } from "../allocators";
+import { BoundingBox, BoundingBoxCalculateCenter, BoundingBoxEmpty } from "../shared";
 import { LowLevelStructure, HighLevelStructure, LL_STRUCTURE_SIZE_BYTES, LL_STRUCTURE_SIZE } from "./shared";
+
+export function quadraticBezierToBoundingBox(array: ArrayViews, offset: number): BoundingBox {
+    const result = BoundingBoxEmpty();
+
+    const p0 = vec3.fromValues(
+        array.f32View[offset * LL_STRUCTURE_SIZE + 0],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 1],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 2]
+    );
+    const p1 = vec3.fromValues(
+        array.f32View[offset * LL_STRUCTURE_SIZE + 4],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 5],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 6]
+    );
+    const p2 = vec3.fromValues(
+        array.f32View[offset * LL_STRUCTURE_SIZE + 8],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 9],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 10]
+    );
+    
+    
+    let mi = vec3.min(vec3.create(), p0, p2);
+    let ma = vec3.max(vec3.create(), p0, p2);
+
+    if (p1[0] < mi[0] 
+     || p1[0] > ma[0] 
+     || p1[1] < mi[1] 
+     || p1[1] > ma[1]
+     || p1[2] < mi[2] 
+     || p1[2] > ma[2]
+    ) {
+        const t = vec3.create();
+        const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
+        t[0] = clamp((p0[0] - p1[0]) / (p0[0] - 2.0*p1[0] + p2[0]), 0.0, 1.0);
+        t[1] = clamp((p0[1] - p1[1]) / (p0[1] - 2.0*p1[1] + p2[1]), 0.0, 1.0);
+        t[1] = clamp((p0[2] - p1[2]) / (p0[2] - 2.0*p1[2] + p2[2]), 0.0, 1.0);
+        const s = t.map(v => 1.0 - v);
+        const q = vec3.create();
+        q[0] = s[0]*s[0]*p0[0] + 2.0*s[0]*t[0]*p1[0] + t[0]*t[0]*p2[0];
+        q[1] = s[1]*s[1]*p0[1] + 2.0*s[1]*t[1]*p1[1] + t[1]*t[1]*p2[1];
+        q[2] = s[2]*s[2]*p0[2] + 2.0*s[2]*t[2]*p1[2] + t[2]*t[2]*p2[2];
+
+        mi = vec3.min(vec3.create(), mi, q);
+        ma = vec3.max(vec3.create(), ma, q);
+    }
+
+    result.min = mi;
+    result.max = ma;
+
+    BoundingBoxCalculateCenter(result);
+
+    return result;
+}
 
 export class QuadraticBezier {
     p0: vec3;
@@ -54,6 +108,35 @@ export class QuadraticBezier {
         return [
             this.splitLeft(t), this.splitRight(t)
         ];
+    }
+
+
+    public evaluate(t: number): vec3 {
+        const p0 = this.p0;
+        const p1 = this.p1;
+        const p2 = this.p2;
+        const tinv = 1.0 - t;
+
+        const result = vec3.create();
+        result[0] = tinv * tinv * p0[0] + 2.0 * tinv * t * p1[0] + t * t * p2[0];
+        result[1] = tinv * tinv * p0[1] + 2.0 * tinv * t * p1[1] + t * t * p2[1];
+        result[2] = tinv * tinv * p0[2] + 2.0 * tinv * t * p1[2] + t * t * p2[2];
+        
+        return result;
+    }
+    
+    public evaluateDifferential(t: number): vec3 {
+        const p0 = this.p0;
+        const p1 = this.p1;
+        const p2 = this.p2;
+        const tinv = 1.0 - t;
+
+        const result = vec3.create();
+        result[0] = 2.0 * tinv * (p1[0] - p0[0]) + 2.0 * t * (p2[0] - p1[0]);
+        result[1] = 2.0 * tinv * (p1[1] - p0[1]) + 2.0 * t * (p2[1] - p1[1]);
+        result[2] = 2.0 * tinv * (p1[2] - p0[2]) + 2.0 * t * (p2[2] - p1[2]);
+    
+        return result;
     }
 }
 

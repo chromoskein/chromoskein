@@ -324,7 +324,7 @@ export class Scene {
         this.lastStructureID += 1;
 
         // const continuousTube = new ContinuousTube(this.graphicsLibrary, this.lastStructureID, false, points, radius ?? 1.0, colors);
-        const spline = new Spline(this.graphicsLibrary, this.lastStructureID, partOfBVH, points, radius ?? 1.0, colors);
+        const spline = new Spline(this.graphicsLibrary, this.lastStructureID, partOfBVH, points, radius ?? 1.0);
         const splineIndex = this.addStructure(structureName, spline, update);
 
         return [splineIndex, spline];

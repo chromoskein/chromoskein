@@ -1,4 +1,5 @@
-export const beziers = (writeDepth: boolean) => { return /* wgsl */`
+export const beziers = (writeDepth: boolean) => {
+  return /* wgsl */`
 struct CurveIntersectionResult {
   rayT: f32,
   curveT: f32,
@@ -76,7 +77,7 @@ fn rayQuadraticBezierIntersection(ray: Ray, curve: QuadraticBezierCurve) -> Curv
     var dt1: f32 = 0.0;
     var dt2: f32 = 0.0;
 
-    for(var i: i32 = 0; i < 8; i = i + 1) {
+    for(var i: i32 = 0; i < 3; i = i + 1) {
       rci.co = evaluateQuadraticBezier(curve, t);
       rci.cd = evaluateDifferentialQuadraticBezier(curve, t);
 
@@ -147,8 +148,9 @@ struct BufferQuadraticBezierCurve {
     p2: vec4<f32>,
 
     colorFrom: vec4<f32>,
+    borderColor: vec4<f32>,
 
-    padding: array<f32, 15>,
+    padding: array<f32, 11>,
 
     ty: i32,
 };
@@ -169,6 +171,11 @@ struct VertexOutput {
   @location(2) p2 : vec3<f32>,
   @location(3) radius: f32,
   @location(4) color : vec3<f32>,
+  @location(5) borderColor : vec3<f32>,
+  @location(6) p0n: vec3<f32>,
+  @location(7) p1n: vec3<f32>,
+  @location(8) p0p: vec3<f32>,
+  @location(9) p1p: vec3<f32>,
 };
 
 fn rnd(i: f32) -> f32 {
@@ -230,6 +237,11 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
     curve.p2,
     curve.radius,
     curveBuffer.colorFrom.xyz,
+    curveBuffer.borderColor.xyz,
+    curvesBuffer.curves[i32(InstanceIndex) - 1].p0.xyz,
+    curvesBuffer.curves[i32(InstanceIndex) - 1].p1.xyz,
+    curvesBuffer.curves[i32(InstanceIndex) + 1].p1.xyz,
+    curvesBuffer.curves[i32(InstanceIndex) + 1].p2.xyz
     // vec3<f32>(rnd(f32(InstanceIndex) + 5.0), rnd(f32(InstanceIndex)), rnd(f32(InstanceIndex) + 2.0))
   );
 }
@@ -247,12 +259,21 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
                  @location(2) p2 : vec3<f32>,
                  @location(3) radius: f32,
                  @location(4) color : vec3<f32>,
+                 @location(5) borderColor : vec3<f32>,
+                 @location(6) p0n: vec3<f32>,
+                 @location(7) p1n: vec3<f32>,
+                 @location(8) p0p: vec3<f32>,
+                 @location(9) p1p: vec3<f32>,
                  ) -> FragmentOutput {
   // Fragment in framebuffer/window coordinates
   var fragmentScreenSpace: vec4<f32> = vec4<f32>(Position.xyz, 1.0); 
 
+  let smallRadius = radius * 0.66;
+
   // Define curve
   let curve_ws: QuadraticBezierCurve = QuadraticBezierCurve(p0, p1, p2, radius);
+  let curve_wsn: QuadraticBezierCurve = QuadraticBezierCurve(p0n, p1n, p0, smallRadius);
+  let curve_wsp: QuadraticBezierCurve = QuadraticBezierCurve(p2, p0p, p1p, smallRadius);
 
   var fragmentNormalizedSpace: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 1.0);
   fragmentNormalizedSpace.x = fragmentScreenSpace.x;
@@ -276,90 +297,65 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
 
   // Transform the curve to ray-centric coordinates
   var curve: QuadraticBezierCurve = transformToRayFrame(ray, curve_ws);
+  var curven: QuadraticBezierCurve = transformToRayFrame(ray, curve_wsn);
+  var curvep: QuadraticBezierCurve = transformToRayFrame(ray, curve_wsp);
 
   // 
   var curve2 = curve;
-  curve2.radius = curve2.radius * 0.5;
-  let result: CurveIntersectionResult = rayQuadraticBezierIntersection(ray, curve);
-  // curve2.p0 = evaluateQuadraticBezier(curve, -0.20);
-  // curve2.p2 = evaluateQuadraticBezier(curve, 1.20);
+  curve2.radius = smallRadius;
+  var result: CurveIntersectionResult = rayQuadraticBezierIntersection(ray, curve);
   let result2: CurveIntersectionResult = rayQuadraticBezierIntersection(ray, curve2);
-  //let resultFalse = rayQuadraticBezierFalseIntersection(curve.p0.xyz, curve.p1.xyz, curve.p2.xyz, radius);
 
+  let resultPrevious = rayQuadraticBezierIntersection(ray, curven);
+  let resultNext = rayQuadraticBezierIntersection(ray, curvep);
+
+  var intersectionBezier: vec3<f32> = vec3<f32>(0.0);
   var intersection: vec3<f32> = ray.origin + result.rayT * ray.direction;
   var normal: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);
   var depth: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.0);
 
+    // Discard based on culling objects
+    var cull = false;
+
   if (!result.hit) {
-    discard;
-
-    // let startDiskNormal = normalize(evaluateDifferentialQuadraticBezier(curve_ws, 0.0));
-    // let startDiskIntersection = rayDiskIntersection(ray, Disk(
-    //   evaluateQuadraticBezier(curve_ws, 0.0),
-    //   normalize(evaluateDifferentialQuadraticBezier(curve_ws, 0.0)),
-    //   radius,
-    // ));
-
-    // let endDiskNormal = -normalize(evaluateDifferentialQuadraticBezier(curve_ws, 1.0));
-    // let endDiskIntersection = rayDiskIntersection(ray, Disk(
-    //   evaluateQuadraticBezier(curve_ws, 1.0),
-    //   endDiskNormal,
-    //   radius,
-    // ));
-
-    // if (startDiskIntersection.w >= 0.0) {
-    //   intersection = startDiskIntersection.xyz;
-    //   normal = -startDiskNormal;
-    //   depth = camera.projectionView * vec4<f32>(startDiskIntersection.xyz, 1.0);
-    //   depth = depth * (1.0 / depth.w);
-    // } else if (endDiskIntersection.w >= 0.0) {
-    //   intersection = endDiskIntersection.xyz;
-    //   normal = -endDiskNormal;
-    //   depth = camera.projectionView * vec4<f32>(endDiskIntersection.xyz, 1.0);
-    //   depth = depth * (1.0 / depth.w);
-    // } else {
-    //   discard;
-    // }
+    // discard;
+    cull = true;
   } else {
-    intersection = ray.origin + result.rayT * ray.direction;
-    let intersectionBezier: vec3<f32> = evaluateQuadraticBezier(curve_ws, result.curveT);
-    normal = normalize(intersection - intersectionBezier);
-    depth = camera.projectionView * vec4<f32>(intersection, 1.0);
-    depth = depth * (1.0 / depth.w);
+      intersection = ray.origin + result.rayT * ray.direction;
+      intersectionBezier = evaluateQuadraticBezier(curve_ws, result.curveT);
+      normal = normalize(intersection - intersectionBezier);
+      depth = camera.projectionView * vec4<f32>(intersection, 1.0);
+      depth = depth * (1.0 / depth.w);
   }
 
-  // var fragmentColor = color;
-  var fragmentColor = color;
+  var fragmentColor = borderColor;
   
-  // if (resultFalse.x > 0.5 && resultFalse.z >= 0.0 && resultFalse.z < 1.0) {
-  //    fragmentColor = vec3<f32>(0.1, 0.3, 0.8);
-  // }
+  if (result2.hit || resultPrevious.hit || resultNext.hit) {
+    fragmentColor = color;
+  }
 
-  if (result2.hit) {
-    fragmentColor = vec3<f32>(0.1, 0.3, 0.8);
- }
 
-    let startDiskNormal = -normalize(evaluateDifferentialQuadraticBezier(curve_ws, 0.0));
-    let startDiskIntersection = rayDiskIntersectionBothSides(ray, Disk(
-      evaluateQuadraticBezier(curve_ws, 0.0),
-      normalize(evaluateDifferentialQuadraticBezier(curve_ws, 0.0)),
-      radius * 0.5,
-    ));
 
-    let endDiskNormal = normalize(evaluateDifferentialQuadraticBezier(curve_ws, 1.0));
-    let endDiskIntersection = rayDiskIntersectionBothSides(ray, Disk(
-      evaluateQuadraticBezier(curve_ws, 1.0),
-      endDiskNormal,
-      radius * 0.5,
-    ));
+  if (cullObjectsBuffer.len <= u32(0)) {
+    cull = false;
+  }
 
-    if (startDiskIntersection || endDiskIntersection) {
-      fragmentColor = vec3<f32>(1.0, 0.0, 0.0);
+  for (var i: u32 = u32(0); i < cullObjectsBuffer.len; i = i + u32(1)) {
+    let object = cullObjectsBuffer.objects[i];
+
+    if (object.ty == u32(2)) {
+      let plane = vec4<f32>(bitcast<f32>(object.content[0]), bitcast<f32>(object.content[1]), bitcast<f32>(object.content[2]), bitcast<f32>(object.content[3]));
+
+      if (dot(plane, vec4<f32>(intersection, 1.0)) < 0.0) {
+        let planeT = -(dot(ray.origin, plane.xyz) + plane.w) / dot(ray.direction, plane.xyz);
+        cull = true;
+      }
     }
+  }
 
-//  if (result.curveT <= 0.1 || result.curveT >= 0.9) {
-//   fragmentColor = vec3<f32>(1.0);
-//  }
+  if (cull) {
+    discard;
+  }
 
   // Final write
   return FragmentOutput(
