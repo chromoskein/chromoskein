@@ -36,7 +36,7 @@ export function intersectPrimitive(primitive: DataView, ray: Ray, offset: number
 
     let result;
     switch (ty) {
-        //case 'Sphere': result = intersectSphere(primitive, ray, offset); break;
+        case 'Sphere': result = intersectSphere(primitive, ray, offset); break;
         case 'Cylinder': result = intersectCylinder(primitive, ray, offset); break;
         case 'AABB': result = intersectAABB(primitive, ray, offset); break;
         case 'RoundedCone': result = intersectRoundedConeWithCutPlanes(primitive, ray, offset, cullObjects); break;

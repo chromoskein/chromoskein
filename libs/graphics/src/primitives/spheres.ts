@@ -16,6 +16,7 @@ export class Spheres implements HighLevelStructure {
 
     //#region Style
     private _colors: Array<vec4>;
+    private _borderColors: Array<vec4>;
     //#endregion
 
     private _partOfBVH: boolean;
@@ -57,6 +58,7 @@ export class Spheres implements HighLevelStructure {
             }
             this._colors = colors;
         }
+        this._borderColors = this._colors.map(v => vec4.clone(v));
     }
 
     public getID(): number {
@@ -75,6 +77,8 @@ export class Spheres implements HighLevelStructure {
                     center: this._centers[i],
                     radius: this._radii[i],
                     color: this._colors[i],
+                    borderColor: this._borderColors[i],
+                    partOfBVH: this._partOfBVH,
                 });
 
                 buffer.i32View.set([this.id], (offset + i) * LL_STRUCTURE_SIZE + 30);
@@ -175,8 +179,8 @@ export class Spheres implements HighLevelStructure {
         this.buffer.setModifiedBytes({ start: this._spheresPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._spheresPosition + this._radii.length) * LL_STRUCTURE_SIZE_BYTES });
     }
 
-    public resetColor(color: vec4): void {
-        this._colors.fill(color);
+    public resetColors(color: vec4): void {
+        this._colors.fill(vec4.clone(color));
 
         if (!this.buffer) return;
 
@@ -187,14 +191,50 @@ export class Spheres implements HighLevelStructure {
         this.buffer.setModifiedBytes({ start: (this._spheresPosition) * LL_STRUCTURE_SIZE_BYTES, end: (this._spheresPosition + this._colors.length) * LL_STRUCTURE_SIZE_BYTES });
     }
 
+    public resetBorderColors(color: vec4): void {
+        this._borderColors.fill(color);
+
+        if (!this.buffer) return;
+
+        for (let i = 0; i < this._borderColors.length; i++) {
+            writeSphereToArrayBuffer(this.buffer, this._spheresPosition + i, { borderColor: this._borderColors[i] });
+        }
+
+        this.buffer.setModifiedBytes({ start: (this._spheresPosition) * LL_STRUCTURE_SIZE_BYTES, end: (this._spheresPosition + this._borderColors.length) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
     public setColor(i: number, color: vec4): void {
-        this._colors[i] = color;
+        this._colors[i] = vec4.clone(color);
 
         if (!this.buffer) return;
 
         writeSphereToArrayBuffer(this.buffer, this._spheresPosition + i, { color });
 
         this.setModified(i, false);
+    }
+
+    public setColors(colors: Array<vec4>): void {
+        this._colors = colors.map(v => vec4.clone(v));
+
+        if (!this.buffer) return;
+
+        for (let i = 0; i < this._colors.length; i++) {
+            writeSphereToArrayBuffer(this.buffer, this._spheresPosition + i, { color: this._colors[i] });
+        }
+
+        this.buffer.setModifiedBytes({ start: (this._spheresPosition) * LL_STRUCTURE_SIZE_BYTES, end: (this._spheresPosition + this._colors.length) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
+    public setBorderColors(colors: Array<vec4>): void {
+        this._borderColors = colors.map(v => vec4.clone(v));
+
+        if (!this.buffer) return;
+
+        for (let i = 0; i < this._borderColors.length; i++) {
+            writeSphereToArrayBuffer(this.buffer, this._spheresPosition + i, { borderColor: this._borderColors[i] });
+        }
+
+        this.buffer.setModifiedBytes({ start: (this._spheresPosition) * LL_STRUCTURE_SIZE_BYTES, end: (this._spheresPosition + this._borderColors.length) * LL_STRUCTURE_SIZE_BYTES });
     }
 
     public getColor(i: number): vec4 | Array<vec4> {

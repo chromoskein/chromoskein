@@ -8,8 +8,9 @@ struct BufferSphere {
     radius: f32,
 
     color: vec4<f32>,
+    borderColor: vec4<f32>,
 
-    padding: array<f32, 23>,
+    padding: array<f32, 19>,
 
     ty: i32,
 };
@@ -29,6 +30,7 @@ struct VertexOutput {
   @builtin(position) Position : vec4<f32>,
   @location(0) sphere : vec4<f32>,
   @location(1) color : vec4<f32>,
+  @location(2) borderColor : vec4<f32>,
 };
 
 @stage(vertex)
@@ -37,13 +39,13 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 ) -> VertexOutput {
   let bufferSphere: BufferSphere = spheresBuffer.spheres[InstanceIndex];
 
-  if (bufferSphere.ty != 0) {
-    return VertexOutput(
-      vec4<f32>(0.0, 0.0, 0.0, 0.0), 
-      vec4<f32>(0.0, 0.0, 0.0, 0.0),
-      vec4<f32>(0.0, 0.0, 0.0, 0.0)
-    );
-  }
+  // if (bufferSphere.ty != 0) {
+  //   return VertexOutput(
+  //     vec4<f32>(0.0, 0.0, 0.0, 0.0), 
+  //     vec4<f32>(0.0, 0.0, 0.0, 0.0),
+  //     vec4<f32>(0.0, 0.0, 0.0, 0.0)
+  //   );
+  // }
 
   let sphere: Sphere = Sphere(bufferSphere.position, bufferSphere.radius);
   let boundingRectangle: BoundingRectangle = sphereBoundingRectangle(sphere, camera.projectionView);
@@ -72,7 +74,8 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
   return VertexOutput(
     vec4<f32>(position, center.z, 1.0), 
     vec4<f32>(sphere.position.xyz, sphere.radius),
-    bufferSphere.color
+    bufferSphere.color,
+    bufferSphere.borderColor,
   );
 }
 
@@ -86,6 +89,7 @@ struct FragmentOutput {
 fn main_fragment(@builtin(position) Position : vec4<f32>, 
                  @location(0) s : vec4<f32>,
                  @location(1) color : vec4<f32>,
+                 @location(2) borderColor : vec4<f32>,
                  ) -> FragmentOutput {
   // Fragment in framebuffer/window coordinates
   var fragmentNormalizedSpace: vec4<f32> = vec4<f32>(Position.xyz, 1.0); 
@@ -122,7 +126,13 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
     discard;
   }
 
-  var outputColor = vec4<f32>(1.0);
+  var outputColor = color;
+
+  let angle = dot(normal, normalize(camera.position.xyz - intersection1.xyz));
+
+  if (angle < 0.50) {
+    outputColor = borderColor;
+  }
 
   ${writeDepth ? `` : `
   let intersection2: vec3<f32> = camera.position.xyz + t.y * ray.direction.xyz;

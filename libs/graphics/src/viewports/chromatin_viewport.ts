@@ -96,7 +96,7 @@ export class ChromatinPart {
     if (this._structure instanceof ContinuousTube) {
       this._structure.resetColorBorder(vec4.fromValues(color.r, color.g, color.b, color.a));
     } else if (this._structure instanceof Spheres) {
-      this._structure.resetColor(vec4.fromValues(color.r, color.g, color.b, color.a));
+      this._structure.resetColors(vec4.fromValues(color.r, color.g, color.b, color.a));
     } else if (this._structure instanceof Spline) {
       this._structure.resetColorBorder(vec4.fromValues(color.r, color.g, color.b, color.a));
     }
@@ -125,7 +125,7 @@ export class ChromatinPart {
         }
       }
     } else if (this._structure instanceof Spheres) {
-      finalColorsArray = colors;
+      finalColorsArray = colors.map(v => vec4.clone(v));
     } else if (this._structure instanceof Spline) {
       finalColorsArray = new Array(4 * this._binsPositions.length);
 
@@ -147,8 +147,7 @@ export class ChromatinPart {
     if (this._structure instanceof ContinuousTube) {
       this.setBinColorVec4(binIndex, c);
     } else if (this._structure instanceof Spheres) {
-
-      this._structure.setColor(binIndex, c);
+      this.setBinColorVec4(binIndex, c);
     } else if (this._structure instanceof Spline) {
       this.setBinColorVec4(binIndex, c);
     }

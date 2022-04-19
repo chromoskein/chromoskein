@@ -244,11 +244,12 @@ ctx.onmessage = ({ data: { objectsBuffer } }) => {
         const objectOffsetWords = i * LL_STRUCTURE_SIZE;
         const objectOffsetBytes = i * LL_STRUCTURE_SIZE_BYTES;
 
+        const partOfBVH = arrayViews.i32View[objectOffsetWords + 29];
         const objectType = arrayViews.i32View[objectOffsetWords + 31];
 
-        if (objectType != LowLevelStructure.None) {
+        if (objectType != LowLevelStructure.None && partOfBVH) {
             switch (objectType) {
-                // case LowLevelStructure.Sphere: bboxes.push(sphereToBoundingBox(arrayViews, i)); break;
+                case LowLevelStructure.Sphere: bboxes.push(sphereToBoundingBox(arrayViews, i)); break;
                 case LowLevelStructure.Cylinder: bboxes.push(cylinderToBoundingBox(objectsBuffer, i)); break;
                 case LowLevelStructure.RoundedCone: bboxes.push(roundedConeToBoundingBox(arrayViews, i)); break;
                 case LowLevelStructure.QuadraticBezierCurve: bboxes.push(quadraticBezierToBoundingBox(arrayViews, i)); break;

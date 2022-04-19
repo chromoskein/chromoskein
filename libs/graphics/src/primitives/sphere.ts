@@ -1,20 +1,24 @@
 import { vec3, vec4 } from "gl-matrix";
 import { GraphicsLibrary } from "..";
 import { ArrayViews, LinearImmutableArray } from "../allocators";
-import { BoundingBox, BoundingBoxEmpty, BoundingBoxExtendByPoint } from "../shared";
+import { BoundingBox, BoundingBoxCalculateCenter, BoundingBoxEmpty, BoundingBoxExtendByPoint } from "../shared";
 import { LowLevelStructure, HighLevelStructure, LL_STRUCTURE_SIZE_BYTES, LL_STRUCTURE_SIZE } from "./shared";
 
 export function writeSphereToArrayBuffer(
     array: LinearImmutableArray,
     offset: number,
     {
+        partOfBVH = true,
         center = null,
         radius = null,
         color = null,
+        borderColor = null,        
     }: {
+        partOfBVH?: boolean;
         center?: vec3 | null;
         radius?: number | null;
         color?: vec4 | null;
+        borderColor?: vec4 | null;        
     } = {}
 ): void {
     const offsetWords = offset * LL_STRUCTURE_SIZE;
@@ -28,9 +32,14 @@ export function writeSphereToArrayBuffer(
     }
 
     if (color) {
-        array.f32View.set([color[0], color[1], color[2], color[3]], offsetWords + 4);
+        array.f32View.set(color, offsetWords + 4);
     }
 
+    if (borderColor) {
+        array.f32View.set(borderColor, offsetWords + 8);
+    }
+
+    array.i32View.set([partOfBVH ? 1 : 0], offsetWords + 29);
     array.i32View.set([LowLevelStructure.Sphere], offsetWords + 31);
 }
 
@@ -39,13 +48,15 @@ export function sphereToBoundingBox(array: ArrayViews, offset: number): Bounding
 
     const spherePosition = vec3.fromValues(
         array.f32View[offset * LL_STRUCTURE_SIZE + 0],
-        array.f32View[offset * LL_STRUCTURE_SIZE + 4],
-        array.f32View[offset * LL_STRUCTURE_SIZE + 8]
+        array.f32View[offset * LL_STRUCTURE_SIZE + 1],
+        array.f32View[offset * LL_STRUCTURE_SIZE + 2]
     );
-    const sphereRadius = array.f32View[offset * LL_STRUCTURE_SIZE + 12];
+    const sphereRadius = array.f32View[offset * LL_STRUCTURE_SIZE + 3];
 
     BoundingBoxExtendByPoint(result, vec3.add(vec3.create(), spherePosition, vec3.fromValues(sphereRadius, sphereRadius, sphereRadius)));
     BoundingBoxExtendByPoint(result, vec3.add(vec3.create(), spherePosition, vec3.fromValues(-sphereRadius, -sphereRadius, -sphereRadius)));
+
+    BoundingBoxCalculateCenter(result);
 
     return result;
 }

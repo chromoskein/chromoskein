@@ -417,7 +417,7 @@ export function ChromatinViewport(props: {
         }
 
 
-    }, [viewport, globalSelections.selections, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
+    }, [viewport, globalSelections.selections, configuration.representation, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
 
     // Calculate/Cache border colors (selections)
     useEffect(() => {
@@ -472,15 +472,13 @@ export function ChromatinViewport(props: {
 
         setBorderColors(allBorderColors);
         // console.timeEnd('colorBins::selections');
-    }, [viewport, globalSelections.selections, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
+    }, [viewport, globalSelections.selections, configuration.representation, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
 
     // Color bins
     useEffect(() => {
         if (!viewport.canvas || !configuration.data) {
             return;
         }
-
-        console.log('coloring');
 
         const datum = configuration.data;
         const binPositions = data.data.filter(d => d.id == datum.id)[0] as BinPositionsData;
@@ -502,6 +500,18 @@ export function ChromatinViewport(props: {
 
                 if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
                     chromatinPart.structure.setBorderColorsCombined(borderColors[chromosomeIndex]);
+                } else {
+                    chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+                }
+            } else if (chromatinPart.structure instanceof Spheres) {
+                if (chromosomeIndex < innerColors.length && innerColors[chromosomeIndex] && innerColors[chromosomeIndex].length != 0) {
+                    chromatinPart.structure.setColors(innerColors[chromosomeIndex]);
+                } else {
+                    chromatinPart.structure.resetColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
+                }
+
+                if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
+                    chromatinPart.structure.setBorderColors(borderColors[chromosomeIndex]);
                 } else {
                     chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                 }
