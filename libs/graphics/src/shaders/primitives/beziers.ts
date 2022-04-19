@@ -77,13 +77,13 @@ fn rayQuadraticBezierIntersection(ray: Ray, curve: QuadraticBezierCurve) -> Curv
     var dt1: f32 = 0.0;
     var dt2: f32 = 0.0;
 
-    for(var i: i32 = 0; i < 3; i = i + 1) {
+    for(var i: i32 = 0; i < 5; i = i + 1) {
       rci.co = evaluateQuadraticBezier(curve, t);
       rci.cd = evaluateDifferentialQuadraticBezier(curve, t);
 
       rci = rayBezierIntersect(rci, curve.radius);
       
-      if (rci.phantom && abs(rci.dt) < 0.01) {
+      if (rci.phantom && abs(rci.dt) < 0.1) {
         rci.s = rci.s + rci.co.z;
         
         result.rayT = rci.s;

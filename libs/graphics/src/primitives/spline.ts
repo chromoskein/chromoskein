@@ -82,10 +82,11 @@ export class Spline implements HighLevelStructure {
 
         const newPoints = [];
         for(let i = 0; i < this.catmullRomPoints.length - 1; i++) {
-            newPoints.push(this.catmullRomPoints[i]);
+            // newPoints.push(this.catmullRomPoints[i]);
             const newPoint = vec3.scale(vec3.create(), vec3.add(vec3.create(), this.catmullRomPoints[i], this.catmullRomPoints[i + 1]), 0.5);
             newPoints.push(newPoint);
         }
+        newPoints.push(vec3.scale(vec3.create(), vec3.add(vec3.create(), newPoints[newPoints.length - 1], endPoint), 0.5));
         newPoints.push(endPoint);
         this.catmullRomPoints = newPoints;
 
@@ -94,6 +95,8 @@ export class Spline implements HighLevelStructure {
         // N - 3 cubic beziers are approximated by 2 * (N - 3) quadratic beziers
         const cubicBeziersLength = (this.catmullRomPoints.length - 3)
         const quadraticBeziersLength = 2 * cubicBeziersLength;
+
+        console.log(this._points.length, this.catmullRomPoints.length, quadraticBeziersLength);
 
         this._colors = new Array(quadraticBeziersLength);
         this._colors.fill(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
@@ -303,29 +306,29 @@ export class Spline implements HighLevelStructure {
     public setColor(segment: number, color: vec4): void {
         if (!this.buffer) return;
 
-        for (let i = 0; i < 4; i++) {
-            const offsetWords = (this._bufferPosition + 4 * segment + i) * LL_STRUCTURE_SIZE;
+        for (let i = 0; i < 2; i++) {
+            const offsetWords = (this._bufferPosition + 2 * segment + i) * LL_STRUCTURE_SIZE;
     
-            this._colors[4 * segment + i] = color;
+            this._colors[2 * segment + i] = color;
     
             this.buffer.f32View.set(color, offsetWords + 12);
         }
 
-        this.buffer.setModifiedBytes({ start: (this._bufferPosition + 4 * segment) * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + 4 * segment + 4) * LL_STRUCTURE_SIZE_BYTES, });
+        this.buffer.setModifiedBytes({ start: (this._bufferPosition + 2 * segment) * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + 2 * segment + 2) * LL_STRUCTURE_SIZE_BYTES, });
     }
 
     public setBorderColor(segment: number, color: vec4): void {
         if (!this.buffer) return;
 
-        for (let i = 0; i < 4; i++) {
-            const offsetWords = (this._bufferPosition + 4 * segment + i) * LL_STRUCTURE_SIZE;
+        for (let i = 0; i < 2; i++) {
+            const offsetWords = (this._bufferPosition + 2 * segment + i) * LL_STRUCTURE_SIZE;
     
-            this._borderColors[4 * segment + i] = color;
+            this._borderColors[2 * segment + i] = color;
     
             this.buffer.f32View.set(color, offsetWords + 16);
         }
 
-        this.buffer.setModifiedBytes({ start: (this._bufferPosition + 4 * segment) * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + 4 * segment + 4) * LL_STRUCTURE_SIZE_BYTES, });
+        this.buffer.setModifiedBytes({ start: (this._bufferPosition + 2 * segment) * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + 2 * segment + 2) * LL_STRUCTURE_SIZE_BYTES, });
     }
 
     public setColors(colors: Array<vec4>): void {

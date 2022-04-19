@@ -431,7 +431,7 @@ export function rayQuadraticBezierIntersection(ray: Ray, curve: QuadraticBezier,
         let dt1 = 0.0;
         let dt2 = 0.0;
 
-        for (let i = 0; i < 8; i = i + 1) {
+        for (let i = 0; i < 16; i = i + 1) {
             rci.co = curve.evaluate(t);
             rci.cd = curve.evaluateDifferential(t);
       
@@ -505,7 +505,7 @@ export function intersectQuadraticBezier(buffer: DataView, ray: Ray, offset: num
     );
 
     const radius = buffer.getFloat32(byteOffset + 12, true);
-    
+
     let curve = new QuadraticBezier(p0, p1, p2);
     curve = transformToRayFrame(ray, curve);
     const curveIntersection = rayQuadraticBezierIntersection(ray, curve, radius);
@@ -513,20 +513,20 @@ export function intersectQuadraticBezier(buffer: DataView, ray: Ray, offset: num
     const intersection = vec3.add(vec3.create(), ray.origin, vec3.scale(vec3.create(), ray.direction, curveIntersection.rayT));
 
     if (curveIntersection.hit && curveIntersection.rayT > 0.0) {
-        for (const cullObject of cullObjects) {
-            if (cullObject instanceof CullPlane && cullObject.cullsPoint(intersection)) {
-                const planeNormal = cullObject.normal;
-                const denom = vec3.dot(ray.direction, planeNormal);
+        // for (const cullObject of cullObjects) {
+        //     if (cullObject instanceof CullPlane && cullObject.cullsPoint(intersection)) {
+        //         const planeNormal = cullObject.normal;
+        //         const denom = vec3.dot(ray.direction, planeNormal);
 
-                const planeT = vec3.dot(vec3.sub(vec3.create(), cullObject.point, ray.origin), planeNormal) / denom;
+        //         const planeT = vec3.dot(vec3.sub(vec3.create(), cullObject.point, ray.origin), planeNormal) / denom;
 
-                if (planeT > 0.0 && planeT > curveIntersection.rayT) {
-                    return planeT;
-                } else {
-                    return -1.0;
-                }
-            }
-        }
+        //         if (planeT > 0.0 && planeT > curveIntersection.rayT) {
+        //             return planeT;
+        //         } else {
+        //             return -1.0;
+        //         }
+        //     }
+        // }
 
         return curveIntersection.rayT;
     }

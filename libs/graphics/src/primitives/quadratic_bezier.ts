@@ -23,6 +23,7 @@ export function quadraticBezierToBoundingBox(array: ArrayViews, offset: number):
         array.f32View[offset * LL_STRUCTURE_SIZE + 10]
     );
     
+    const radius = array.f32View[offset * LL_STRUCTURE_SIZE + 3];
     
     let mi = vec3.min(vec3.create(), p0, p2);
     let ma = vec3.max(vec3.create(), p0, p2);
@@ -49,8 +50,9 @@ export function quadraticBezierToBoundingBox(array: ArrayViews, offset: number):
         ma = vec3.max(vec3.create(), ma, q);
     }
 
-    result.min = mi;
-    result.max = ma;
+    result.min = vec3.add(vec3.create(), mi, vec3.fromValues(-radius, -radius, -radius));
+    result.max = vec3.add(vec3.create(), ma, vec3.fromValues(radius, radius, radius));
+    
 
     BoundingBoxCalculateCenter(result);
 

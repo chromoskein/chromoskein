@@ -86,7 +86,7 @@ export class ChromatinPart {
     } else if (this._structure instanceof Spheres) {
       return this._structure.localOffsetOf(LowLevelStructure.Sphere, hit.lowLevelIndex);
     } else if (this._structure instanceof Spline) {
-      return Math.floor(this._structure.localOffsetOf(LowLevelStructure.QuadraticBezierCurve, hit.lowLevelIndex) / 4);
+      return Math.floor(this._structure.localOffsetOf(LowLevelStructure.QuadraticBezierCurve, hit.lowLevelIndex) / 2);
     }
 
     return null;

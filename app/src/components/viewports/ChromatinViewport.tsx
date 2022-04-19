@@ -417,7 +417,7 @@ export function ChromatinViewport(props: {
         }
 
 
-    }, [viewport, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
+    }, [viewport, globalSelections.selections, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
 
     // Calculate/Cache border colors (selections)
     useEffect(() => {
@@ -476,9 +476,11 @@ export function ChromatinViewport(props: {
 
     // Color bins
     useEffect(() => {
-        if (!viewport || !viewport.canvas || !configuration.data) {
+        if (!viewport.canvas || !configuration.data) {
             return;
         }
+
+        console.log('coloring');
 
         const datum = configuration.data;
         const binPositions = data.data.filter(d => d.id == datum.id)[0] as BinPositionsData;
@@ -631,7 +633,7 @@ export function ChromatinViewport(props: {
         }
         // console.timeEnd('colorBins::intersection');
         // console.timeEnd('colorBins');
-    }, [viewport, configuration.data, configuration.selectedSelectionID, globalSelections, closestIntersection, configuration.tool, configuration.chromosomes, innerColors, borderColors]);
+    }, [viewport, closestIntersection, innerColors, borderColors, configuration.data, configuration.tool, configuration.selectedSelectionID, configuration.chromosomes, data.data, globalSelections.selections, isShiftPressed]);
 
     useEffect(() => {
         if (viewport && configuration.backgroundColor) {
