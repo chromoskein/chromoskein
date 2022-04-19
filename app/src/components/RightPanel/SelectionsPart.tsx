@@ -2,6 +2,7 @@ import { ChromatinViewportConfiguration, D1ViewportConfiguration, DistanceMapDat
 import { DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionID, Selection, SelectionState } from "../../modules/storage/models/selections";
 import { ConfigurationReducer, ConfigurationsWithSelections, useConfiguration, useSelections, useViewportName } from "../hooks";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 
 import React, { Dispatch, useEffect, useState } from "react";
 import { Text } from '@fluentui/react/lib/Text';
@@ -90,37 +91,55 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
         });
     }
 
-    return <div><Text nowrap block variant='large'>Selections</Text>
-        {selectedDataPartID != null && selections.map(([selection, associatedData]) => {
-            if (renaming && renaming.id === selection.id) {
-                return <div
-                    className={selection.id == configuration.selectedSelectionID ? "treeViewListItem selected" : "treeViewListItem"}
-                    key={isoSelectionID.unwrap(selection.id)}
-                    onClick={() => selectSelection(selection.id)}>
-                    <span className='selectionColorbox' style={{ backgroundColor: `rgb(${selection.color.r * 255}, ${selection.color.g * 255}, ${selection.color.b * 255})` }}></span>
-                    <span style={{ display: 'block', width: '4px' }}></span>
-                    <TextField className="text" defaultValue={selection.name} onChange={(_e, newName) => handleRenameChange(newName)} onKeyDown={(e) => e.key === 'Enter' && handleRenameEnd()}></TextField>
-                    <Rename16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={handleRenameEnd}></Rename16Regular>
-                    {(associatedData.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, false) }}></EyeShow16Regular>)}
-                    {(!associatedData.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, true) }}></EyeOff16Regular>)}
-                    <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeSelection(selection.id) }}></Delete16Regular>
-                </div>
-            } else {
-                return <div
-                    className={selection.id == configuration.selectedSelectionID ? "treeViewListItem selected" : "treeViewListItem"}
-                    key={isoSelectionID.unwrap(selection.id)}
-                    onClick={() => selectSelection(selection.id)}
-                    style={{ cursor: 'pointer'}}>
-                    <span className='selectionColorbox' style={{ backgroundColor: `rgb(${selection.color.r * 255}, ${selection.color.g * 255}, ${selection.color.b * 255})` }}></span>
-                    <span style={{ display: 'block', width: '4px' }}></span>
-                    <span className='text'>{selection.name}</span>
-                    <Rename16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={() => handleRenameStart(selection)}></Rename16Regular>
-                    {(associatedData.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, false) }}></EyeShow16Regular>)}
-                    {(!associatedData.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, true) }}></EyeOff16Regular>)}
-                    <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeSelection(selection.id) }}></Delete16Regular>
-                </div>
-            }
-        })}
+    function handleDragEnd(result: DropResult) {
+        if (!result.destination) {
+            return;
+        }
+
+        globalSelectionsDispatch({
+            type: SelectionActionKind.REORDER,
+            sourceIndex: result.source.index,
+            targetIndex: result.destination.index,
+        });
+    }
+
+    return <>
+        <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="selections">
+                {(provided, snapshot) => <>
+                    <div ref={provided.innerRef} {...provided.droppableProps}>
+                        {selections.map(([selection, options], index) =>
+                            <Draggable
+                                key={isoSelectionID.unwrap(selection.id)}
+                                draggableId={`${isoSelectionID.unwrap(selection.id)}`}
+                                index={index}>
+                                {(provided, snapshot) => (
+                                    <div ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={selection.id == configuration.selectedSelectionID ? "treeViewListItem selected" : "treeViewListItem"}
+                                        onClick={() => selectSelection(selection.id)}>
+                                        <span className='selectionColorbox' style={{ backgroundColor: `rgb(${selection.color.r * 255}, ${selection.color.g * 255}, ${selection.color.b * 255})` }}></span>
+                                        <span style={{ display: 'block', width: '4px' }}></span>
+                                        {renaming && renaming.id === selection.id && <>
+                                            <TextField className="text" defaultValue={selection.name} onChange={(_e, newName) => handleRenameChange(newName)} onKeyDown={(e) => e.key === 'Enter' && handleRenameEnd()}></TextField>
+                                            <Rename16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={handleRenameEnd}></Rename16Regular>
+                                        </>}
+                                        {(!renaming || renaming.id !== selection.id) && <>
+                                            <Text className="text" nowrap>{selection.name}</Text>
+                                            <Rename16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={() => handleRenameStart(selection)}></Rename16Regular>
+                                        </>}
+                                        {(options.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, false) }}></EyeShow16Regular>)}
+                                        {(!options.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, true) }}></EyeOff16Regular>)}
+                                        <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeSelection(selection.id) }}></Delete16Regular>
+                                    </div>
+                                )}
+                            </Draggable>)}
+                    </div>
+                    {provided.placeholder}
+                </>}
+            </Droppable>
+        </DragDropContext>
         {(selectedDataPartID != null) && (<PrimaryButton text='Add selection' style={{ marginTop: '8px' }} onClick={() => addSelection()} />)}
-    </div>
+    </>
 }

@@ -30,6 +30,7 @@ export type SelectionState = {
 export enum SelectionActionKind {
   ADD = 'ADD',
   UPDATE = 'UPDATE',
+  REORDER = 'REORDER',
   REMOVE = 'REMOVE',
   SET = 'SET',
 }
@@ -63,7 +64,13 @@ export type SelectionActionSet = {
   state: SelectionState;
 };
 
-export type SelectionAction = SelectionActionAdd | SelectionActionUpdate | SelectionActionRemove | SelectionActionSet;
+export type SelectionActionReorder = {
+  type: SelectionActionKind.REORDER;
+  sourceIndex: number;
+  targetIndex: number;
+}
+
+export type SelectionAction = SelectionActionAdd | SelectionActionUpdate | SelectionActionRemove | SelectionActionSet | SelectionActionReorder;
 
 export function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
   switch (action.type) {
@@ -95,6 +102,15 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
       if (action.color) newSelections[selectionIndex].color = action.color;
       if (action.bins) newSelections[selectionIndex].bins = action.bins;
 
+      return {
+        ...state,
+        selections: newSelections
+      }
+    }
+    case SelectionActionKind.REORDER: {
+      const newSelections = [...state.selections];
+      //place selection on action.sourceIndex to action.targetIndex
+      newSelections.splice(action.targetIndex, 0, newSelections.splice(action.sourceIndex, 1)[0]);
       return {
         ...state,
         selections: newSelections
