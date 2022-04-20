@@ -394,7 +394,7 @@ export function TADViewport(props: {
         }
 
 
-        allSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selection.id, name: null, color: null, bins: newBins });
+        allSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selection.id, bins: newBins });
     };
     //#endregion
 

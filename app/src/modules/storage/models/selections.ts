@@ -47,9 +47,9 @@ export type SelectionActionUpdate = {
 
   id: SelectionID;
 
-  name: string | null;
-  color: GPUColorDict | null;
-  bins: Uint16Array | null;
+  name?: string;
+  color?: GPUColorDict;
+  bins?: Uint16Array;
 };
 
 export type SelectionActionRemove = {

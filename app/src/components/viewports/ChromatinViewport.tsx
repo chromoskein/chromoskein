@@ -64,7 +64,7 @@ export function ChromatinViewport(props: {
 
     useKey(["Alt"], () => setSecondaryModPressed(true), { eventTypes: ["keydown"] });
     useKey(["Alt"], () => setSecondaryModPressed(false), { eventTypes: ["keyup"] });
-    
+
     useKey(["Shift"], () => setShiftPressed(true), { eventTypes: ["keydown"] });
     useKey(["Shift"], () => setShiftPressed(false), { eventTypes: ["keyup"] });
 
@@ -807,7 +807,7 @@ export function ChromatinViewport(props: {
             });
         }
 
-        globalSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selectionId, name: null, color: null, bins: newBins });
+        globalSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selectionId, bins: newBins });
     };
 
     return (

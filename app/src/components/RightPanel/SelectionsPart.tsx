@@ -7,7 +7,8 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautif
 import React, { Dispatch, useEffect, useState } from "react";
 import { Text } from '@fluentui/react/lib/Text';
 import { Delete16Regular, EyeShow16Regular, EyeOff16Regular, Rename16Regular } from '@fluentui/react-icons';
-import { PrimaryButton, TextField } from "@fluentui/react";
+import { Callout, ColorPicker, DefaultButton, IColor, PrimaryButton, TextField } from "@fluentui/react";
+import chroma from "chroma-js";
 
 export interface PropsSelectionsPart<T extends ViewportConfiguration> {
     selections: Array<[Selection, ViewportSelectionOptions]>,
@@ -25,6 +26,8 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
 
     const selections = props.selections;
     const [renaming, setRenaming] = useState<{ id: SelectionID, newName: string } | null>(null);
+    const [isColorCalloutVisible, setIsColorCalloutVisible] = useState<boolean>(false);
+
 
     if (!configuration.data) return <div></div>;
 
@@ -103,6 +106,22 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
         });
     }
 
+    function changeSelectionColor(selectionID: SelectionID, color: IColor) {
+        console.log(color);
+
+        globalSelectionsDispatch({
+            type: SelectionActionKind.UPDATE,
+            id: selectionID,
+            color: {
+                r: color.r / 255,
+                g: color.g / 255,
+                b: color.b / 255,
+                a: color.a != undefined ? (color.a / 255) : 1
+            },
+        });
+
+    }
+
     return <>
         <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="selections">
@@ -119,7 +138,40 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                                         {...provided.dragHandleProps}
                                         className={selection.id == configuration.selectedSelectionID ? "treeViewListItem selected" : "treeViewListItem"}
                                         onClick={() => selectSelection(selection.id)}>
-                                        <span className='selectionColorbox' style={{ backgroundColor: `rgb(${selection.color.r * 255}, ${selection.color.g * 255}, ${selection.color.b * 255})` }}></span>
+                                        <DefaultButton id="selectionColorButton"
+                                            style={{
+                                                padding: 0,
+                                                minWidth: "0px",
+                                            }}
+                                            onRenderText={(p) => <div
+                                                style={{
+                                                    width: '1.2rem',
+                                                    height: '1.2rem',
+                                                    margin: '0px 4px',
+                                                    backgroundColor: `rgb(${selection.color.r * 255}, ${selection.color.g * 255}, ${selection.color.b * 255})`,
+                                                }}
+                                                key={`${isoSelectionID.unwrap(selection.id)}-color-button`}
+                                            ></div>}
+                                            onClick={() => setIsColorCalloutVisible(true)}
+                                        />
+                                        {isColorCalloutVisible && (
+                                            <Callout
+                                                gapSpace={0}
+                                                target={'#selectionColorButton'}
+                                                onDismiss={() => setIsColorCalloutVisible(false)}
+                                                setInitialFocus
+                                            >
+                                                <ColorPicker
+                                                    color={configuration.backgroundColor}
+                                                    onChange={(_, color) => changeSelectionColor(selection.id, color)}
+                                                    alphaType={'none'}
+                                                    showPreview={true}
+                                                    strings={{
+                                                        hueAriaLabel: 'Hue',
+                                                    }}
+                                                />
+                                            </Callout>
+                                        )}
                                         <span style={{ display: 'block', width: '4px' }}></span>
                                         {renaming && renaming.id === selection.id && <>
                                             <TextField className="text" defaultValue={selection.name} onChange={(_e, newName) => handleRenameChange(newName)} onKeyDown={(e) => e.key === 'Enter' && handleRenameEnd()}></TextField>
