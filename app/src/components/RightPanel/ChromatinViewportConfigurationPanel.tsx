@@ -414,7 +414,6 @@ export function ChromatinViewportConfigurationPanel(props: {
 
         </Stack>
 
-
         {/* List of 3D data */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
@@ -553,7 +552,6 @@ export function ChromatinViewportConfigurationPanel(props: {
                     }
                 />)
             }</>
-
         }
 
         {configuration.colorMappingMode == '1d-numerical' && <>
@@ -587,8 +585,6 @@ export function ChromatinViewportConfigurationPanel(props: {
         }
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
-
-
 
         <Text nowrap block variant='large'>Tooltip</Text>
         <Checkbox label="Show tooltip" checked={configuration.showTooltip} onChange={handleShowTooltipChange} />
@@ -644,5 +640,5 @@ export function ChromatinViewportConfigurationPanel(props: {
             dataReducer={props.dataReducer}
             selectionsReducer={props.selectionsReducer}
         ></SelectionsPart>
-    </div >
+    </div>
 }

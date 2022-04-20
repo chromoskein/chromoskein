@@ -119,17 +119,6 @@ export function ChromatinViewport(props: {
         viewport.camera.ignoreEvents = isPrimaryModPressed;
     }, [isPrimaryModPressed]);
 
-    // Establish 3D structure
-    const configurePart = (part: ChromatinPart, configuration: IChromatinDataConfiguration) => {
-        if (part.structure instanceof ContinuousTube) {
-            part.structure.radius = configuration.radius;
-        } else if (part.structure instanceof Spheres) {
-            part.structure.setRadiusAll(configuration.radius);
-        } else if (part.structure instanceof Spline) {
-            part.structure.radius = configuration.radius;
-        }
-    };
-
     // remove data removed from data tab 
     // useEffect(() => {
     //     const dataWithoutGlobalyRemoved = configuration.data.filter(confD => data.data.find(globalD => confD.id == globalD.id) != undefined);
@@ -151,6 +140,7 @@ export function ChromatinViewport(props: {
 
         const datum = datumUntyped as BinPositionsData;
 
+        let radius = configuration.data? configuration.data.radius : 0.0;
         if (!previousConfiguration || (previousConfiguration && ((previousConfiguration.data && previousConfiguration.data.id != configuration.data.id) || !previousConfiguration.data))) {
             const values = datum.values;
             const distances = [];
@@ -162,13 +152,14 @@ export function ChromatinViewport(props: {
 
             const quantiles = quantile(distances, [0.05, 0.95]);
 
+            radius = quantiles[0] / 2.0;
             updateConfiguration({
                 ...configuration,
                 data: {
                     ...configuration.data,
-                    radius: quantiles[0] / 2.0
+                    radius: quantiles[0] / 4.0
                 },
-                radiusRange: { min: 0.0, max: quantiles[1] / 2.0 }
+                radiusRange: { min: 0.0, max: quantiles[0] / 2.0 }
             });
         }
 
@@ -192,7 +183,7 @@ export function ChromatinViewport(props: {
             });
 
             const chromatinPart = viewport.addPart(chromosomeInfo.name, explodedPositions as Positions3D, true, isoDataID.unwrap(datum.id), chromosomeIndex, configuration.representation, false);
-            configurePart(chromatinPart, configuration.data);
+            chromatinPart.structure.radius = radius;
         }
 
         viewport.rebuild();

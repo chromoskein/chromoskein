@@ -240,6 +240,7 @@ ctx.onmessage = ({ data: { objectsBuffer } }) => {
     let objectNumber = 0;
     const bboxes = [];
     const global_bbox = BoundingBoxEmpty();
+    
     for (let i = 0; i < objectsCount; i++) {
         const objectOffsetWords = i * LL_STRUCTURE_SIZE;
         const objectOffsetBytes = i * LL_STRUCTURE_SIZE_BYTES;

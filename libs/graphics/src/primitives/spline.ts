@@ -181,6 +181,7 @@ export class Spline implements HighLevelStructure {
             buffer.f32View.set(this._colors[i], offsetWords + 12);
             buffer.f32View.set(this._borderColors[i], offsetWords + 16);
 
+            buffer.i32View.set([this._partOfBVH ? 1 : 0], (offset + i) * LL_STRUCTURE_SIZE + 29);
             buffer.i32View.set([this.id], offsetWords + 30);
             buffer.i32View.set([LowLevelStructure.QuadraticBezierCurve], offsetWords + 31);
         }

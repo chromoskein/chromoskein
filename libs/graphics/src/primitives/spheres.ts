@@ -12,7 +12,7 @@ export class Spheres implements HighLevelStructure {
     private _spheresPosition = 0;
 
     private _centers: Array<vec3>;
-    private _radii: Array<number>;
+    private _radius: number;
 
     //#region Style
     private _colors: Array<vec4>;
@@ -31,23 +31,14 @@ export class Spheres implements HighLevelStructure {
         return this._opaque;
     }
 
-    constructor(graphicsLibrary: GraphicsLibrary, id: number, partOfBVH = true, points: Array<vec3>, radii: Array<number> | null = null, colors: Array<vec4> | null = null) {
+    constructor(graphicsLibrary: GraphicsLibrary, id: number, partOfBVH = true, points: Array<vec3>, colors: Array<vec4> | null = null) {
         this.graphicsLibrary = graphicsLibrary;
 
         this.id = id;
         this._centers = points;
         this._partOfBVH = partOfBVH;
         this._dirtyBVH = true;
-
-        if (radii == null) {
-            this._radii = new Array(this._centers.length);
-            this._radii.fill(1.0);
-        } else {
-            if (this._centers.length != radii.length) {
-                throw "";
-            }
-            this._radii = radii;
-        }
+        this._radius = 0.0;
 
         if (colors == null) {
             this._colors = new Array(this._centers.length);
@@ -75,7 +66,7 @@ export class Spheres implements HighLevelStructure {
             for (let i = 0; i < this._centers.length; i++) {
                 writeSphereToArrayBuffer(buffer, offset + i, {
                     center: this._centers[i],
-                    radius: this._radii[i],
+                    radius: this._radius,
                     color: this._colors[i],
                     borderColor: this._borderColors[i],
                     partOfBVH: this._partOfBVH,
@@ -153,30 +144,15 @@ export class Spheres implements HighLevelStructure {
     }
 
     //#region Setters & Getters
-    public getRadius(i: number): number {
-        return this._radii[i];
+    public get radius(): number {
+        return this._radius;
     }
 
-    public setRadius(i: number, radius: number): void {
-        this._radii[i] = radius;
+    public set radius(radius: number) {
+        this._radius = radius;
 
-        if (!this.buffer) return;
-
-        writeSphereToArrayBuffer(this.buffer, this._spheresPosition + i, { radius });
-
-        this.setModified(i);
-    }
-
-    public setRadiusAll(radius: number): void {
-        this._radii.fill(radius);
-
-        if (!this.buffer) return;
-
-        for (let i = 0; i < this._radii.length; i++) {
-            writeSphereToArrayBuffer(this.buffer, this._spheresPosition + i, { radius })
-        }
-
-        this.buffer.setModifiedBytes({ start: this._spheresPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._spheresPosition + this._radii.length) * LL_STRUCTURE_SIZE_BYTES });
+        this.buffer?.setModifiedBytes({ start: this._spheresPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._spheresPosition + this._centers.length) * LL_STRUCTURE_SIZE_BYTES });
+        this._dirtyBVH = true;
     }
 
     public resetColors(color: vec4): void {
