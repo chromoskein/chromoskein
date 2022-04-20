@@ -146,7 +146,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         ]
 
 
-    const [isCalloutVisible, setIsCalloutVisible] = useState<boolean>(false);
+    const [isBackgroundColorCalloutVisible, setIsBackgroundColorCalloutVisible] = useState<boolean>(false);
 
     const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer);
 
@@ -351,7 +351,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         { key: 1, text: 'Spheres' },
         { key: 2, text: 'Continuous Tube' },
         { key: 3, text: 'Spline' },
-      ];
+    ];
 
     const representationChanged = (event: FormEvent<HTMLDivElement>, option: IDropdownOption<any> | undefined, index: number | undefined): void => {
         if (!option || typeof option.key != 'number') return;
@@ -381,22 +381,21 @@ export function ChromatinViewportConfigurationPanel(props: {
             </Stack.Item>
             <Stack.Item>
                 <DefaultButton id="backgroundButton" styles={colorPickerButtonStyles}
-                    onRenderText={(p) => <span>
-                        <div style={{
-                            display: "flex",
-                            width: '1.2rem',
-                            height: '1.2rem',
-                            margin: '0px 4px',
-                            backgroundColor: `#${configuration.backgroundColor.hex}`
-                        }}></div>
-                    </span>}
-                    onClick={() => setIsCalloutVisible(true)}
+                    onRenderText={(p) => <div style={{
+                        width: '1.2rem',
+                        height: '1.2rem',
+                        margin: '0px 4px',
+                        backgroundColor: `#${configuration.backgroundColor.hex}`
+                    }}
+                        key="backgroundButton"
+                    ></div>}
+                    onClick={() => setIsBackgroundColorCalloutVisible(true)}
                 />
-                {isCalloutVisible && (
+                {isBackgroundColorCalloutVisible && (
                     <Callout
                         gapSpace={0}
                         target={'#backgroundButton'}
-                        onDismiss={() => setIsCalloutVisible(false)}
+                        onDismiss={() => setIsBackgroundColorCalloutVisible(false)}
                         setInitialFocus
                     >
                         <ColorPicker
