@@ -107,7 +107,7 @@ export function ChromatinViewport(props: {
                 ...configuration,
                 camera: viewport.cameraConfiguration
             });
-        }, 1000)
+        }, 500)
 
         return () => clearTimeout(timer);
     }, [viewport.cameraConfiguration]);
@@ -140,7 +140,7 @@ export function ChromatinViewport(props: {
 
         const datum = datumUntyped as BinPositionsData;
 
-        let radius = configuration.data? configuration.data.radius : 0.0;
+        let radius = configuration.data ? configuration.data.radius : 0.0;
         if (!previousConfiguration || (previousConfiguration && ((previousConfiguration.data && previousConfiguration.data.id != configuration.data.id) || !previousConfiguration.data))) {
             const values = datum.values;
             const distances = [];
@@ -657,27 +657,35 @@ export function ChromatinViewport(props: {
     useEffect(() => {
         if (!viewport) return;
 
-        let planeNormal;
-        switch (configuration.cutaway.axis) {
-            case 'X': {
-                planeNormal = vec3.fromValues(0.0, 0.0, 1.0);
-                break;
-            }
-            case 'Y': {
-                planeNormal = vec3.fromValues(0.0, 1.0, 0.0);
-                break;
-            }
-            case 'Z': {
-                planeNormal = vec3.fromValues(1.0, 0.0, 0.0);
-                break;
-            }
-        }
-        const planePoint = vec3.scale(vec3.create(), planeNormal, configuration.cutaway.length);
-
         viewport.deleteCullObjects();
-        viewport.addCullObject(new CullPlane(planeNormal, planePoint));
+
+        for (const cutaway of configuration.cutaways) {
+            let planeNormal;
+            if (cutaway.axis == 'X' || cutaway.axis == 'Y' || cutaway.axis == 'Z') {
+                switch (cutaway.axis) {
+                    case 'X': {
+                        planeNormal = vec3.fromValues(0.0, 0.0, 1.0);
+                        break;
+                    }
+                    case 'Y': {
+                        planeNormal = vec3.fromValues(0.0, 1.0, 0.0);
+                        break;
+                    }
+                    case 'Z': {
+                        planeNormal = vec3.fromValues(1.0, 0.0, 0.0);
+                        break;
+                    }
+                }
+            } else {
+                planeNormal = vec3.clone(cutaway.axis);
+            }
+
+            const planePoint = vec3.scale(vec3.create(), planeNormal, cutaway.length);
+            viewport.addCullObject(new CullPlane(planeNormal, planePoint));
+        }
+
         viewport.updateCullObjects();
-    }, [viewport, configuration.cutaway.axis, configuration.cutaway.length]);
+    }, [viewport, configuration.cutaways]);
 
     function makeRulerTooltipInfo(closestIntersection: ChromatinIntersection): string | null {
         if (configuration.tool.type == 'ruler' && configuration.tool.from) {

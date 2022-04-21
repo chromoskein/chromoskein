@@ -92,6 +92,11 @@ export class OrbitCamera extends Camera {
             rotX: this._rotX,
             rotY: this._rotY,
             distance: this._distance,
+            position: {
+                x: this._position[0],
+                y: this._position[1],
+                z: this._position[2]
+            },
             lookAtPosition: {
                 x: this._lookAtPosition[0],
                 y: this._lookAtPosition[1],

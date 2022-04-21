@@ -1,17 +1,18 @@
 import { Callout, DefaultButton, TextField, ColorPicker, ComboBox, IComboBoxOption, IComboBox, Label, Slider, IColor, Dropdown, IDropdownOption, Stack, Separator, ChoiceGroup, IChoiceGroupOption, Checkbox, IButtonStyles } from "@fluentui/react";
 import { Model, TabNode } from "flexlayout-react";
-import React, { Dispatch, FormEvent, MouseEvent, MouseEventHandler, useEffect, useState } from "react";
+import React, { Dispatch, FormEvent, MouseEvent, useState } from "react";
 import { toNumber } from "lodash";
 import './RightPanel.scss';
-import { Delete16Regular } from '@fluentui/react-icons';
-import { ChromatinRepresentation } from "../../modules/graphics";
+import { ChromatinRepresentation, SmoothCamera, SmoothCameraConfiguration } from "../../modules/graphics";
 import { Text } from '@fluentui/react/lib/Text';
 
 import { ChromatinViewportAggregationFunction, ChromatinViewportColorMappingMode, ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, TooltipNumericAggregation, TooltipTextAggregation, ViewportConfigurationType } from '../../modules/storage/models/viewports';
-import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
+import { BinPositionsData, DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration, useSelections, useViewportName } from "../hooks";
 import { SelectionsPart } from "./SelectionsPart";
+import { CutawaysPart } from "./CutawaysPart";
+import { vec3 } from "gl-matrix";
 
 export function ChromatinViewportConfigurationPanel(props: {
     model: Model,
@@ -301,32 +302,6 @@ export function ChromatinViewportConfigurationPanel(props: {
     }
     //#endregion
 
-    const setCutawayAxis = (ev?: FormEvent<HTMLElement | HTMLInputElement> | undefined, option?: IChoiceGroupOption | undefined) => {
-        if (!option) return;
-
-        const key = option.key;
-
-        if (key != 'X' && key != 'Y' && key != 'Z') return;
-
-        updateConfiguration({
-            ...configuration,
-            cutaway: {
-                ...configuration.cutaway,
-                axis: key
-            }
-        });
-    }
-
-    const setCutawayLength = (length: number) => {
-        updateConfiguration({
-            ...configuration,
-            cutaway: {
-                ...configuration.cutaway,
-                length: length
-            }
-        });
-    }
-
     const handleChromosomeMouseEvent = (event: MouseEvent<HTMLDivElement>, index: number) => {
         if (event.buttons != 1) {
             return;
@@ -381,7 +356,7 @@ export function ChromatinViewportConfigurationPanel(props: {
             </Stack.Item>
             <Stack.Item>
                 <DefaultButton id="backgroundButton" styles={colorPickerButtonStyles}
-                    onRenderText={(p) => <div style={{
+                    onRenderText={() => <div style={{
                         width: '1.2rem',
                         height: '1.2rem',
                         margin: '0px 4px',
@@ -484,24 +459,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                 onChange={(value) => setRadius(value)}
             />
             )}
-            <ChoiceGroup
-                defaultSelectedKey="X"
-                styles={{ flexContainer: { display: "flex", gap: "16px" } }}
-                options={[
-                    { key: 'X', text: 'X' },
-                    { key: 'Y', text: 'Y' },
-                    { key: 'Z', text: 'Z' }]}
-                label="Cutaway axis"
-                onChange={setCutawayAxis}
-                required={true} />
-            <Slider
-                label="Cutaway"
-                min={-1.0}
-                max={1.0}
-                step={0.01}
-                value={configuration.cutaway.length}
-                onChange={value => setCutawayLength(value)}
-            ></Slider>
+            <CutawaysPart configurationReducer={configurationReducer}></CutawaysPart>
         </Stack>
 
         {/*  */}

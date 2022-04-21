@@ -411,6 +411,7 @@ export class ChromatinViewport extends Viewport3D {
       rotX: 0.0,
       rotY: 0.0,
       distance: 0.0,
+      position: { x: 0.0, y: 0.0, z: 0.0 },
       lookAtPosition: { x: 0.0, y: 0.0, z: 0.0 }
     }
   }

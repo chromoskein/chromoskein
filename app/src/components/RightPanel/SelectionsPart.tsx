@@ -1,14 +1,13 @@
-import { ChromatinViewportConfiguration, D1ViewportConfiguration, DistanceMapDataConfiguration, DistanceViewportConfiguration, ForceGraphViewportConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
-import { DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
+import { DistanceMapDataConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
+import { DataAction, DataID, DataState } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionID, Selection, SelectionState } from "../../modules/storage/models/selections";
-import { ConfigurationReducer, ConfigurationsWithSelections, useConfiguration, useSelections, useViewportName } from "../hooks";
+import { ConfigurationReducer, ConfigurationsWithSelections } from "../hooks";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 
-import React, { Dispatch, useEffect, useState } from "react";
+import { Dispatch, useState } from "react";
 import { Text } from '@fluentui/react/lib/Text';
 import { Delete16Regular, EyeShow16Regular, EyeOff16Regular, Rename16Regular } from '@fluentui/react-icons';
 import { Callout, ColorPicker, DefaultButton, IColor, PrimaryButton, TextField } from "@fluentui/react";
-import chroma from "chroma-js";
 
 export interface PropsSelectionsPart<T extends ViewportConfiguration> {
     selections: Array<[Selection, ViewportSelectionOptions]>,
