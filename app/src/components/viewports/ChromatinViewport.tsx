@@ -16,6 +16,7 @@ import { quantile } from "simple-statistics";
 import _, { identity } from "lodash";
 import { Spline } from "../../modules/graphics/primitives/spline";
 import { density } from "../../modules/density";
+import { LabelingOverlay } from "./LabelingOverlay"
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
@@ -864,8 +865,10 @@ export function ChromatinViewport(props: {
         globalSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selectionId, bins: newBins });
     };
 
-    return (
+    return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas data-tip data-for='tooltip' ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden' }} tabIndex={1} onClick={() => onClick()}></canvas>
+        <LabelingOverlay graphicsLibrary={props.graphicsLibrary}></LabelingOverlay>
+    </div>
     );
 
 

@@ -16,6 +16,7 @@ export * from "./viewports/index";
 export * from "./utils";
 export * from "./blur";
 export * from "./culling";
+export * from "./labeling/index";
 
 export class GraphicsLibrary {
     private _adapter: GPUAdapter;
