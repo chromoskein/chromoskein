@@ -13,6 +13,11 @@ export async function saveToFile(states: ApplicationState): Promise<void> {
 }
 
 export type TextFile = { name: string, content: string };
+
+export function loadFromJson(json: string): ApplicationState {
+    return JSON.parse(json);
+}
+
 export function loadFromFile(file: TextFile): ApplicationState {
-    return JSON.parse(file.content);
+    return loadFromJson(file.content);
 }

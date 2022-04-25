@@ -10,11 +10,11 @@ export function TopBar(props: {
     onNewD1Viewport: menuCallback,
     onNewTADMapViewport: menuCallback,
     onNewForceGraphViewport: menuCallback,
-    onNewWorkspace: menuCallback,
     onSaveState: menuCallback,
     onResetState: menuCallback,
     onFileExport: menuCallback,
     onFileImport: menuCallback,
+    onExemplaryWorkspace: menuCallback,
 }) {
     const items: ICommandBarItemProps[] = [
         {
@@ -22,12 +22,6 @@ export function TopBar(props: {
             text: 'Workspace',
             subMenuProps: {
                 items: [
-                    {
-                        key: 'new',
-                        text: 'New',
-                        iconProps: { iconName: '' },
-                        onClick: props.onNewWorkspace
-                    },
                     {
                         key: 'save',
                         text: 'Save in browser',
@@ -52,7 +46,12 @@ export function TopBar(props: {
                         text: 'Import from file',
                         iconProps: { iconName: 'Import' },
                         onClick: props.onFileImport
-
+                    },
+                    {
+                        key: 'exemplary-workspace',
+                        text: 'Open exemplary workspace',
+                        iconProps: { iconName: 'OpenFolderHorizontal' },
+                        onClick: props.onExemplaryWorkspace
                     }
                 ],
             },

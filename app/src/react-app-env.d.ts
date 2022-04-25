@@ -75,5 +75,10 @@ declare module '*.wgsl' {
   export default content;
 }
 
+declare module '*.chromoskein' {
+  const content: string;
+  export default content;
+}
+
 declare module '@fluentui/react-icons';
 declare module '@gmod/gff';

@@ -31,13 +31,17 @@ export const config = {
                 }
             },
             {
-                test: /\.wgsl/,
-                type: 'asset/source'
+                test: [/\.chromoskein/, /\.XYZ/, /\.wgsl/],
+                type: 'asset/source',
             },
-            {
-                test: /\.XYZ/,
-                type: 'asset/source'
-            },
+            // {
+            //     test: /\.wgsl/,
+            //     type: 'asset/source'
+            // },
+            // {
+            //     test: /\.XYZ/,
+            //     type: 'asset/source'
+            // },
             {
                 test: /\.png/,
                 type: 'asset/resource'

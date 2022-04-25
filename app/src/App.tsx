@@ -15,11 +15,12 @@ import { TADViewport } from './components/viewports/TADViewport';
 import { isNumber } from 'lodash';
 import { CursorClick24Regular, Lasso24Regular } from '@fluentui/react-icons';
 import { NewXYZDataDialog } from './components/dialogs/NewXYZDataDialog';
+import { ExemplaryWorkspaceDialog } from './components/dialogs/ExemplaryWorkspaceDialog';
 // import New1DDataDialog from './dialogs/New1DDataDialog';
 import { DataAction, DataActionKind, dataReducer, DataState } from './modules/storage/models/data';
 import { SelectionActionKind, selectionReducer, SelectionState } from './modules/storage/models/selections';
 import { clearBrowser, loadFromBrowser, saveToBrowser } from './modules/storage/inBrowserStorage';
-import { saveToFile, loadFromFile } from './modules/storage/fileStorage';
+import { saveToFile, loadFromFile, loadFromJson } from './modules/storage/fileStorage';
 import { ImportWorkspaceDialog } from './components/dialogs/ImportWorkspaceDialog';
 import { ApplicationState, APPLICATION_STATE_VERSION } from './modules/storage/state';
 import { ForceGraphViewport } from './components/viewports/ForceGraphViewport';
@@ -187,6 +188,7 @@ function App(): JSX.Element {
   const [newGenomicDataDialogHidden, setNewGenomicDataDialogHidden] = useState(true);
   const [new1DDataDialogHidden, setNew1DDataDialogHidden] = useState(true);
   const [newDistanceDataDialogHidden, setNewDistanceDataDialogHidden] = useState(true);
+  const [exemplaryWorkspaceDialogHidden, setExemplaryWorkspaceDialogHidden] = useState(true);
   const [workspaceFileImportDialogHidden, setWorkspaceFileImportDialogHidden] = useState(true);
   //#endregion
 
@@ -404,7 +406,6 @@ function App(): JSX.Element {
           onNewD1Viewport={addD1Viewport}
           onNewTADMapViewport={addTADMapViewport}
           onNewForceGraphViewport={addForceGraphViewport}
-          onNewWorkspace={() => setCurrentState(initialState)}
           onSaveState={async () => await saveToBrowser(getCurrentState())}
           onResetState={() => clearBrowser().then(() => window.location.reload())}
           onFileExport={async () => {
@@ -412,6 +413,9 @@ function App(): JSX.Element {
           }}
           onFileImport={() => {
             setWorkspaceFileImportDialogHidden(false);
+          }}
+          onExemplaryWorkspace={() => {
+            setExemplaryWorkspaceDialogHidden(false)
           }}
         />
       </div>
@@ -455,6 +459,12 @@ function App(): JSX.Element {
         hidden={workspaceFileImportDialogHidden}
         workspaceFileParser={loadFromFile}
         onClose={() => { setWorkspaceFileImportDialogHidden(true) }}
+        onFileImported={setCurrentState}
+      />
+      <ExemplaryWorkspaceDialog
+        hidden={exemplaryWorkspaceDialogHidden}
+        workspaceJsonParser={loadFromJson}
+        onClose={() => { setExemplaryWorkspaceDialogHidden(true) }}
         onFileImported={setCurrentState}
       />
       {!newGenomicDataDialogHidden && (<NewGenomicDataDialog
