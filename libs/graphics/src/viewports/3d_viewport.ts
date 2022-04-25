@@ -15,8 +15,8 @@ export class Viewport3D {
   protected _canvas: HTMLCanvasElement | null = null;
   protected _context: GPUCanvasContext | null = null;
 
-  protected width = 0;
-  protected height = 0;
+  protected _width = 0;
+  protected _height = 0;
 
   protected outputTexture: GPUTexture | null = null;
   protected depthTexture: GPUTexture | null = null;
@@ -252,8 +252,8 @@ export class Viewport3D {
     this._canvas = null;
     this._context = null;
 
-    this.width = 0;
-    this.height = 0;
+    this._width = 0;
+    this._height = 0;
 
     this.outputTexture?.destroy();
     this.outputTexture = null;
@@ -279,8 +279,8 @@ export class Viewport3D {
 
     this._canvas.setAttribute("style", "width:" + (width / devicePixelRatio) + "px; height:" + (height / devicePixelRatio) + "px");
 
-    this.width = width;
-    this.height = height;
+    this._width = width;
+    this._height = height;
 
     this._canvas.width = width;
     this._canvas.height = height;
@@ -837,6 +837,14 @@ export class Viewport3D {
 
   public get canvas(): HTMLCanvasElement | null {
     return this._canvas;
+  }
+
+  public get width(): number {
+    return this._width;
+  }
+
+  public get height(): number {
+    return this._height;
   }
 
   //#region SSAO
