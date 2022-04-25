@@ -279,6 +279,7 @@ export class Scene {
                     }
                 ]
             });
+
             // console.timeEnd('scene::buildBVH::Finish');
         };
         this.bvhWorker.postMessage({ objectsBuffer: copyOfObjectsBuffer });
@@ -296,12 +297,12 @@ export class Scene {
         return [sphereIndex, sphere];
     }
 
-    public addSpheres(structureName: string, points: Array<vec3>, radii: Array<number> | null = null, colors: Array<vec4> | null = null, partOfBVH = true, update = true): [number, Spheres] {
+    public addSpheres(structureName: string, points: Array<vec3>, radius: number | null = null, colors: Array<vec4> | null = null, partOfBVH = true, update = true): [number, Spheres] {
         this.removeStructureByName(structureName);
 
         this.lastStructureID += 1;
 
-        const spheres = new Spheres(this.graphicsLibrary, this.lastStructureID, partOfBVH, points, radii, colors);
+        const spheres = new Spheres(this.graphicsLibrary, this.lastStructureID, partOfBVH, points, colors);
         const spheresIndex = this.addStructure(structureName, spheres, update);
 
         return [spheresIndex, spheres];

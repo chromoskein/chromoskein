@@ -107,7 +107,7 @@ export function ChromatinViewport(props: {
                 ...configuration,
                 camera: viewport.cameraConfiguration
             });
-        }, 1000)
+        }, 500)
 
         return () => clearTimeout(timer);
     }, [viewport.cameraConfiguration]);
@@ -118,17 +118,6 @@ export function ChromatinViewport(props: {
 
         viewport.camera.ignoreEvents = isPrimaryModPressed;
     }, [isPrimaryModPressed]);
-
-    // Establish 3D structure
-    const configurePart = (part: ChromatinPart, configuration: IChromatinDataConfiguration) => {
-        if (part.structure instanceof ContinuousTube) {
-            part.structure.radius = configuration.radius;
-        } else if (part.structure instanceof Spheres) {
-            part.structure.setRadiusAll(configuration.radius);
-        } else if (part.structure instanceof Spline) {
-            part.structure.radius = configuration.radius;
-        }
-    };
 
     // remove data removed from data tab 
     // useEffect(() => {
@@ -151,6 +140,7 @@ export function ChromatinViewport(props: {
 
         const datum = datumUntyped as BinPositionsData;
 
+        let radius = configuration.data ? configuration.data.radius : 0.0;
         if (!previousConfiguration || (previousConfiguration && ((previousConfiguration.data && previousConfiguration.data.id != configuration.data.id) || !previousConfiguration.data))) {
             const values = datum.values;
             const distances = [];
@@ -162,13 +152,14 @@ export function ChromatinViewport(props: {
 
             const quantiles = quantile(distances, [0.05, 0.95]);
 
+            radius = quantiles[0] / 2.0;
             updateConfiguration({
                 ...configuration,
                 data: {
                     ...configuration.data,
-                    radius: quantiles[0] / 2.0
+                    radius: quantiles[0] / 4.0
                 },
-                radiusRange: { min: 0.0, max: quantiles[1] / 2.0 }
+                radiusRange: { min: 0.0, max: quantiles[0] / 2.0 }
             });
         }
 
@@ -192,7 +183,7 @@ export function ChromatinViewport(props: {
             });
 
             const chromatinPart = viewport.addPart(chromosomeInfo.name, explodedPositions as Positions3D, true, isoDataID.unwrap(datum.id), chromosomeIndex, configuration.representation, false);
-            configurePart(chromatinPart, configuration.data);
+            chromatinPart.structure.radius = radius;
         }
 
         viewport.rebuild();
@@ -666,27 +657,35 @@ export function ChromatinViewport(props: {
     useEffect(() => {
         if (!viewport) return;
 
-        let planeNormal;
-        switch (configuration.cutaway.axis) {
-            case 'X': {
-                planeNormal = vec3.fromValues(0.0, 0.0, 1.0);
-                break;
-            }
-            case 'Y': {
-                planeNormal = vec3.fromValues(0.0, 1.0, 0.0);
-                break;
-            }
-            case 'Z': {
-                planeNormal = vec3.fromValues(1.0, 0.0, 0.0);
-                break;
-            }
-        }
-        const planePoint = vec3.scale(vec3.create(), planeNormal, configuration.cutaway.length);
-
         viewport.deleteCullObjects();
-        viewport.addCullObject(new CullPlane(planeNormal, planePoint));
+
+        for (const cutaway of configuration.cutaways) {
+            let planeNormal;
+            if (cutaway.axis == 'X' || cutaway.axis == 'Y' || cutaway.axis == 'Z') {
+                switch (cutaway.axis) {
+                    case 'X': {
+                        planeNormal = vec3.fromValues(0.0, 0.0, 1.0);
+                        break;
+                    }
+                    case 'Y': {
+                        planeNormal = vec3.fromValues(0.0, 1.0, 0.0);
+                        break;
+                    }
+                    case 'Z': {
+                        planeNormal = vec3.fromValues(1.0, 0.0, 0.0);
+                        break;
+                    }
+                }
+            } else {
+                planeNormal = vec3.clone(cutaway.axis);
+            }
+
+            const planePoint = vec3.scale(vec3.create(), planeNormal, cutaway.length);
+            viewport.addCullObject(new CullPlane(planeNormal, planePoint));
+        }
+
         viewport.updateCullObjects();
-    }, [viewport, configuration.cutaway.axis, configuration.cutaway.length]);
+    }, [viewport, configuration.cutaways]);
 
     function makeRulerTooltipInfo(closestIntersection: ChromatinIntersection): string | null {
         if (configuration.tool.type == 'ruler' && configuration.tool.from) {

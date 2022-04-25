@@ -1,3 +1,4 @@
+import { vec3 } from "gl-matrix";
 import { ChromatinRepresentation, OrbitCameraConfiguration, SmoothCameraConfiguration } from "../../../graphics";
 import { DataID } from "../data";
 import { IDataConfiguration, IViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions, blackBackground, NoViewportTool } from "./shared";
@@ -50,6 +51,12 @@ export type ChromatinViewportColorMappingMode = 'none' | 'centromers' | '1d-nume
 export type TooltipTextAggregation = 'none' | 'count';
 export type TooltipNumericAggregation = 'none' | 'min' | 'max' | 'median' | 'mean' | 'sum';
 
+export type Cutaway = {
+    name: string,
+    axis: 'X' | 'Y' | 'Z' | vec3,
+    length: number,
+}
+
 export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     type: ViewportConfigurationType.Chromatin,
     tag: "3D",
@@ -82,9 +89,12 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     },
 
     cutaway: {
-        axis: 'X' | 'Y' | 'Z',
+        axis: 'X' | 'Y' | 'Z' | vec3,
         length: number,
     },
+
+    selectedCutaway: number,
+    cutaways: Array<Cutaway>,
 
     sectionCuts: {
         showDebugPlanes: boolean;
@@ -149,6 +159,9 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
             axis: 'X',
             length: -1.0,
         },
+
+        selectedCutaway: 0,
+        cutaways: [],
 
         sectionCuts: {
             showDebugPlanes: false,

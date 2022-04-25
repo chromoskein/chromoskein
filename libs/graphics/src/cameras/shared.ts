@@ -40,7 +40,9 @@ export type OrbitCameraConfiguration = {
     rotX: number,
     rotY: number,
     distance: number,
-    lookAtPosition: { x: number, y: number, z: number }
+
+    position: { x: number, y: number, z: number },
+    lookAtPosition: { x: number, y: number, z: number },
 }
 
 export type OrthoCameraConfiguration = {
@@ -148,7 +150,9 @@ export class Camera {
             rotX: 0.0,
             rotY: 0.0,
             distance: 0.0,
-            lookAtPosition: { x: 0.0, y: 0.0, z: 0.0 }
+
+            position: { x: this._position[0], y: this._position[1], z: this._position[2] },
+            lookAtPosition: { x: 0.0, y: 0.0, z: 0.0 },            
         }
     }
 
