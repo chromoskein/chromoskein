@@ -31,3 +31,7 @@ export function hexToRGBAUnit(hex: string, alpha: number): GPUColorDict {
         a: alpha,
     }
 }
+
+export function getRandomInt(max: number) : number {
+    return Math.floor(Math.random() * max);
+}

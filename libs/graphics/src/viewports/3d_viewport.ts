@@ -762,6 +762,13 @@ export class Viewport3D {
     this.dirty = false;
   }
 
+  public getIDBuffer() : GPUTexture | null {
+    if (this.gBuffer) {
+      return this.gBuffer?.colorsOpaque;
+    }
+    return null;
+  }
+
   //#region Camera events
   public onMouseDown(event: MouseEvent): void {
     if (this._camera == null || this._scene == null) {
