@@ -43,7 +43,7 @@ export interface IChromatinDataConfiguration extends IDataConfiguration {
 
     selections: Array<ViewportSelectionOptions>,
     representation: ChromatinRepresentation,
-    radius: number,
+    radius: number | null,
 }
 
 export type ChromatinViewportAggregationFunction = "min" | "max" | "median" | "mean" | 'sum';

@@ -140,8 +140,9 @@ export function ChromatinViewport(props: {
 
         const datum = datumUntyped as BinPositionsData;
 
+        const recalculate = !configuration.data || (configuration.data && !configuration.data.radius);
         let radius = configuration.data ? configuration.data.radius : 0.0;
-        if (!previousConfiguration || (previousConfiguration && ((previousConfiguration.data && previousConfiguration.data.id != configuration.data.id) || !previousConfiguration.data))) {
+        if (recalculate || !previousConfiguration || (previousConfiguration && ((previousConfiguration.data && previousConfiguration.data.id != configuration.data.id) || !previousConfiguration.data))) {
             const values = datum.values;
             const distances = [];
             for (let i = 0; i < values.length - 1; i++) {
@@ -162,6 +163,8 @@ export function ChromatinViewport(props: {
                 radiusRange: { min: 0.0, max: quantiles[0] / 2.0 }
             });
         }
+
+        if (!radius) return;
 
         for (const [chromosomeIndex, chromosome] of configuration.chromosomes.entries()) {
             if (!chromosome) continue;
