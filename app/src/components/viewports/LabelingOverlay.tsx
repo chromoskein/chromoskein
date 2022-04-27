@@ -8,12 +8,7 @@ export function LabelingOverlay(props: { graphicsLibrary: GraphicsModule.Graphic
     const [layoutGenerator, setLayoutGenerator] = useState<GraphicsModule.LabelLayoutGenerator>(() => new GraphicsModule.LabelLayoutGenerator(props.viewport, props.graphicsLibrary));
     const [labels, setLabels] = useState<GraphicsModule.Label[]>([]);
 
-    // useDeepCompareEffect(() => {
-    //     setLabels(layoutGenerator.getLabelPositions());
-    //     // console.log("LabelingOverlay:: recomputing label positions!")
-    // }, [layoutGenerator, props.viewport, props.viewport.camera]);
-
-    useDeepCompareEffect(() => {
+    useEffect(() => {
         layoutGenerator.viewport = props.viewport;
         setLabels(layoutGenerator.getLabelPositions());
         console.log("LabelingOverlay:: props.viewport changed!");

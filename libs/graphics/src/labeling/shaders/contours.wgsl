@@ -13,14 +13,37 @@
 @group(0) @binding(0) var<uniform> camera : Camera; 
 
 @group(1) @binding(0) var gBufferID : texture_2d<f32>;
-@group(1) @binding(1) var contours : texture_2d<f32>;
+@group(1) @binding(1) var contours : texture_storage_2d<rgba32float, write>;
+
+fn compareIDs(X: i32, R: i32, L: i32, T: i32, B: i32) -> bool {
+  return ((X == R) && (X == L) && (X == T) && (X == B));
+}
 
 @stage(compute) @workgroup_size(8, 8) fn 
 main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-   if (f32(GlobalInvocationID.x) >= camera.viewportSize.x ||
+  if (f32(GlobalInvocationID.x) >= camera.viewportSize.x ||
       f32(GlobalInvocationID.y) >= camera.viewportSize.y) {
     return;
-
-    // error bro;
   }
+
+  let coordinates = vec2<i32>(GlobalInvocationID.xy);
+
+  // let idVec = textureLoad(gBufferID, vec2<i32>(coordinates), 0).xyz;
+  let id = textureLoad(gBufferID, vec2<i32>(coordinates), 0).x;
+  let step = 1;
+
+  let X = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, 0), 0).x);
+  let R = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(step, 0), 0).x);
+  let L = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(-step, 0), 0).x);
+  let T = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, step), 0).x);
+  let B = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, -step), 0).x);
+
+  var finalValue = f32(0);
+  if (!compareIDs(X, R, L, T, B)) {
+    finalValue = id;
+  }
+
+ 
+  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(id, 0.0, 0.0, 0.0));
+  // error bro;
 }

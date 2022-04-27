@@ -46,7 +46,7 @@ export class LabelLayoutGenerator {
 
         this.contoursTexture = this.graphicsLibrary.device.createTexture({
             size,
-            format: 'r32float',
+            format: 'rgba32float',
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
         });
     }
@@ -94,7 +94,7 @@ export class LabelLayoutGenerator {
             ]
         });
 
-        const layout = device.createBindGroupLayout({
+        const contoursBGLayout = device.createBindGroupLayout({
             entries: [
                 // ID Buffer (input)
                 {
@@ -110,22 +110,12 @@ export class LabelLayoutGenerator {
                 {
                     binding: 1,
                     visibility: GPUShaderStage.COMPUTE,
-                    texture: {
-                        sampleType: 'unfilterable-float',
+                    storageTexture: {
+                        access: 'write-only',
+                        format: 'rgba32float',
                         viewDimension: '2d',
-                        multisampled: false,
                     }
                 },
-                // // gBufferAmbientOcclusion
-                // {
-                //     binding: 2,
-                //     visibility: GPUShaderStage.COMPUTE,
-                //     storageTexture: {
-                //         access: 'write-only',
-                //         format: 'r32float',
-                //         viewDimension: '2d',
-                //     }
-                // },
             ],
         });
 
@@ -137,16 +127,13 @@ export class LabelLayoutGenerator {
             cameraBGLayout: this.graphicsLibrary.bindGroupLayouts.camera,
             gBufferBindGroup: device.createBindGroup({
                 // layout: this.graphicsLibrary.bindGroupLayouts.ssaoGBuffer,
-                layout: layout,
+                layout: contoursBGLayout,
                 entries: [
                     { binding: 0, resource: idBuffer.createView() },
                     { binding: 1, resource: this.contoursTexture.createView() },
-                    // { binding: 0, resource: this.depthTexture.createView() },
-                    // { binding: 1, resource: this.gBuffer.worldNormals.createView() },
-                    // { binding: 2, resource: this.gBuffer.ambientOcclusion[0].createView() }
                 ]
             }),
-            gBufferBindGroupLayout: layout,
+            gBufferBindGroupLayout: contoursBGLayout,
             passEncoder: computePassEncoder,
         });
 
