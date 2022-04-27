@@ -1,6 +1,6 @@
 import * as GraphicsModule from "../../modules/graphics";
 import { useEffect, useState } from "react";
-import { useDeepCompareEffect } from "react-use";
+import { LabelingDebugViewport } from "./LabelingDebugViewport";
 
 
 export function LabelingOverlay(props: { graphicsLibrary: GraphicsModule.GraphicsLibrary, viewport: GraphicsModule.ChromatinViewport }): JSX.Element {
@@ -16,7 +16,12 @@ export function LabelingOverlay(props: { graphicsLibrary: GraphicsModule.Graphic
     }, [layoutGenerator, props.viewport, props.viewport.width, props.viewport.height]);
 
 
-    return (<svg style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
-        {labels.map(({ id, x, y, text }: GraphicsModule.Label) => (<text key={id} x={x} y={y} fontSize={18} fill='white'>{text}</text>))}
-    </svg>);
+    return (
+        <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
+            <svg style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
+                {labels.map(({ id, x, y, text }: GraphicsModule.Label) => (<text key={id} x={x} y={y} fontSize={18} fill='white'>{text}</text>))}
+            </svg>
+            <LabelingDebugViewport />
+        </div>
+        );
 }
