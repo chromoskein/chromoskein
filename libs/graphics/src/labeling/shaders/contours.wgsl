@@ -20,5 +20,7 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
    if (f32(GlobalInvocationID.x) >= camera.viewportSize.x ||
       f32(GlobalInvocationID.y) >= camera.viewportSize.y) {
     return;
+
+    // error bro;
   }
 }

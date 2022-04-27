@@ -1,6 +1,10 @@
 import { GraphicsLibrary } from "..";
+import { cameraBindGroupLayout } from "../pipelines/default_layouts";
 import {getRandomInt} from "../utils";
 import { ChromatinViewport } from "../viewports";
+
+//~ Shaders
+import contours from "./shaders/contours.wgsl";
 
 export type Label = {
     x: number;
@@ -12,20 +16,33 @@ export type Label = {
 
 export class LabelLayoutGenerator {
 
-    private viewport: ChromatinViewport | null = null;
+    private _viewport: ChromatinViewport | null = null;
     private graphicsLibrary: GraphicsLibrary | null = null;
 
     //~ private textures
-    private contoursTexture: GPUTexture;
+    private contoursTexture: GPUTexture | null = null;
 
     constructor(viewport: ChromatinViewport, graphicsLib: GraphicsLibrary) {
-        this.viewport = viewport;
+        this._viewport = viewport;
         this.graphicsLibrary = graphicsLib;
 
+        if (viewport.width == 0 || viewport.height == 0) {
+            this.resizeTextures(123, 123); //~ just making sure I don't have a texture with size 0x0 but I can still tell there's a problem
+        } else {
+            this.resizeTextures(viewport.width, viewport.height);
+        }
+    }
+
+    private resizeTextures(width: number, height: number) {
         const size = {
-            width: this.viewport.width,
-            height: this.viewport.height,
+            width: width,
+            height: height,
         };
+
+        if (!this.graphicsLibrary) {
+            console.log("error: graphicsLibrary is null")
+            return;
+        }
 
         this.contoursTexture = this.graphicsLibrary.device.createTexture({
             size,
@@ -34,15 +51,30 @@ export class LabelLayoutGenerator {
         });
     }
 
+    public set viewport(vp: ChromatinViewport | null) {
+        this._viewport = vp;
+
+        if (vp) {
+            this.resizeTextures(vp.width, vp.height);
+        }
+    }
+
+    public get viewport() : ChromatinViewport | null {
+        return this._viewport;
+    }
+
     // #region High-level labeling workflow
 
-    public computeContours() {
+    public computeContours() : void {
+        console.log("computeContours STARTING.");
         if (!this.viewport || !this.viewport.camera || !this.graphicsLibrary) {
             return;
         }
 
         const idBuffer = this.viewport.getIDBuffer();
-        if (!idBuffer) { return; }
+        if (!idBuffer || !this.contoursTexture) { 
+            return; 
+        }
 
         const device = this.graphicsLibrary.device;
 
@@ -62,12 +94,50 @@ export class LabelLayoutGenerator {
             ]
         });
 
+        const layout = device.createBindGroupLayout({
+            entries: [
+                // ID Buffer (input)
+                {
+                    binding: 0,
+                    visibility: GPUShaderStage.COMPUTE,
+                    texture: {
+                        sampleType: 'unfilterable-float',
+                        viewDimension: '2d',
+                        multisampled: false,
+                    }
+                },
+                // Contours (output)
+                {
+                    binding: 1,
+                    visibility: GPUShaderStage.COMPUTE,
+                    texture: {
+                        sampleType: 'unfilterable-float',
+                        viewDimension: '2d',
+                        multisampled: false,
+                    }
+                },
+                // // gBufferAmbientOcclusion
+                // {
+                //     binding: 2,
+                //     visibility: GPUShaderStage.COMPUTE,
+                //     storageTexture: {
+                //         access: 'write-only',
+                //         format: 'r32float',
+                //         viewDimension: '2d',
+                //     }
+                // },
+            ],
+        });
+
+
         this.renderContoursPass({
             width: this.viewport.width,
             height: this.viewport.height,
             cameraBindGroup: cameraBindGroup,
+            cameraBGLayout: this.graphicsLibrary.bindGroupLayouts.camera,
             gBufferBindGroup: device.createBindGroup({
-                layout: this.graphicsLibrary.bindGroupLayouts.ssaoGBuffer,
+                // layout: this.graphicsLibrary.bindGroupLayouts.ssaoGBuffer,
+                layout: layout,
                 entries: [
                     { binding: 0, resource: idBuffer.createView() },
                     { binding: 1, resource: this.contoursTexture.createView() },
@@ -76,10 +146,12 @@ export class LabelLayoutGenerator {
                     // { binding: 2, resource: this.gBuffer.ambientOcclusion[0].createView() }
                 ]
             }),
+            gBufferBindGroupLayout: layout,
             passEncoder: computePassEncoder,
         });
 
         computePassEncoder.end();
+        console.log("computeContours SUCCEEDED!");
     }
 
     public computeVoronoi(): void {
@@ -87,6 +159,7 @@ export class LabelLayoutGenerator {
     }
 
     public getLabelPositions(): Label[] {
+        this.computeContours();
         return this.debug_getRandomLabelPositions();
     }
 
@@ -97,12 +170,37 @@ export class LabelLayoutGenerator {
         width: number,
         height: number,
         cameraBindGroup: GPUBindGroup,
+        cameraBGLayout: GPUBindGroupLayout,
         gBufferBindGroup: GPUBindGroup,
+        gBufferBindGroupLayout: GPUBindGroupLayout,
         passEncoder: GPUComputePassEncoder,
     }): void {
         if (!this.graphicsLibrary) {
+            console.log("computeContours failed. #3")
             return;
         }
+
+        const device = this.graphicsLibrary.device;
+        const pipelineLayoutDescriptor =
+        {
+            bindGroupLayouts: [
+                parameters.cameraBGLayout, parameters.gBufferBindGroupLayout
+            ],
+        }
+
+        const contoursShader = device.createShaderModule({ code: contours });
+
+        const pipelineLayout = device.createPipelineLayout(pipelineLayoutDescriptor);
+        const contoursPipelineDescriptor = {
+            // layout: pipelineLayouts.ssao,
+            layout: pipelineLayout,
+            compute: {
+                // module: shaderModules.ssao,
+                module: contoursShader,
+                entryPoint: "main",
+            },
+        };
+        const contoursPipeline = device.createComputePipeline(contoursPipelineDescriptor);
 
         parameters.passEncoder.setPipeline(this.graphicsLibrary.computePipelines.screenSpaceAmbientOcclusion);
         parameters.passEncoder.setBindGroup(0, parameters.cameraBindGroup);
