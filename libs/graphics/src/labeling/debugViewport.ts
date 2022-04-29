@@ -14,8 +14,8 @@ export class DebugViewport {
     protected _canvas: HTMLCanvasElement | null = null;
     protected _context: GPUCanvasContext | null = null;
 
-    protected _width = 0;
-    protected _height = 0;
+    protected _width = 800;
+    protected _height = 600;
 
     constructor(library: GraphicsLibrary, viewport: ChromatinViewport, canvas: HTMLCanvasElement | null) {
         this.graphicsLibrary = library;
@@ -25,6 +25,27 @@ export class DebugViewport {
         if (this._canvas != null) {
             console.log("✅CANVAS CONFIGURED");
             this._context = this._canvas.getContext("webgpu");
+
+            const size = {
+                width: this._width,
+                height: this._height,
+            };
+
+            if (this._context) {
+                this._context.configure({
+                    device: this.graphicsLibrary.device,
+                    format: 'bgra8unorm',
+                    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+                    compositingAlphaMode: "opaque",
+                    size,
+                });
+
+                console.log("let's try this.");
+                const textureView = this._context.getCurrentTexture().createView();
+                console.log("⚠️no problem, boss.");
+            } else {
+                console.log("PROBLEM, Boss!");
+            }
         } else {
             console.log("❌CANVAS CONFIGURED");
         }
@@ -41,7 +62,7 @@ export class DebugViewport {
         const textureView = this._context.getCurrentTexture().createView();
 
         // if (this._camera == null || this.scene == null) {
-            const clearColor: GPUColorDict = { r: 0.0, g: 0.0, b: 0.0, a: 1.0 };
+            const clearColor: GPUColorDict = { r: 1.0, g: 0.0, b: 1.0, a: 1.0 };
             const commandEncoder = device.createCommandEncoder();
             const passthroughPassEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [
