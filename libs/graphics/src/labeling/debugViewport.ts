@@ -62,6 +62,7 @@ export class DebugViewport {
         const textureView = this._context.getCurrentTexture().createView();
 
         // if (this._camera == null || this.scene == null) {
+        if (this._mainViewport == null) { //~ I think this is not run ever right now
             const clearColor: GPUColorDict = { r: 1.0, g: 0.0, b: 1.0, a: 1.0 };
             const commandEncoder = device.createCommandEncoder();
             const passthroughPassEncoder = commandEncoder.beginRenderPass({
@@ -81,7 +82,44 @@ export class DebugViewport {
             device.queue.submit([commandBuffer]);
 
             return;
-        // }
+        }
+
+        console.log("gonna render!");
+        const commandEncoder = device.createCommandEncoder();
+
+        const textureToShow = this._mainViewport.getIDBuffer();
+        if (!textureToShow) {
+            return;
+        }
+
+        const backgroundColor: GPUColorDict = { r: 1.0, g: 0.0, b: 0.0, a: 1.0};
+        const passthroughPassEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [
+                {
+                    view: textureView,
+                    clearValue: backgroundColor,
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                },
+            ],
+        });
+        passthroughPassEncoder.setPipeline(this.graphicsLibrary.renderPipelines.textureBlit);
+        passthroughPassEncoder.setBindGroup(0, device.createBindGroup({
+            layout: this.graphicsLibrary.bindGroupLayouts.singleTexture,
+            entries: [
+                {
+                    binding: 0,
+                    // resource: this.gBuffer.colorsOpaque.createView(),
+                    resource: textureToShow.createView(),
+                },
+            ]
+        }));
+        passthroughPassEncoder.draw(3, 1, 0, 0);
+        passthroughPassEncoder.end();
+
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
     }
 
 

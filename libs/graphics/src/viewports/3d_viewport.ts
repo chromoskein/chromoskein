@@ -764,7 +764,8 @@ export class Viewport3D {
 
   public getIDBuffer() : GPUTexture | null {
     if (this.gBuffer) {
-      return this.gBuffer?.colorsOpaque;
+      // return this.gBuffer?.colorsOpaque;
+      return this.gBuffer.worldNormals;
     }
     return null;
   }

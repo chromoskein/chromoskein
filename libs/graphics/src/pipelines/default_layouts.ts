@@ -198,6 +198,54 @@ export function renderGBufferBindGroupLayout(): GPUBindGroupLayoutDescriptor {
     };
 }
 
+export function singleTextureLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        entries: [
+            {
+                binding: 0,
+                visibility: GPUShaderStage.FRAGMENT,
+                texture: {
+                    sampleType: 'float',
+                    viewDimension: '2d',
+                    multisampled: false,
+                }
+            },
+        ],
+    };
+
+}
+
+export function textureBlitPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPURenderPipelineDescriptor {
+    return {
+        layout: pipelineLayouts.textureBlit,
+        vertex: {
+            module: shaderModules.textureBlit,
+            entryPoint: "main_vertex",
+        },
+        fragment: {
+            module: shaderModules.textureBlit,
+            entryPoint: "main_fragment",
+            targets: [
+                {
+                    format: "bgra8unorm",
+                },
+            ]
+        },
+        primitive: {
+            topology: 'triangle-strip',
+            stripIndexFormat: 'uint32',
+        },
+    };
+}
+
+export function textureBlitPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
+    return {
+        bindGroupLayouts: [
+            bindGroupLayouts.singleTexture
+        ],
+    }
+}
+
 export function renderGBufferPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
     return {
         bindGroupLayouts: [
