@@ -1,4 +1,4 @@
-import { GraphicsLibrary } from "..";
+import { GraphicsLibrary, LabelLayoutGenerator } from "..";
 import { ChromatinViewport } from "../viewports/chromatin_viewport";
 
 /**
@@ -7,6 +7,7 @@ import { ChromatinViewport } from "../viewports/chromatin_viewport";
 export class DebugViewport {
     //~ High-level inputs
     private _mainViewport: ChromatinViewport;
+    private _labelingGenerator: LabelLayoutGenerator;
 
     //~ Low-level internals
     protected graphicsLibrary: GraphicsLibrary;
@@ -17,10 +18,11 @@ export class DebugViewport {
     protected _width = 800;
     protected _height = 600;
 
-    constructor(library: GraphicsLibrary, viewport: ChromatinViewport, canvas: HTMLCanvasElement | null) {
+    constructor(library: GraphicsLibrary, viewport: ChromatinViewport, labelingGenerator: LabelLayoutGenerator, canvas: HTMLCanvasElement | null) {
         this.graphicsLibrary = library;
         this._canvas = canvas;
         this._mainViewport = viewport;
+        this._labelingGenerator = labelingGenerator;
 
         if (this._canvas != null) {
             console.log("✅CANVAS CONFIGURED");
@@ -84,10 +86,11 @@ export class DebugViewport {
             return;
         }
 
-        console.log("gonna render!");
+        // console.log("gonna render!");
         const commandEncoder = device.createCommandEncoder();
 
         const textureToShow = this._mainViewport.getIDBuffer();
+        // const textureToShow = this._labelingGenerator.debug_getContoursTexture();
         if (!textureToShow) {
             return;
         }

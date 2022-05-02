@@ -6,20 +6,16 @@ import { useEffect, useRef, useState } from "react";
  * @param props 
  * @returns 
  */
-export function LabelingDebugViewport(props: {graphicsLibrary: GraphicsModule.GraphicsLibrary, viewport: GraphicsModule.ChromatinViewport}): JSX.Element {
+export function LabelingDebugViewport(props: {graphicsLibrary: GraphicsModule.GraphicsLibrary, viewport: GraphicsModule.ChromatinViewport, labelingGenerator: GraphicsModule.LabelLayoutGenerator}): JSX.Element {
 
     const canvasElement = useRef<HTMLCanvasElement>(null);
-    const [labelingDebugViewport, setLabelingDebugViewport] = useState<GraphicsModule.DebugViewport>(() => new GraphicsModule.DebugViewport(props.graphicsLibrary, props.viewport, canvasElement.current));
-    // const [layoutGenerator, setLayoutGenerator] = useState<GraphicsModule.LabelLayoutGenerator>(() => new GraphicsModule.LabelLayoutGenerator(props.viewport, props.graphicsLibrary));
+    const [labelingDebugViewport, setLabelingDebugViewport] = useState<GraphicsModule.DebugViewport>(() => new GraphicsModule.DebugViewport(props.graphicsLibrary, props.viewport, props.labelingGenerator, canvasElement.current));
 
     // Viewport Setup
     useEffect(() => {
         console.log("🅱️LabelingDebugViewport changed.");
         if (props.graphicsLibrary && canvasElement != null && canvasElement.current) {
-            // const newViewport = props.graphicsLibrary.createChromatinViewport(canvasElement.current);
-            const newViewport = new GraphicsModule.DebugViewport(props.graphicsLibrary, props.viewport, canvasElement.current);
-            // newViewport.cameraConfiguration = configuration.camera;
-            // setViewport(() => newViewport);
+            const newViewport = new GraphicsModule.DebugViewport(props.graphicsLibrary, props.viewport, props.labelingGenerator, canvasElement.current);
             setLabelingDebugViewport(() => newViewport);
 
             // Draw the scene repeatedly
@@ -31,7 +27,6 @@ export function LabelingDebugViewport(props: {graphicsLibrary: GraphicsModule.Gr
             const requestID = requestAnimationFrame(render);
 
             return function cleanup() {
-                // viewport?.deallocate();
                 labelingDebugViewport?.deallocate();
                 window.cancelAnimationFrame(requestID);
             };

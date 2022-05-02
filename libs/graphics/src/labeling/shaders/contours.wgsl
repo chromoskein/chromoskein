@@ -44,6 +44,7 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   }
 
  
-  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(id, 0.0, 0.0, 0.0));
+  // textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(id, 0.0, 0.0, 0.0));
+  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(1.0, 0.0, 0.0, 1.0));
   // error bro;
 }

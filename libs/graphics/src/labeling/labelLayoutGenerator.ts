@@ -206,5 +206,9 @@ export class LabelLayoutGenerator {
         return retLabels;
     }
 
+    public debug_getContoursTexture(): GPUTexture | null {
+        return this.contoursTexture;
+    }
+
     // #endregion
 }
