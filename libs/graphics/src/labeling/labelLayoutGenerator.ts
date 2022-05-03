@@ -194,7 +194,7 @@ export class LabelLayoutGenerator {
         parameters.passEncoder.setBindGroup(1, parameters.gBufferBindGroup);
         // parameters.passEncoder.setBindGroup(2, parameters.ssaoBindGroup);
 
-        parameters.passEncoder.dispatch(
+        parameters.passEncoder.dispatchWorkgroups(
             Math.ceil((parameters.width + 7) / 8),
             Math.ceil((parameters.height + 7) / 8),
             1);
