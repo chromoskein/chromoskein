@@ -150,6 +150,9 @@ export class LabelLayoutGenerator {
         });
 
         computePassEncoder.end();
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
         console.log("computeContours SUCCEEDED!");
     }
 
