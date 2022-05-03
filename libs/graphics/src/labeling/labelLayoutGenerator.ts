@@ -23,6 +23,7 @@ export class LabelLayoutGenerator {
     private contoursTexture: GPUTexture | null = null;
 
     constructor(viewport: ChromatinViewport, graphicsLib: GraphicsLibrary) {
+        console.log("<LabelLayoutGenerator constructor!>");
         this._viewport = viewport;
         this.graphicsLibrary = graphicsLib;
 
@@ -31,6 +32,8 @@ export class LabelLayoutGenerator {
         } else {
             this.resizeTextures(viewport.width, viewport.height);
         }
+
+        console.log("</LabelLayoutGenerator constructor!>");
     }
 
     private resizeTextures(width: number, height: number) {
@@ -44,6 +47,9 @@ export class LabelLayoutGenerator {
             return;
         }
 
+        console.log("resizing...");
+        console.log("viewport size = " + width + " x " + height);
+
         this.contoursTexture = this.graphicsLibrary.device.createTexture({
             size,
             format: 'rgba32float',
@@ -52,9 +58,13 @@ export class LabelLayoutGenerator {
     }
 
     public set viewport(vp: ChromatinViewport | null) {
+        const oldWidth = this._viewport?.width;
+        const oldHeight = this._viewport?.height;
         this._viewport = vp;
 
-        if (vp) {
+        console.log("SHOULD resize: " + oldWidth + " -> " + vp?.width + ", " + oldHeight + " -> " + vp?.height);
+        // if ((vp) && ((vp.width != oldWidth) || (vp.height != oldHeight))) {
+        if ((vp) && ((vp.width != 0) || (vp.height != 0))) {
             this.resizeTextures(vp.width, vp.height);
         }
     }
@@ -75,6 +85,8 @@ export class LabelLayoutGenerator {
         if (!idBuffer || !this.contoursTexture) { 
             return; 
         }
+
+        this.debug_clearContoursTexture(); //~ just for testing whether the blitting pipeline works fine. it does.
 
         const device = this.graphicsLibrary.device;
 
@@ -189,15 +201,66 @@ export class LabelLayoutGenerator {
         };
         const contoursPipeline = device.createComputePipeline(contoursPipelineDescriptor);
 
-        parameters.passEncoder.setPipeline(this.graphicsLibrary.computePipelines.screenSpaceAmbientOcclusion);
+        // parameters.passEncoder.setPipeline(this.graphicsLibrary.computePipelines.screenSpaceAmbientOcclusion);
+        parameters.passEncoder.setPipeline(contoursPipeline);
         parameters.passEncoder.setBindGroup(0, parameters.cameraBindGroup);
         parameters.passEncoder.setBindGroup(1, parameters.gBufferBindGroup);
         // parameters.passEncoder.setBindGroup(2, parameters.ssaoBindGroup);
+
+        console.log("computing contours pass: " + parameters.width + " x " + parameters.height);
 
         parameters.passEncoder.dispatchWorkgroups(
             Math.ceil((parameters.width + 7) / 8),
             Math.ceil((parameters.height + 7) / 8),
             1);
+    }
+
+    private debug_clearContoursTexture() {
+        if (!this.graphicsLibrary) {
+            return;
+        }
+
+        const device = this.graphicsLibrary.device;
+
+        const commandEncoder = device.createCommandEncoder();
+
+        // // const textureToShow = this._mainViewport.getIDBuffer();
+        // const textureToShow = this._labelingGenerator.debug_getContoursTexture();
+        // if (!textureToShow) {
+        //     return;
+        // }
+        if (!this.contoursTexture) {
+            return;
+        }
+        const textureView = this.contoursTexture.createView();
+
+        const backgroundColor: GPUColorDict = { r: 1.0, g: 0.0, b: 1.0, a: 1.0};
+        const passthroughPassEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [
+                {
+                    view: textureView,
+                    clearValue: backgroundColor,
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                },
+            ],
+        });
+        // passthroughPassEncoder.setPipeline(this.graphicsLibrary.renderPipelines.textureBlit);
+        // passthroughPassEncoder.setBindGroup(0, device.createBindGroup({
+        //     layout: this.graphicsLibrary.bindGroupLayouts.singleTexture,
+        //     entries: [
+        //         {
+        //             binding: 0,
+        //             resource: textureToShow.createView(),
+        //         },
+        //     ]
+        // }));
+        // // passthroughPassEncoder.draw(3, 1, 0, 0);
+        passthroughPassEncoder.end();
+
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
     }
 
 

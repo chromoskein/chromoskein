@@ -13,9 +13,10 @@ export function LabelingOverlay(props: { graphicsLibrary: GraphicsModule.Graphic
     const [labels, setLabels] = useState<GraphicsModule.Label[]>([]);
 
     useEffect(() => {
+        console.log("🅰️LabelingOverlay changed.");
         layoutGenerator.viewport = props.viewport;
         setLabels(layoutGenerator.getLabelPositions());
-        console.log("🅰️LabelingOverlay changed.");
+        console.log([layoutGenerator, props.viewport, props.viewport.width, props.viewport.height]);
     }, [layoutGenerator, props.viewport, props.viewport.width, props.viewport.height]);
 
 

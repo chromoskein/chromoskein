@@ -21,30 +21,35 @@ fn compareIDs(X: i32, R: i32, L: i32, T: i32, B: i32) -> bool {
 
 @stage(compute) @workgroup_size(8, 8) fn 
 main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-  if (f32(GlobalInvocationID.x) >= camera.viewportSize.x ||
-      f32(GlobalInvocationID.y) >= camera.viewportSize.y) {
+  if (f32(GlobalInvocationID.x) >= 50.0 ||
+      f32(GlobalInvocationID.y) >= 50.0) {
     return;
   }
+  // if (f32(GlobalInvocationID.x) >= camera.viewportSize.x ||
+  //     f32(GlobalInvocationID.y) >= camera.viewportSize.y) {
+  //   return;
+  // }
 
-  let coordinates = vec2<i32>(GlobalInvocationID.xy);
+  // let coordinates = vec2<i32>(GlobalInvocationID.xy);
 
-  // let idVec = textureLoad(gBufferID, vec2<i32>(coordinates), 0).xyz;
-  let id = textureLoad(gBufferID, vec2<i32>(coordinates), 0).x;
-  let step = 1;
+  // // let idVec = textureLoad(gBufferID, vec2<i32>(coordinates), 0).xyz;
+  // let id = textureLoad(gBufferID, vec2<i32>(coordinates), 0).x;
+  // let step = 1;
 
-  let X = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, 0), 0).x);
-  let R = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(step, 0), 0).x);
-  let L = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(-step, 0), 0).x);
-  let T = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, step), 0).x);
-  let B = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, -step), 0).x);
+  // let X = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, 0), 0).x);
+  // let R = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(step, 0), 0).x);
+  // let L = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(-step, 0), 0).x);
+  // let T = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, step), 0).x);
+  // let B = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, -step), 0).x);
 
-  var finalValue = f32(0);
-  if (!compareIDs(X, R, L, T, B)) {
-    finalValue = id;
-  }
+  // var finalValue = f32(0);
+  // if (!compareIDs(X, R, L, T, B)) {
+  //   finalValue = id;
+  // }
 
  
   // textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(id, 0.0, 0.0, 0.0));
-  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(1.0, 0.0, 0.0, 1.0));
+  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(1.0, 0.0, 1.0, 1.0));
+  // textureStore(contours, vec2<i32>(10, 10), vec4<f32>(1.0, 1.0, 1.0, 1.0));
   // error bro;
 }

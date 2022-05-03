@@ -205,7 +205,8 @@ export function singleTextureLayout(): GPUBindGroupLayoutDescriptor {
                 binding: 0,
                 visibility: GPUShaderStage.FRAGMENT,
                 texture: {
-                    sampleType: 'float',
+                    // sampleType: 'float',
+                    sampleType: 'unfilterable-float',
                     viewDimension: '2d',
                     multisampled: false,
                 }

@@ -42,14 +42,14 @@ export class DebugViewport {
                     size,
                 });
 
-                console.log("let's try this.");
-                const textureView = this._context.getCurrentTexture().createView();
-                console.log("⚠️no problem, boss.");
+                // console.log("let's try this.");
+                // const textureView = this._context.getCurrentTexture().createView();
+                // console.log("⚠️no problem, boss.");
             } else {
-                console.log("PROBLEM, Boss!");
+                // console.log("PROBLEM, Boss!");
             }
         } else {
-            console.log("❌CANVAS CONFIGURED");
+            console.log("❌CANVAS NOT CONFIGURED");
         }
     }
 
@@ -112,7 +112,6 @@ export class DebugViewport {
             entries: [
                 {
                     binding: 0,
-                    // resource: this.gBuffer.colorsOpaque.createView(),
                     resource: textureToShow.createView(),
                 },
             ]
