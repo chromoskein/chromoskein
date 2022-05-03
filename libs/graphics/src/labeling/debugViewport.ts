@@ -95,7 +95,7 @@ export class DebugViewport {
             return;
         }
 
-        const backgroundColor: GPUColorDict = { r: 1.0, g: 0.0, b: 0.0, a: 1.0};
+        const backgroundColor: GPUColorDict = { r: 0.3, g: 0.3, b: 0.3, a: 1.0};
         const passthroughPassEncoder = commandEncoder.beginRenderPass({
             colorAttachments: [
                 {
