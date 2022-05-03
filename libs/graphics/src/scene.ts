@@ -509,7 +509,7 @@ export class Scene {
         parameters.passEncoder.setBindGroup(2, this._bvhBindGroup);
         parameters.passEncoder.setBindGroup(3, parameters.outputBindGroup);
 
-        parameters.passEncoder.dispatch(
+        parameters.passEncoder.dispatchWorkgroups(
             Math.ceil((parameters.width + 15) / 16),
             Math.ceil((parameters.height + 15) / 16),
             1);
@@ -533,7 +533,7 @@ export class Scene {
         parameters.passEncoder.setBindGroup(2, this._bvhBindGroup);
         parameters.passEncoder.setBindGroup(3, parameters.gBufferBindGroup);
 
-        parameters.passEncoder.dispatch(
+        parameters.passEncoder.dispatchWorkgroups(
             Math.ceil((parameters.width + 15) / 16),
             Math.ceil((parameters.height + 15) / 16),
             1);
@@ -553,7 +553,7 @@ export class Scene {
         parameters.passEncoder.setBindGroup(1, parameters.gBufferBindGroup);
         parameters.passEncoder.setBindGroup(2, parameters.ssaoBindGroup);
 
-        parameters.passEncoder.dispatch(
+        parameters.passEncoder.dispatchWorkgroups(
             Math.ceil((parameters.width + 7) / 8),
             Math.ceil((parameters.height + 7) / 8),
             1);

@@ -96,13 +96,13 @@ export class Blur {
         computePass.setBindGroup(0, this.computeConstantsBindGroup);
 
         computePass.setBindGroup(1, this.computeBindGroup0);
-        computePass.dispatch(
+        computePass.dispatchWorkgroups(
             Math.ceil(this._width / this._blockDimension),
             Math.ceil(this._height / batch[1])
         );
 
         computePass.setBindGroup(1, this.computeBindGroup1);
-        computePass.dispatch(
+        computePass.dispatchWorkgroups(
             Math.ceil(this._height / this._blockDimension),
             Math.ceil(this._width / batch[1])
         );

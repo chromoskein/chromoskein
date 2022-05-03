@@ -642,7 +642,7 @@ export class Viewport3D {
         ],
       })
     );
-    computePassEncoder.dispatch(
+    computePassEncoder.dispatchWorkgroups(
       Math.ceil((this.width + 7) / 8),
       Math.ceil((this.height + 7) / 8),
     );
@@ -659,7 +659,7 @@ export class Viewport3D {
         ],
       })
     );
-    computePassEncoder.dispatch(
+    computePassEncoder.dispatchWorkgroups(
       Math.ceil((this.width + 7) / 8),
       Math.ceil((this.height + 7) / 8),
     );
