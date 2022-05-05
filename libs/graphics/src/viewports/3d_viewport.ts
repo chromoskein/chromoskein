@@ -26,6 +26,7 @@ export class Viewport3D {
     worldNormals: GPUTexture,
     ambientOcclusion: [GPUTexture, GPUTexture, GPUTexture],
     currentAmbientOcclusion: number,
+    selectionIDs: GPUTexture,
     globals: {
       ambientOcclusionTaps: number,
     },
@@ -265,6 +266,7 @@ export class Viewport3D {
     this.gBuffer?.colorsTransparent.destroy();
     this.gBuffer?.worldNormals.destroy();
     this.gBuffer?.ambientOcclusion.forEach(t => t.destroy());
+    this.gBuffer?.selectionIDs.destroy();
     this.gBuffer = null;
 
     this._camera = null;
@@ -352,6 +354,11 @@ export class Viewport3D {
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
       })],
       currentAmbientOcclusion: 0,
+      selectionIDs: this.graphicsLibrary.device.createTexture({
+        size,
+        format: 'r32float', //~ make the most compact possible: 'r8unorm'???
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+      }),
       globals: {
         ambientOcclusionTaps: 0,
       },
@@ -488,6 +495,12 @@ export class Viewport3D {
         },
         {
           view: this.gBuffer.worldNormals.createView(),
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        },
+        {
+          view: this.gBuffer.selectionIDs.createView(),
           clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
           loadOp: 'clear',
           storeOp: 'store',
@@ -765,7 +778,8 @@ export class Viewport3D {
   public getIDBuffer() : GPUTexture | null {
     if (this.gBuffer) {
       // return this.gBuffer?.colorsOpaque;
-      return this.gBuffer.worldNormals;
+      // return this.gBuffer.worldNormals;
+      return this.gBuffer.selectionIDs;
     }
     return null;
   }

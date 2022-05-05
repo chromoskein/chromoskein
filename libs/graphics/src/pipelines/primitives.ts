@@ -14,6 +14,42 @@ const gBufferOutputs = (writeDepth: boolean): Array<GPUColorTargetState> => writ
     // World Normals
     {
         format: GBUFFER_NORMAL_FORMAT,
+    },
+] : [
+    // Color
+    {
+        format: "rgba8unorm",
+        blend: {
+            color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+            },
+            alpha: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+            }
+        }
+    },
+];
+
+const gBufferOutputsWithID = (writeDepth: boolean): Array<GPUColorTargetState> => writeDepth ? [
+    // Color
+    {
+        format: "rgba8unorm",
+    },
+    // World Positions
+    // {
+    //     format: "rgba32float",
+    // },
+    // World Normals
+    {
+        format: GBUFFER_NORMAL_FORMAT,
+    },
+    //~ Selection ID
+    {
+        format: "r32float",
     }
 ] : [
     // Color
@@ -32,6 +68,10 @@ const gBufferOutputs = (writeDepth: boolean): Array<GPUColorTargetState> => writ
             }
         }
     },
+    //~ Selection ID
+    {
+        format: "r32float",
+    }
 ];
 
 const depthDescription = (writeDepth: boolean): GPUDepthStencilState => {
@@ -74,7 +114,7 @@ export function spheresPipelineDescriptor(device: GPUDevice, bindGroupLayouts: B
             fragment: {
                 module: depth ? shaderModules.spheresWriteDepth : shaderModules.spheresDiscardDepth,
                 entryPoint: "main_fragment",
-                targets: gBufferOutputs(depth),
+                targets: gBufferOutputsWithID(depth),
     
             },
             primitive: {
@@ -101,7 +141,7 @@ export function spheresPipelineDescriptor(device: GPUDevice, bindGroupLayouts: B
         fragment: {
             module: depth ? shaderModules.spheresWriteDepth : shaderModules.spheresDiscardDepth,
             entryPoint: "main_fragment",
-            targets: gBufferOutputs(depth),
+            targets: gBufferOutputsWithID(depth),
 
         },
         primitive: {
@@ -182,7 +222,8 @@ export function roundedConesPipelineDescriptor(pipelineLayouts: PipelineLayouts,
         fragment: {
             module: depth ? shaderModules.roundedConesWriteDepth : shaderModules.roundedConesDiscardDepth,
             entryPoint: "main_fragment",
-            targets: gBufferOutputs(depth),
+            // targets: gBufferOutputs(depth),
+            targets: gBufferOutputsWithID(depth),
         },
         primitive: {
             topology: 'triangle-strip',
