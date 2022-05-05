@@ -169,7 +169,7 @@ struct FragmentOutput {
   ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32,' : ''}
   @location(0) color : vec4<f32>,
   ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}
-  @location(${writeDepth ? '2' : '1'}) selectionID: vec4<f32>,
+  ${writeDepth ? '@location(2) selectionID: vec4<f32>,' : ''}
 };
 
 @stage(fragment)
@@ -325,7 +325,7 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
     // dot(normal.xyz, normalize(camera.position.xyz - intersection.xyz)) * color,
     color,
     ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-    vec4<f32>(1.0, 0.0, 0.0, 1.0),
+    ${writeDepth ? 'vec4<f32>(1.0, 0.0, 0.0, 1.0),' : '' }
   );  
 }
 `};

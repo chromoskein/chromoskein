@@ -529,6 +529,7 @@ export class Viewport3D {
 
     // commandEncoder.writeTimestamp(this.timestampsQuerySet, 1);
     const gBufferRasterizeTransparentPass = commandEncoder.beginRenderPass({
+      label: "G-Buffer Rasterization Transparent Pass",
       colorAttachments: [
         {
           view: this.gBuffer.colorsTransparent.createView(),

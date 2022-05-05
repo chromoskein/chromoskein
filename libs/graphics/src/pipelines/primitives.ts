@@ -67,11 +67,7 @@ const gBufferOutputsWithID = (writeDepth: boolean): Array<GPUColorTargetState> =
                 operation: 'add',
             }
         }
-    },
-    //~ Selection ID
-    {
-        format: "r32float",
-    }
+    }, 
 ];
 
 const depthDescription = (writeDepth: boolean): GPUDepthStencilState => {
@@ -181,7 +177,7 @@ export function quadraticBeziersPipelineDescriptor(pipelineLayouts: PipelineLayo
         fragment: {
             module: depth ? shaderModules.quadraticBeziersWriteDepth : shaderModules.quadraticBeziersDiscardDepth,
             entryPoint: "main_fragment",
-            targets: gBufferOutputs(depth),
+            targets: gBufferOutputsWithID(depth),
         },
         primitive: {
             topology: 'triangle-strip',
