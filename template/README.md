@@ -1,0 +1,1 @@
+This is a template for any playground of Chromatin.

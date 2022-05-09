@@ -1,0 +1,26 @@
+{
+  "name": "template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.tsx",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "watch": "node scripts/watch.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@webgpu/types": "^0.1.15",
+    "esbuild": "^0.14.38",
+    "gl-matrix": "^3.4.3",
+    "image-js": "^0.34.0",
+    "lodash": "^4.17.21",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.9",
+    "@types/react-dom": "^18.0.3",
+    "typescript": "^4.6.4"
+  }
+}
