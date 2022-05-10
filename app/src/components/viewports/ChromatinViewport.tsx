@@ -15,6 +15,7 @@ import { quantile } from "simple-statistics";
 import _, { identity } from "lodash";
 import { Spline } from "../../modules/graphics/primitives/spline";
 import { LabelingOverlay } from "./LabelingOverlay"
+import { LabelingDebugViewport } from "./LabelingDebugViewport";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
@@ -59,6 +60,10 @@ export function ChromatinViewport(props: {
 
     const [isShiftPressed, setShiftPressed] = useState(false);
 
+    //~ Labeling
+    const [layoutGenerator, setLayoutGenerator] = useState<GraphicsModule.LabelLayoutGenerator>(() => new GraphicsModule.LabelLayoutGenerator(viewport, props.graphicsLibrary));
+    const [labels, setLabels] = useState<GraphicsModule.Label[]>([]);
+
     // Input
     useKey(["Control", "Meta"], () => setPrimaryModPressed(true), { eventTypes: ["keydown"] });
     useKey(["Control", "Meta"], () => setPrimaryModPressed(false), { eventTypes: ["keyup"] });
@@ -83,6 +88,8 @@ export function ChromatinViewport(props: {
             // Draw the scene repeatedly
             const render = async (frametime: number) => {
                 await newViewport.render(frametime);
+                //~ label rendered scene. TODO: how does it work with async/await here???
+                setLabels(layoutGenerator.getLabelPositions());
 
                 requestAnimationFrame(render);
             }
@@ -815,7 +822,8 @@ export function ChromatinViewport(props: {
 
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas data-tip data-for='tooltip' ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden' }} tabIndex={1} onClick={() => onClick()}></canvas>
-        <LabelingOverlay graphicsLibrary={props.graphicsLibrary} viewport={viewport}></LabelingOverlay>
+        {/* <LabelingOverlay labels={labels}></LabelingOverlay> */}
+        <LabelingDebugViewport graphicsLibrary={props.graphicsLibrary} viewport={viewport} labelingGenerator={layoutGenerator}></LabelingDebugViewport>
     </div>
     );
 

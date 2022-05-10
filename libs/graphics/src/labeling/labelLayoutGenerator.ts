@@ -22,6 +22,9 @@ export class LabelLayoutGenerator {
     //~ private textures
     private contoursTexture: GPUTexture | null = null;
 
+    //~ internal state
+    private lastFrameLabels: Label[] = [];
+
     constructor(viewport: ChromatinViewport, graphicsLib: GraphicsLibrary) {
         console.log("<LabelLayoutGenerator constructor!>");
         this._viewport = viewport;
@@ -36,7 +39,9 @@ export class LabelLayoutGenerator {
         console.log("</LabelLayoutGenerator constructor!>");
     }
 
-    public resizeTextures(width: number, height: number) {
+    public resizeTextures(width: number, height: number): void {
+        if (width <= 0 || height <= 0) return;
+
         const size = {
             width: width,
             height: height,
@@ -51,6 +56,7 @@ export class LabelLayoutGenerator {
         console.log("viewport size = " + width + " x " + height);
 
         this.contoursTexture = this.graphicsLibrary.device.createTexture({
+            label: "Contours pass texture (Labeling)",
             size,
             format: 'rgba32float',
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
@@ -161,7 +167,7 @@ export class LabelLayoutGenerator {
     }
 
     public getLabelPositions(): Label[] {
-        this.computeContours();
+        // this.computeContours();
         return this.debug_getRandomLabelPositions();
     }
 
@@ -194,6 +200,7 @@ export class LabelLayoutGenerator {
 
         const pipelineLayout = device.createPipelineLayout(pipelineLayoutDescriptor);
         const contoursPipelineDescriptor = {
+            label: "Contours (Labeling)",
             // layout: pipelineLayouts.ssao,
             layout: pipelineLayout,
             compute: {
@@ -267,8 +274,14 @@ export class LabelLayoutGenerator {
     }
 
 
-    public debug_getRandomLabelPositions(): Label[] {
-        const retLabels = Array.from({ length: 100 }, (_, index) => ({ id: index, x: getRandomInt(800), y: getRandomInt(600), text: "Label " + index }));
+    public debug_getRandomLabelPositions(force = false): Label[] {
+        let retLabels = this.lastFrameLabels;
+
+        if (this.lastFrameLabels.length == 0 || force) {
+            retLabels = Array.from({ length: 100 }, (_, index) => ({ id: index, x: getRandomInt(800), y: getRandomInt(600), text: "Label " + index }));
+            this.lastFrameLabels = retLabels;
+        }
+
         return retLabels;
     }
 

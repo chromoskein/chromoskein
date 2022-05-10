@@ -24,33 +24,44 @@ export class DebugViewport {
         this._mainViewport = viewport;
         this._labelingGenerator = labelingGenerator;
 
-        if (this._canvas != null) {
-            console.log("✅CANVAS CONFIGURED");
-            this._context = this._canvas.getContext("webgpu");
+        if (this._canvas == null) return;
 
-            const size = {
-                width: this._width,
-                height: this._height,
-            };
+        this._context = this._canvas.getContext("webgpu");
+        console.log("viewport size = " + this._width + " x " + this._height);
 
-            if (this._context) {
-                this._context.configure({
-                    device: this.graphicsLibrary.device,
-                    format: 'bgra8unorm',
-                    usage: GPUTextureUsage.RENDER_ATTACHMENT,
-                    compositingAlphaMode: "opaque",
-                    size,
-                });
+        const size = {
+            width: this._width,
+            height: this._height,
+        };
 
-                // console.log("let's try this.");
-                // const textureView = this._context.getCurrentTexture().createView();
-                // console.log("⚠️no problem, boss.");
-            } else {
-                // console.log("PROBLEM, Boss!");
-            }
-        } else {
-            console.log("❌CANVAS NOT CONFIGURED");
+        if (this._context) {
+            this._context.configure({
+                device: this.graphicsLibrary.device,
+                format: 'bgra8unorm',
+                usage: GPUTextureUsage.RENDER_ATTACHMENT,
+                compositingAlphaMode: "opaque",
+                size,
+            });
+
         }
+    }
+
+    public resize(width: number, height: number): void {
+        if (!this._context) return;
+
+        console.log("DebugViewport::resize");
+        console.log("width = " + width + ", height = " + height);
+
+        this._context.configure({
+            device: this.graphicsLibrary.device,
+            format: 'bgra8unorm',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+            compositingAlphaMode: "opaque",
+            size: {
+                width: width,
+                height: height,
+            }
+        });
     }
 
     async render(frametime: number): Promise<void> {
@@ -124,19 +135,6 @@ export class DebugViewport {
 
     }
 
-    public resize(width: number, height: number): void {
-        if (!this._context) return;
-        this._context.configure({
-            device: this.graphicsLibrary.device,
-            format: 'bgra8unorm',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT,
-            compositingAlphaMode: "opaque",
-            size: {
-                width: width,
-                height: height,
-            }
-        });
-    }
 
 
     public deallocate(): void {
