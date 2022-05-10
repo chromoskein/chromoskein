@@ -124,6 +124,20 @@ export class DebugViewport {
 
     }
 
+    public resize(width: number, height: number): void {
+        if (!this._context) return;
+        this._context.configure({
+            device: this.graphicsLibrary.device,
+            format: 'bgra8unorm',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+            compositingAlphaMode: "opaque",
+            size: {
+                width: width,
+                height: height,
+            }
+        });
+    }
+
 
     public deallocate(): void {
         //~ TODO

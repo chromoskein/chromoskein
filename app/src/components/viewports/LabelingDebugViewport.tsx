@@ -35,5 +35,19 @@ export function LabelingDebugViewport(props: {graphicsLibrary: GraphicsModule.Gr
     // }, [props.graphicsLibrary, props.viewport, labelingDebugViewport, canvasElement]);
     // }, [props.graphicsLibrary, props.configurationID, canvasElement]);
 
+    useEffect(() => {
+        if (!canvasElement.current) return;
+
+        const c = canvasElement.current;
+        const devicePixelRatio = window.devicePixelRatio || 1.0;
+        c.setAttribute("style", "width:" + (props.viewport.width / devicePixelRatio) + "px; height:" + (props.viewport.height / devicePixelRatio) + "px");
+    
+        c.width = props.viewport.width;
+        c.height = props.viewport.height;
+
+        labelingDebugViewport.resize(props.viewport.width, props.viewport.height);
+        props.labelingGenerator.resizeTextures(props.viewport.width, props.viewport.height);
+    }, [labelingDebugViewport, props.labelingGenerator, props.viewport.width, props.viewport.height]);
+
     return <canvas data-tip data-for='tooltip' ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none'}} tabIndex={-1}></canvas>
 }

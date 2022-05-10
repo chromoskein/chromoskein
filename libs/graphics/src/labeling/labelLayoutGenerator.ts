@@ -36,7 +36,7 @@ export class LabelLayoutGenerator {
         console.log("</LabelLayoutGenerator constructor!>");
     }
 
-    private resizeTextures(width: number, height: number) {
+    public resizeTextures(width: number, height: number) {
         const size = {
             width: width,
             height: height,
