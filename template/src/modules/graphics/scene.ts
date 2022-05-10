@@ -222,7 +222,7 @@ export class Scene {
         const copyOfObjectsBuffer = this._buffer.cpuBuffer().slice(this._buffer.data.byteOffset, this._buffer.data.byteOffset + this._buffer.data.byteLength);
         // console.timeEnd('scene::buildBVH::bboxes');
 
-        this.bvhWorker = new Worker(new URL('./bvh/binned_sah_builder.ts', import.meta.url));
+        this.bvhWorker = new Worker(new URL('./bvh/binned_sah_builder.worker.ts', import.meta.url));
         this.bvhWorker.onmessage = ({ data: { result } }) => {
             // console.time('scene::buildBVH::Finish');
             if (result == null) {

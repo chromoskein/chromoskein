@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "src/index.tsx",
+  "type": "module",
   "scripts": {
     "build": "node scripts/build.js",
     "watch": "node scripts/watch.js"
@@ -19,8 +20,10 @@
     "react-dom": "^18.1.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.182",
     "@types/react": "^18.0.9",
     "@types/react-dom": "^18.0.3",
+    "esbuild-plugin-inline-worker": "^0.1.1",
     "typescript": "^4.6.4"
   }
 }

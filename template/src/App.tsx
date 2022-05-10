@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GraphicsLibrary } from "./modules/graphics/index";
 import * as GraphicsModule from "./modules/graphics";
 import './App.css';
+import pdbData from './data/3d_model.pdb';
+import { parsePdb } from './modules/parsing/parsePDB';
+import { vec3 } from 'gl-matrix';
 
 export function App(): JSX.Element {
   const [adapter, setAdapter] = useState<GPUAdapter | null>(null);
@@ -10,7 +13,9 @@ export function App(): JSX.Element {
   const [graphicsLibrary, setGraphicsLibrary] = useState<GraphicsLibrary | null>(null);
 
   const canvasElement = useRef<HTMLCanvasElement>(null);
-  const [viewport, setViewport] = useState<GraphicsModule.ChromatinViewport | null>(null);
+  const [viewport, setViewport] = useState<GraphicsModule.Viewport3D | null>(null);
+
+  const [data, setData] = useState(null);
 
   //#region Adapter, Device, Library Initialization
   useEffect(() => {
@@ -57,7 +62,7 @@ export function App(): JSX.Element {
   useEffect(() => {
     if (!graphicsLibrary || canvasElement == null || !canvasElement.current) return;
 
-    const newViewport = graphicsLibrary.createChromatinViewport(canvasElement.current);
+    const newViewport = graphicsLibrary.create3DViewport(canvasElement.current);
     setViewport(() => newViewport);
 
     // Draw the scene repeatedly
@@ -74,6 +79,21 @@ export function App(): JSX.Element {
     };
   }, [graphicsLibrary, canvasElement]);
   //#endregion Viewport Setup
+
+  //#region Load Data
+  useEffect(() => {
+    if (!viewport) return;
+
+    fetch(pdbData)
+      .then(response => response.text().then(data => {
+        const positions = parsePdb(data)[0].atoms;
+        const [_, spheres] = viewport.scene.addSpheres("atoms", positions.map(v => vec3.fromValues(v.x, v.y, v.z)), 0.1, null, false, true);
+        spheres.radius = 0.008;
+        viewport.scene.buildLowLevelStructure();
+      })
+    );
+  }, [viewport]);
+  //#endregion Load Data
 
   return (
     <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden' }}></canvas>

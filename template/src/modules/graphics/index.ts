@@ -5,7 +5,7 @@ import { createRenderPipelines } from "./pipelines/index";
 import { BindGroupLayouts, ComputePipelines, PipelineLayouts, RenderPipelines } from "./pipelines/shared";
 import { Scene } from "./scene";
 import { createShaderModules, ShaderModules } from "./shaders/index";
-import { ChromatinViewport, DistanceViewport } from "./viewports/index";
+import { ChromatinViewport, DistanceViewport, Viewport3D } from "./viewports/index";
 
 export * from "./cameras/index";
 export * from "./allocators/index";
@@ -70,6 +70,10 @@ export class GraphicsLibrary {
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
         }).createView({
         });
+    }
+
+    public create3DViewport(canvas: HTMLCanvasElement | null, scene: Scene | null = null, camera: OrbitCamera | SmoothCamera | null = null): Viewport3D {
+        return new Viewport3D(this, canvas, scene, camera);
     }
 
     public createChromatinViewport(canvas: HTMLCanvasElement | null, scene: Scene | null = null, camera: OrbitCamera | SmoothCamera | null = null): ChromatinViewport {
