@@ -102,6 +102,10 @@ export function ChromatinViewport(props: {
         }
     }, [props.graphicsLibrary, props.configurationID, canvasElement]);
 
+    useEffect(() => {
+        layoutGenerator.viewport = viewport;
+    }, [layoutGenerator, viewport, viewport.width, viewport.height]);
+
     // Camera Update
     useDeepCompareEffect(() => {
         viewport.cameraConfiguration = configuration.camera;

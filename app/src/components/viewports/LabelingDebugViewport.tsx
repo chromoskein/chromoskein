@@ -40,14 +40,17 @@ export function LabelingDebugViewport(props: {graphicsLibrary: GraphicsModule.Gr
 
         const c = canvasElement.current;
         const devicePixelRatio = window.devicePixelRatio || 1.0;
-        c.setAttribute("style", "width:" + (props.viewport.width / devicePixelRatio) + "px; height:" + (props.viewport.height / devicePixelRatio) + "px");
+        const baseStyles = "width: 100%; height: 100%; overflow: hidden; position: absolute; top: 0; left: 0; pointer-events: none;";
+        c.setAttribute("style", baseStyles + "width:" + (props.viewport.width / devicePixelRatio) + "px; height:" + (props.viewport.height / devicePixelRatio) + "px");
     
         c.width = props.viewport.width;
         c.height = props.viewport.height;
 
+        console.log("LabelingDebugViewport use effect happening..");
         labelingDebugViewport.resize(props.viewport.width, props.viewport.height);
         props.labelingGenerator.resizeTextures(props.viewport.width, props.viewport.height);
     }, [labelingDebugViewport, props.labelingGenerator, props.viewport.width, props.viewport.height]);
 
-    return <canvas data-tip data-for='tooltip' ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none'}} tabIndex={-1}></canvas>
+    return <canvas ref={canvasElement} tabIndex={-1}></canvas>
+    // return <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, pointerEvents: 'none'}} tabIndex={-1}></canvas>
 }

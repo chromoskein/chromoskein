@@ -52,8 +52,8 @@ export class LabelLayoutGenerator {
             return;
         }
 
-        console.log("resizing...");
-        console.log("viewport size = " + width + " x " + height);
+        // console.log("resizing...");
+        // console.log("viewport size = " + width + " x " + height);
 
         this.contoursTexture = this.graphicsLibrary.device.createTexture({
             label: "Contours pass texture (Labeling)",
@@ -68,8 +68,9 @@ export class LabelLayoutGenerator {
         const oldHeight = this._viewport?.height;
         this._viewport = vp;
 
-        console.log("SHOULD resize: " + oldWidth + " -> " + vp?.width + ", " + oldHeight + " -> " + vp?.height);
+        // console.log("SHOULD resize: " + oldWidth + " -> " + vp?.width + ", " + oldHeight + " -> " + vp?.height);
         // if ((vp) && ((vp.width != oldWidth) || (vp.height != oldHeight))) {
+        console.log("labelLayoutGenerator::          setting viewport...");
         if ((vp) && ((vp.width != 0) || (vp.height != 0))) {
             this.resizeTextures(vp.width, vp.height);
         }
@@ -84,11 +85,16 @@ export class LabelLayoutGenerator {
     public computeContours() : void {
         console.log("computeContours STARTING.");
         if (!this.viewport || !this.viewport.camera || !this.graphicsLibrary) {
+            // console.log(this.viewport);
+            // console.log(this.viewport.camera);
+            // console.log(this.graphicsLibrary);
+            // console.log("error 1");
             return;
         }
 
         const idBuffer = this.viewport.getIDBuffer();
         if (!idBuffer || !this.contoursTexture) { 
+            // console.log("error 2");
             return; 
         }
 
@@ -167,7 +173,7 @@ export class LabelLayoutGenerator {
     }
 
     public getLabelPositions(): Label[] {
-        // this.computeContours();
+        this.computeContours();
         return this.debug_getRandomLabelPositions();
     }
 

@@ -27,31 +27,25 @@ export class DebugViewport {
         if (this._canvas == null) return;
 
         this._context = this._canvas.getContext("webgpu");
-        console.log("viewport size = " + this._width + " x " + this._height);
 
-        const size = {
-            width: this._width,
-            height: this._height,
-        };
-
-        if (this._context) {
-            this._context.configure({
-                device: this.graphicsLibrary.device,
-                format: 'bgra8unorm',
-                usage: GPUTextureUsage.RENDER_ATTACHMENT,
-                compositingAlphaMode: "opaque",
-                size,
-            });
-
-        }
+        this.resize(this._width, this._height);
+        // this.reconfigureContext(this._width, this._height);
     }
 
     public resize(width: number, height: number): void {
         if (!this._context) return;
 
-        console.log("DebugViewport::resize");
-        console.log("width = " + width + ", height = " + height);
+        console.log("DebugViewport::resize(" + width + ", " + height + ")");
 
+        this.reconfigureContext(width, height);
+    }
+
+    private reconfigureContext(width: number, height: number): void {
+        if (!this._context) return;
+
+        if (width <= 0 || height <= 0) return;
+
+        console.log("Reconfiguring context:" + width + " x " + height)
         this._context.configure({
             device: this.graphicsLibrary.device,
             format: 'bgra8unorm',
@@ -68,6 +62,8 @@ export class DebugViewport {
         if (!this._context) {
             return;
         }
+
+        // console.log("debugViewport::render");
 
         const device = this.graphicsLibrary.device;
 
