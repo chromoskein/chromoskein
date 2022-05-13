@@ -23,6 +23,8 @@ import ssao from "./postprocess/ssao.wgsl";
 import aoBlur from "./postprocess/ssao_blur.wgsl";
 import ssaoJoin from "./postprocess/ssao_join.wgsl";
 
+import contours from "./labeling/contours.wgsl";
+
 export interface ShaderModules {
     [key: string]: GPUShaderModule;
 }
@@ -63,6 +65,10 @@ export function createShaderModules(device: GPUDevice): ShaderModules {
         ssaoJoin: device.createShaderModule({ code: ssaoJoin }),
         aoBlur: device.createShaderModule({ code: aoBlur }),
         textureBlit: device.createShaderModule({ code: textureBlit }),
+        //#endregion
+
+        //#region Labeling
+        contours: device.createShaderModule({ code: contours }),
         //#endregion
     };
 

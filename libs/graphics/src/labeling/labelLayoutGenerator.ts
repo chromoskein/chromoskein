@@ -1,10 +1,6 @@
 import { GraphicsLibrary } from "..";
-import { cameraBindGroupLayout } from "../pipelines/default_layouts";
 import {getRandomInt} from "../utils";
 import { ChromatinViewport } from "../viewports";
-
-//~ Shaders
-import contours from "./shaders/contours.wgsl";
 
 export type Label = {
     x: number;
@@ -12,7 +8,6 @@ export type Label = {
     id: number;
     text: string;
 };
-
 
 export class LabelLayoutGenerator {
 
@@ -35,6 +30,9 @@ export class LabelLayoutGenerator {
         } else {
             this.resizeTextures(viewport.width, viewport.height);
         }
+
+        if (!this.graphicsLibrary) return;
+
 
         console.log("</LabelLayoutGenerator constructor!>");
     }
@@ -68,8 +66,6 @@ export class LabelLayoutGenerator {
         const oldHeight = this._viewport?.height;
         this._viewport = vp;
 
-        // console.log("SHOULD resize: " + oldWidth + " -> " + vp?.width + ", " + oldHeight + " -> " + vp?.height);
-        // if ((vp) && ((vp.width != oldWidth) || (vp.height != oldHeight))) {
         console.log("labelLayoutGenerator::          setting viewport...");
         if ((vp) && ((vp.width != 0) || (vp.height != 0))) {
             this.resizeTextures(vp.width, vp.height);
@@ -85,16 +81,11 @@ export class LabelLayoutGenerator {
     public computeContours() : void {
         console.log("computeContours STARTING.");
         if (!this.viewport || !this.viewport.camera || !this.graphicsLibrary) {
-            // console.log(this.viewport);
-            // console.log(this.viewport.camera);
-            // console.log(this.graphicsLibrary);
-            // console.log("error 1");
             return;
         }
 
         const idBuffer = this.viewport.getIDBuffer();
         if (!idBuffer || !this.contoursTexture) { 
-            // console.log("error 2");
             return; 
         }
 
@@ -118,46 +109,18 @@ export class LabelLayoutGenerator {
             ]
         });
 
-        const contoursBGLayout = device.createBindGroupLayout({
-            entries: [
-                // ID Buffer (input)
-                {
-                    binding: 0,
-                    visibility: GPUShaderStage.COMPUTE,
-                    texture: {
-                        sampleType: 'unfilterable-float',
-                        viewDimension: '2d',
-                        multisampled: false,
-                    }
-                },
-                // Contours (output)
-                {
-                    binding: 1,
-                    visibility: GPUShaderStage.COMPUTE,
-                    storageTexture: {
-                        access: 'write-only',
-                        format: 'rgba32float',
-                        viewDimension: '2d',
-                    }
-                },
-            ],
-        });
-
-
         this.renderContoursPass({
             width: this.viewport.width,
             height: this.viewport.height,
             cameraBindGroup: cameraBindGroup,
             cameraBGLayout: this.graphicsLibrary.bindGroupLayouts.camera,
-            gBufferBindGroup: device.createBindGroup({
-                // layout: this.graphicsLibrary.bindGroupLayouts.ssaoGBuffer,
-                layout: contoursBGLayout,
+            contoursBindGroup: device.createBindGroup({
+                layout: this.graphicsLibrary.bindGroupLayouts.contours,
                 entries: [
                     { binding: 0, resource: idBuffer.createView() },
                     { binding: 1, resource: this.contoursTexture.createView() },
                 ]
             }),
-            gBufferBindGroupLayout: contoursBGLayout,
             passEncoder: computePassEncoder,
         });
 
@@ -185,45 +148,14 @@ export class LabelLayoutGenerator {
         height: number,
         cameraBindGroup: GPUBindGroup,
         cameraBGLayout: GPUBindGroupLayout,
-        gBufferBindGroup: GPUBindGroup,
-        gBufferBindGroupLayout: GPUBindGroupLayout,
+        contoursBindGroup: GPUBindGroup,
         passEncoder: GPUComputePassEncoder,
     }): void {
-        if (!this.graphicsLibrary) {
-            console.log("computeContours failed. #3")
-            return;
-        }
+        if (!this.graphicsLibrary) return;
 
-        const device = this.graphicsLibrary.device;
-        const pipelineLayoutDescriptor =
-        {
-            bindGroupLayouts: [
-                parameters.cameraBGLayout, parameters.gBufferBindGroupLayout
-            ],
-        }
-
-        const contoursShader = device.createShaderModule({ code: contours });
-
-        const pipelineLayout = device.createPipelineLayout(pipelineLayoutDescriptor);
-        const contoursPipelineDescriptor = {
-            label: "Contours (Labeling)",
-            // layout: pipelineLayouts.ssao,
-            layout: pipelineLayout,
-            compute: {
-                // module: shaderModules.ssao,
-                module: contoursShader,
-                entryPoint: "main",
-            },
-        };
-        const contoursPipeline = device.createComputePipeline(contoursPipelineDescriptor);
-
-        // parameters.passEncoder.setPipeline(this.graphicsLibrary.computePipelines.screenSpaceAmbientOcclusion);
-        parameters.passEncoder.setPipeline(contoursPipeline);
+        parameters.passEncoder.setPipeline(this.graphicsLibrary.computePipelines.contours);
         parameters.passEncoder.setBindGroup(0, parameters.cameraBindGroup);
-        parameters.passEncoder.setBindGroup(1, parameters.gBufferBindGroup);
-        // parameters.passEncoder.setBindGroup(2, parameters.ssaoBindGroup);
-
-        console.log("computing contours pass: " + parameters.width + " x " + parameters.height);
+        parameters.passEncoder.setBindGroup(1, parameters.contoursBindGroup);
 
         parameters.passEncoder.dispatchWorkgroups(
             Math.ceil((parameters.width + 7) / 8),
@@ -296,4 +228,5 @@ export class LabelLayoutGenerator {
     }
 
     // #endregion
+
 }

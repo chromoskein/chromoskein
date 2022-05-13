@@ -4,7 +4,7 @@ import { cameraBindGroupLayout, primitivesBindGroupLayout, primitivesPipelineLay
 import { BindGroupLayouts, PipelineLayouts, RenderPipelines, ComputePipelines } from "./shared";
 import { distanceMapBindGroupLayout, distanceMapPipelineDescriptor, tadmapPipelineDescriptor, distanceMapPipelineLayout } from "./2d";
 import { boundingVolumeHierarchyBindGroupLayout, rayTracingGBufferOutputBindGroupLayout, rayTracingAmbientOcclusionOutputBindGroupLayout, rayTracingAmbientOcclusionPipelineLayout, rayTracingGBufferPipelineLayout, rayTracingGBufferPipelineDescriptor, rayTracingAmbientOcclusionPipelineDescriptor } from "./ray_tracing";
-import { ssaoGBufferBindGroupLayout, ssaoGlobalsBindGroupLayout, ssaoPipelineLayout, ssaoJoinPipelineLayout, ssaoPipelineDescriptor, aoBlurPipelineDescriptor, aoBlurParametersBindGroupLayout, aoBlurIOBindGroupLayout, aoBlurPipelineLayout, ssaoJoinBindGroupLayout, ssaoJoinPipelineDescriptor } from "./postprocess";
+import { ssaoGBufferBindGroupLayout, ssaoGlobalsBindGroupLayout, ssaoPipelineLayout, ssaoJoinPipelineLayout, ssaoPipelineDescriptor, aoBlurPipelineDescriptor, aoBlurParametersBindGroupLayout, aoBlurIOBindGroupLayout, aoBlurPipelineLayout, ssaoJoinBindGroupLayout, ssaoJoinPipelineDescriptor, contoursBindGroupLayout, contoursPipelineLayout, contoursPipelineDescriptor } from "./postprocess";
 import { pipeline } from "stream";
 
 export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderModules): [BindGroupLayouts, PipelineLayouts, RenderPipelines, ComputePipelines] {
@@ -31,6 +31,8 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
 
         distanceMap: device.createBindGroupLayout(distanceMapBindGroupLayout()),
         singleTexture: device.createBindGroupLayout(singleTextureLayout()),
+        //~ labeling
+        contours: device.createBindGroupLayout(contoursBindGroupLayout()),
     };
 
     const pipelineLayouts = {
@@ -46,6 +48,8 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
 
         distanceMap: device.createPipelineLayout(distanceMapPipelineLayout(bindGroupLayouts)),
         textureBlit: device.createPipelineLayout(textureBlitPipelineLayout(bindGroupLayouts)),
+        //~ labeling
+        contours: device.createPipelineLayout(contoursPipelineLayout(bindGroupLayouts)),
     };
 
     const renderPipelines = {
@@ -74,6 +78,8 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         screenSpaceAmbientOcclusion: device.createComputePipeline(ssaoPipelineDescriptor(pipelineLayouts, shaderModules)),
         ambientOcclusionBlur: device.createComputePipeline(aoBlurPipelineDescriptor(pipelineLayouts, shaderModules)),
         ssaoJoin: device.createComputePipeline(ssaoJoinPipelineDescriptor(pipelineLayouts, shaderModules)),
+        //~ labeling
+        contours: device.createComputePipeline(contoursPipelineDescriptor(pipelineLayouts, shaderModules)),
     };
 
     // console.timeEnd('createRenderPipelines');
