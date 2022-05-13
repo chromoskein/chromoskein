@@ -250,6 +250,7 @@ struct FragmentOutput {
   ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32,' : ''}
   @location(0) color : vec4<f32>,  
   ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}  
+  ${writeDepth ? '@location(2) selectionID: vec4<f32>,' : ''}  
 };
 
 @fragment
@@ -362,6 +363,7 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
     ${writeDepth ? 'depth.z,' : ''}
     vec4<f32>(fragmentColor, 1.0),    
     ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
+    ${writeDepth ? 'vec4<f32>(1.0, 0.0, 0.0, 1.0),' : '' }
   );  
 }
 `};

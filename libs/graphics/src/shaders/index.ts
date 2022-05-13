@@ -14,6 +14,7 @@ import rayTracingAmbientOcclusion from "./raytrace_ao.wgsl";
 
 import passthrough from "./util/passthrough.wgsl";
 import renderGBuffer from "./util/render_gbuffer.wgsl";
+import textureBlit from "./util/textureBlit.wgsl";
 
 import tadmap from "./2d/tadmap.wgsl";
 import distanceMap from "./2d/distance_map.wgsl";
@@ -21,6 +22,8 @@ import distanceMap from "./2d/distance_map.wgsl";
 import ssao from "./postprocess/ssao.wgsl";
 import aoBlur from "./postprocess/ssao_blur.wgsl";
 import ssaoJoin from "./postprocess/ssao_join.wgsl";
+
+import contours from "./labeling/contours.wgsl";
 
 export interface ShaderModules {
     [key: string]: GPUShaderModule;
@@ -61,6 +64,11 @@ export function createShaderModules(device: GPUDevice): ShaderModules {
         ssao: device.createShaderModule({ code: ssao }),
         ssaoJoin: device.createShaderModule({ code: ssaoJoin }),
         aoBlur: device.createShaderModule({ code: aoBlur }),
+        textureBlit: device.createShaderModule({ code: textureBlit }),
+        //#endregion
+
+        //#region Labeling
+        contours: device.createShaderModule({ code: contours }),
         //#endregion
     };
 

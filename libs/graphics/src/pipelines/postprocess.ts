@@ -218,3 +218,49 @@ export function ssaoJoinPipelineDescriptor(pipelineLayouts: PipelineLayouts, sha
         }
     };
 }
+
+export function contoursBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        entries: [
+            // ID Buffer (input)
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                texture: {
+                    sampleType: 'unfilterable-float',
+                    viewDimension: '2d',
+                    multisampled: false,
+                }
+            },
+            // Contours (output)
+            {
+                binding: 1,
+                visibility: GPUShaderStage.COMPUTE,
+                storageTexture: {
+                    access: 'write-only',
+                    format: 'rgba32float',
+                    viewDimension: '2d',
+                }
+            },
+        ],
+    }
+}
+
+export function contoursPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
+    return {
+        bindGroupLayouts: [
+            bindGroupLayouts.camera, bindGroupLayouts.contours
+        ],
+    };
+}
+
+export function contoursPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPUComputePipelineDescriptor {
+    return {
+        label: "Contours (Labeling)",
+        layout: pipelineLayouts.contours,
+        compute: {
+            module: shaderModules.contours,
+            entryPoint: "main",
+        },
+    }
+}

@@ -1,10 +1,6 @@
 import { GraphicsLibrary } from "..";
-import { cameraBindGroupLayout } from "../pipelines/default_layouts";
 import {getRandomInt} from "../utils";
 import { ChromatinViewport } from "../viewports";
-
-//~ Shaders
-import contours from "./shaders/contours.wgsl";
 
 export type Label = {
     x: number;
@@ -12,7 +8,6 @@ export type Label = {
     id: number;
     text: string;
 };
-
 
 export class LabelLayoutGenerator {
 
@@ -22,7 +17,11 @@ export class LabelLayoutGenerator {
     //~ private textures
     private contoursTexture: GPUTexture | null = null;
 
+    //~ internal state
+    private lastFrameLabels: Label[] = [];
+
     constructor(viewport: ChromatinViewport, graphicsLib: GraphicsLibrary) {
+        console.log("<LabelLayoutGenerator constructor!>");
         this._viewport = viewport;
         this.graphicsLibrary = graphicsLib;
 
@@ -31,9 +30,16 @@ export class LabelLayoutGenerator {
         } else {
             this.resizeTextures(viewport.width, viewport.height);
         }
+
+        if (!this.graphicsLibrary) return;
+
+
+        console.log("</LabelLayoutGenerator constructor!>");
     }
 
-    private resizeTextures(width: number, height: number) {
+    public resizeTextures(width: number, height: number): void {
+        if (width <= 0 || height <= 0) return;
+
         const size = {
             width: width,
             height: height,
@@ -44,17 +50,24 @@ export class LabelLayoutGenerator {
             return;
         }
 
+        // console.log("resizing...");
+        // console.log("viewport size = " + width + " x " + height);
+
         this.contoursTexture = this.graphicsLibrary.device.createTexture({
+            label: "Contours pass texture (Labeling)",
             size,
-            format: 'r32float',
+            format: 'rgba32float',
             usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
         });
     }
 
     public set viewport(vp: ChromatinViewport | null) {
+        const oldWidth = this._viewport?.width;
+        const oldHeight = this._viewport?.height;
         this._viewport = vp;
 
-        if (vp) {
+        console.log("labelLayoutGenerator::          setting viewport...");
+        if ((vp) && ((vp.width != 0) || (vp.height != 0))) {
             this.resizeTextures(vp.width, vp.height);
         }
     }
@@ -76,6 +89,8 @@ export class LabelLayoutGenerator {
             return; 
         }
 
+        this.debug_clearContoursTexture(); //~ just for testing whether the blitting pipeline works fine. it does.
+
         const device = this.graphicsLibrary.device;
 
         const commandEncoder = device.createCommandEncoder();
@@ -94,63 +109,25 @@ export class LabelLayoutGenerator {
             ]
         });
 
-        const layout = device.createBindGroupLayout({
-            entries: [
-                // ID Buffer (input)
-                {
-                    binding: 0,
-                    visibility: GPUShaderStage.COMPUTE,
-                    texture: {
-                        sampleType: 'unfilterable-float',
-                        viewDimension: '2d',
-                        multisampled: false,
-                    }
-                },
-                // Contours (output)
-                {
-                    binding: 1,
-                    visibility: GPUShaderStage.COMPUTE,
-                    texture: {
-                        sampleType: 'unfilterable-float',
-                        viewDimension: '2d',
-                        multisampled: false,
-                    }
-                },
-                // // gBufferAmbientOcclusion
-                // {
-                //     binding: 2,
-                //     visibility: GPUShaderStage.COMPUTE,
-                //     storageTexture: {
-                //         access: 'write-only',
-                //         format: 'r32float',
-                //         viewDimension: '2d',
-                //     }
-                // },
-            ],
-        });
-
-
         this.renderContoursPass({
             width: this.viewport.width,
             height: this.viewport.height,
             cameraBindGroup: cameraBindGroup,
             cameraBGLayout: this.graphicsLibrary.bindGroupLayouts.camera,
-            gBufferBindGroup: device.createBindGroup({
-                // layout: this.graphicsLibrary.bindGroupLayouts.ssaoGBuffer,
-                layout: layout,
+            contoursBindGroup: device.createBindGroup({
+                layout: this.graphicsLibrary.bindGroupLayouts.contours,
                 entries: [
                     { binding: 0, resource: idBuffer.createView() },
                     { binding: 1, resource: this.contoursTexture.createView() },
-                    // { binding: 0, resource: this.depthTexture.createView() },
-                    // { binding: 1, resource: this.gBuffer.worldNormals.createView() },
-                    // { binding: 2, resource: this.gBuffer.ambientOcclusion[0].createView() }
                 ]
             }),
-            gBufferBindGroupLayout: layout,
             passEncoder: computePassEncoder,
         });
 
         computePassEncoder.end();
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
         console.log("computeContours SUCCEEDED!");
     }
 
@@ -171,53 +148,85 @@ export class LabelLayoutGenerator {
         height: number,
         cameraBindGroup: GPUBindGroup,
         cameraBGLayout: GPUBindGroupLayout,
-        gBufferBindGroup: GPUBindGroup,
-        gBufferBindGroupLayout: GPUBindGroupLayout,
+        contoursBindGroup: GPUBindGroup,
         passEncoder: GPUComputePassEncoder,
     }): void {
-        if (!this.graphicsLibrary) {
-            console.log("computeContours failed. #3")
-            return;
-        }
+        if (!this.graphicsLibrary) return;
 
-        const device = this.graphicsLibrary.device;
-        const pipelineLayoutDescriptor =
-        {
-            bindGroupLayouts: [
-                parameters.cameraBGLayout, parameters.gBufferBindGroupLayout
-            ],
-        }
-
-        const contoursShader = device.createShaderModule({ code: contours });
-
-        const pipelineLayout = device.createPipelineLayout(pipelineLayoutDescriptor);
-        const contoursPipelineDescriptor = {
-            // layout: pipelineLayouts.ssao,
-            layout: pipelineLayout,
-            compute: {
-                // module: shaderModules.ssao,
-                module: contoursShader,
-                entryPoint: "main",
-            },
-        };
-        const contoursPipeline = device.createComputePipeline(contoursPipelineDescriptor);
-
-        parameters.passEncoder.setPipeline(this.graphicsLibrary.computePipelines.screenSpaceAmbientOcclusion);
+        parameters.passEncoder.setPipeline(this.graphicsLibrary.computePipelines.contours);
         parameters.passEncoder.setBindGroup(0, parameters.cameraBindGroup);
-        parameters.passEncoder.setBindGroup(1, parameters.gBufferBindGroup);
-        // parameters.passEncoder.setBindGroup(2, parameters.ssaoBindGroup);
+        parameters.passEncoder.setBindGroup(1, parameters.contoursBindGroup);
 
-        parameters.passEncoder.dispatch(
+        parameters.passEncoder.dispatchWorkgroups(
             Math.ceil((parameters.width + 7) / 8),
             Math.ceil((parameters.height + 7) / 8),
             1);
     }
 
+    private debug_clearContoursTexture() {
+        if (!this.graphicsLibrary) {
+            return;
+        }
 
-    public debug_getRandomLabelPositions(): Label[] {
-        const retLabels = Array.from({ length: 100 }, (_, index) => ({ id: index, x: getRandomInt(800), y: getRandomInt(600), text: "Label " + index }));
+        const device = this.graphicsLibrary.device;
+
+        const commandEncoder = device.createCommandEncoder();
+
+        // // const textureToShow = this._mainViewport.getIDBuffer();
+        // const textureToShow = this._labelingGenerator.debug_getContoursTexture();
+        // if (!textureToShow) {
+        //     return;
+        // }
+        if (!this.contoursTexture) {
+            return;
+        }
+        const textureView = this.contoursTexture.createView();
+
+        const backgroundColor: GPUColorDict = { r: 1.0, g: 0.0, b: 0.0, a: 1.0};
+        const passthroughPassEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [
+                {
+                    view: textureView,
+                    clearValue: backgroundColor,
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                },
+            ],
+        });
+        // passthroughPassEncoder.setPipeline(this.graphicsLibrary.renderPipelines.textureBlit);
+        // passthroughPassEncoder.setBindGroup(0, device.createBindGroup({
+        //     layout: this.graphicsLibrary.bindGroupLayouts.singleTexture,
+        //     entries: [
+        //         {
+        //             binding: 0,
+        //             resource: textureToShow.createView(),
+        //         },
+        //     ]
+        // }));
+        // // passthroughPassEncoder.draw(3, 1, 0, 0);
+        passthroughPassEncoder.end();
+
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
+    }
+
+
+    public debug_getRandomLabelPositions(force = false): Label[] {
+        let retLabels = this.lastFrameLabels;
+
+        if (this.lastFrameLabels.length == 0 || force) {
+            retLabels = Array.from({ length: 100 }, (_, index) => ({ id: index, x: getRandomInt(800), y: getRandomInt(600), text: "Label " + index }));
+            this.lastFrameLabels = retLabels;
+        }
+
         return retLabels;
     }
 
+    public debug_getContoursTexture(): GPUTexture | null {
+        return this.contoursTexture;
+    }
+
     // #endregion
+
 }

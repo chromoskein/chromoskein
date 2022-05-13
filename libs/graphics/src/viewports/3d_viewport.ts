@@ -26,6 +26,7 @@ export class Viewport3D {
     worldNormals: GPUTexture,
     ambientOcclusion: [GPUTexture, GPUTexture, GPUTexture],
     currentAmbientOcclusion: number,
+    selectionIDs: GPUTexture,
     globals: {
       ambientOcclusionTaps: number,
     },
@@ -268,6 +269,7 @@ export class Viewport3D {
     this.gBuffer?.colorsTransparent.destroy();
     this.gBuffer?.worldNormals.destroy();
     this.gBuffer?.ambientOcclusion.forEach(t => t.destroy());
+    this.gBuffer?.selectionIDs.destroy();
     this.gBuffer = null;
 
     this._camera = null;
@@ -355,6 +357,12 @@ export class Viewport3D {
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
       })],
       currentAmbientOcclusion: 0,
+      selectionIDs: this.graphicsLibrary.device.createTexture({
+        label: "Selection ID (gBuffer)",
+        size,
+        format: 'r32float', //~ make the most compact possible: 'r8unorm'???
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+      }),
       globals: {
         ambientOcclusionTaps: 0,
       },
@@ -498,6 +506,12 @@ export class Viewport3D {
           clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
           loadOp: 'clear',
           storeOp: 'store',
+        },
+        {
+          view: this.gBuffer.selectionIDs.createView(),
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
+          loadOp: 'clear',
+          storeOp: 'store',
         }
       ],
       depthStencilAttachment: {
@@ -523,6 +537,7 @@ export class Viewport3D {
 
     // commandEncoder.writeTimestamp(this.timestampsQuerySet, 1);
     const gBufferRasterizeTransparentPass = commandEncoder.beginRenderPass({
+      label: "G-Buffer Rasterization Transparent Pass",
       colorAttachments: [
         {
           view: this.gBuffer.colorsTransparent.createView(),
@@ -771,7 +786,9 @@ export class Viewport3D {
 
   public getIDBuffer() : GPUTexture | null {
     if (this.gBuffer) {
-      return this.gBuffer?.colorsOpaque;
+      // return this.gBuffer?.colorsOpaque;
+      // return this.gBuffer.worldNormals;
+      return this.gBuffer.selectionIDs;
     }
     return null;
   }
