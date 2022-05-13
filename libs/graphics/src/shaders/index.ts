@@ -24,6 +24,7 @@ import aoBlur from "./postprocess/ssao_blur.wgsl";
 import ssaoJoin from "./postprocess/ssao_join.wgsl";
 
 import contours from "./labeling/contours.wgsl";
+import distanceTransform from "./labeling/distance-transform.wgsl";
 
 export interface ShaderModules {
     [key: string]: GPUShaderModule;
@@ -69,6 +70,7 @@ export function createShaderModules(device: GPUDevice): ShaderModules {
 
         //#region Labeling
         contours: device.createShaderModule({ code: contours }),
+        distanceTransform: device.createShaderModule({ code: distanceTransform }),
         //#endregion
     };
 
