@@ -27,25 +27,19 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   }
 
   let coordinates = vec2<i32>(GlobalInvocationID.xy);
+  let textureCoordinates = vec2<f32>(coordinates) / camera.viewportSize;
 
-  let id = textureLoad(gBufferID, vec2<i32>(coordinates), 0).x;
   let step = 1;
-
   let X = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, 0), 0).x);
   let R = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(step, 0), 0).x);
   let L = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(-step, 0), 0).x);
   let T = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, step), 0).x);
   let B = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, -step), 0).x);
 
-  var finalValue = f32(0);
+  var seedValue = vec2<f32>(0.0, 0.0);
   if (!compareIDs(X, R, L, T, B)) {
-    finalValue = id;
+    seedValue = textureCoordinates;
   }
-
  
-  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(finalValue, 0.0, 0.0, 0.0));
-  // textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(id, 0.0, 0.0, 0.0));
-  // textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(1.0, 0.0, 1.0, 1.0));
-  // textureStore(contours, vec2<i32>(10, 10), vec4<f32>(1.0, 1.0, 1.0, 1.0));
-  // error bro;
+  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(seedValue, 0.0, 0.0));
 }
