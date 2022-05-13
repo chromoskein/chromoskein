@@ -16,6 +16,8 @@ export class LabelLayoutGenerator {
 
     //~ private textures
     private contoursTexture: GPUTexture | null = null;
+    private pingTexture: GPUTexture | null = null;
+    private pongTexture: GPUTexture | null = null;
 
     //~ internal state
     private lastFrameLabels: Label[] = [];
@@ -31,10 +33,25 @@ export class LabelLayoutGenerator {
             this.resizeTextures(viewport.width, viewport.height);
         }
 
-        if (!this.graphicsLibrary) return;
-
+        this.createFixedSizeTextures();
 
         console.log("</LabelLayoutGenerator constructor!>");
+    }
+
+    private createFixedSizeTextures(): void {
+        if (!this.graphicsLibrary) {
+            return;
+        }
+
+        const size = {
+            width: 512,
+            height: 512,
+        }
+
+        const usageFlags = GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING;
+        const format = 'rgba32float';
+        this.pingTexture = this.graphicsLibrary.device.createTexture({ label: "DT: Ping (Labeling)", size, format: format, usage: usageFlags});
+        this.pongTexture = this.graphicsLibrary.device.createTexture({ label: "DT: Pong (Labeling)", size, format: format, usage: usageFlags});
     }
 
     public resizeTextures(width: number, height: number): void {
@@ -79,7 +96,7 @@ export class LabelLayoutGenerator {
     // #region High-level labeling workflow
 
     public computeContours() : void {
-        console.log("computeContours STARTING.");
+        // console.log("computeContours STARTING.");
         if (!this.viewport || !this.viewport.camera || !this.graphicsLibrary) {
             return;
         }
@@ -128,11 +145,28 @@ export class LabelLayoutGenerator {
         const commandBuffer = commandEncoder.finish();
         device.queue.submit([commandBuffer]);
 
-        console.log("computeContours SUCCEEDED!");
+        // console.log("computeContours SUCCEEDED!");
     }
 
-    public computeVoronoi(): void {
-        const a = "test";
+    public computeDistanceTransform(contoursSeedTex: GPUTexture, distanceTransfromTex: GPUTexture): void {
+        if (!this.graphicsLibrary || !this.pingTexture || !this.pongTexture) return;
+
+        // //~ TODO: copy contours seed to ping texture
+        // this.graphicsLibrary.blit(contoursSeedTex, this.pingTexture);
+
+        // //~ TODO: Compute DT steps
+        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 2.0);
+        // this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 4.0);
+        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 8.0);
+        // this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 16.0);
+        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 32.0);
+        // this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 64.0);
+        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 128.0);
+        // this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 256.0);
+        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 512.0);
+
+        // //~ TODO: copy result to final distance transform texture
+        // this.graphicsLibrary.blit(this.pongTexture, distanceTransfromTex);
     }
 
     public getLabelPositions(): Label[] {
@@ -161,6 +195,10 @@ export class LabelLayoutGenerator {
             Math.ceil((parameters.width + 7) / 8),
             Math.ceil((parameters.height + 7) / 8),
             1);
+    }
+
+    public computeDTStep(inputTex: GPUTexture, outputTex: GPUTexture, stepSize: number): void {
+        //~ todo
     }
 
     private debug_clearContoursTexture() {

@@ -11,6 +11,9 @@
 };
 
 @group(0) @binding(0) var<uniform> camera : Camera; 
+@group(0) @binding(1) var<uniform> stepSize : f32;
+@group(0) @binding(2) var<uniform> widthScale : f32;
+@group(0) @binding(3) var<uniform> heightScale : f32;
 
 @group(1) @binding(0) var inputTex : texture_2d<f32>;
 @group(1) @binding(1) var outputTex : texture_storage_2d<rgba32float, write>;
@@ -28,9 +31,9 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     return;
   }
 
-  let stepSize = 512.0; //~ TODO: should come from CPU
-  let widthScale = 1.0; //~ TODO: should come from CPU
-  let heightScale = 1.0; //~ TODO: should come from CPU
+//   let stepSize = 512.0; //~ TODO: should come from CPU
+//   let widthScale = 1.0; //~ TODO: should come from CPU
+//   let heightScale = 1.0; //~ TODO: should come from CPU
 
   let coordinates = vec2<i32>(GlobalInvocationID.xy);
   let textureCoordinates = vec2<f32>(coordinates) / camera.viewportSize;
