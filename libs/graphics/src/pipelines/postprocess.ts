@@ -219,6 +219,8 @@ export function ssaoJoinPipelineDescriptor(pipelineLayouts: PipelineLayouts, sha
     };
 }
 
+//#region Contours (Labeling)
+
 export function contoursBindGroupLayout(): GPUBindGroupLayoutDescriptor {
     return {
         entries: [
@@ -264,3 +266,53 @@ export function contoursPipelineDescriptor(pipelineLayouts: PipelineLayouts, sha
         },
     }
 }
+//#endregion
+
+//#region Distance Transform (Labeling)
+export function dtStepBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        entries: [
+            { //~ stepSize
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: 'uniform',
+                }
+            },
+            // { //~ widthScale
+            //     binding: 1,
+            //     visibility: GPUShaderStage.COMPUTE,
+            //     buffer: {
+            //         type: 'uniform',
+            //     }
+            // },
+            // { //~ heightScale
+            //     binding: 2,
+            //     visibility: GPUShaderStage.COMPUTE,
+            //     buffer: {
+            //         type: 'uniform',
+            //     }
+            // }
+        ],
+    }
+}
+
+export function distanceTransformPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
+    return {
+        bindGroupLayouts: [
+            bindGroupLayouts.camera, bindGroupLayouts.contours/*maybe don't reuse? */, bindGroupLayouts.distanceTransformStepParams,
+        ],
+    };
+}
+
+export function distanceTransformPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPUComputePipelineDescriptor {
+    return {
+        label: "Distance Transform step (Labeling)",
+        layout: pipelineLayouts.distanceTransform,
+        compute: {
+            module: shaderModules.distanceTransformStep,
+            entryPoint: "main",
+        },
+    }
+}
+//#endregion

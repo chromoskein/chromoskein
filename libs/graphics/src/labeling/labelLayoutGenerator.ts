@@ -16,6 +16,7 @@ export class LabelLayoutGenerator {
 
     //~ private textures
     private contoursTexture: GPUTexture | null = null;
+    private distanceTransformTexture: GPUTexture | null = null;
     private pingTexture: GPUTexture | null = null;
     private pongTexture: GPUTexture | null = null;
 
@@ -52,6 +53,7 @@ export class LabelLayoutGenerator {
         const format = 'rgba32float';
         this.pingTexture = this.graphicsLibrary.device.createTexture({ label: "DT: Ping (Labeling)", size, format: format, usage: usageFlags});
         this.pongTexture = this.graphicsLibrary.device.createTexture({ label: "DT: Pong (Labeling)", size, format: format, usage: usageFlags});
+        this.distanceTransformTexture = this.graphicsLibrary.device.createTexture({ label: "DT: Final (Labeling)", size, format: format, usage: usageFlags});
     }
 
     public resizeTextures(width: number, height: number): void {
@@ -150,27 +152,33 @@ export class LabelLayoutGenerator {
 
     public computeDistanceTransform(contoursSeedTex: GPUTexture, distanceTransfromTex: GPUTexture): void {
         if (!this.graphicsLibrary || !this.pingTexture || !this.pongTexture) return;
+        console.log("Distance Transform starting...");
 
         // //~ TODO: copy contours seed to ping texture
         // this.graphicsLibrary.blit(contoursSeedTex, this.pingTexture);
 
         // //~ TODO: Compute DT steps
-        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 2.0);
-        // this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 4.0);
-        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 8.0);
-        // this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 16.0);
-        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 32.0);
-        // this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 64.0);
-        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 128.0);
-        // this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 256.0);
-        // this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 512.0);
+        this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 2.0);
+        this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 4.0);
+        this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 8.0);
+        this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 16.0);
+        this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 32.0);
+        this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 64.0);
+        this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 128.0);
+        this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 256.0);
+        this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 512.0);
 
         // //~ TODO: copy result to final distance transform texture
         // this.graphicsLibrary.blit(this.pongTexture, distanceTransfromTex);
+        console.log("Distance Transform finished!");
     }
 
     public getLabelPositions(): Label[] {
         this.computeContours();
+
+        if (!this.contoursTexture || !this.distanceTransformTexture) return [];
+        this.computeDistanceTransform(this.contoursTexture, this.distanceTransformTexture);
+
         return this.debug_getRandomLabelPositions();
     }
 
@@ -199,6 +207,87 @@ export class LabelLayoutGenerator {
 
     public computeDTStep(inputTex: GPUTexture, outputTex: GPUTexture, stepSize: number): void {
         //~ todo
+        if (!this.graphicsLibrary) return; 
+
+        const device = this.graphicsLibrary.device;
+
+        const commandEncoder = device.createCommandEncoder();
+        // const computePassEncoder = commandEncoder.beginComputePass();
+        const passEncoder = commandEncoder.beginComputePass();
+
+        const contoursBindGroup = device.createBindGroup({
+            layout: this.graphicsLibrary.bindGroupLayouts.contours,
+            entries: [
+                { binding: 0, resource: inputTex.createView() },
+                { binding: 1, resource: outputTex.createView() },
+                // { binding: 0, resource: idBuffer.createView() },
+                // { binding: 1, resource: this.contoursTexture.createView() },
+            ]
+        })
+
+        if (!this.viewport || !this.viewport.camera) return;
+        const cameraBindGroup = device.createBindGroup({
+            layout: this.graphicsLibrary.bindGroupLayouts.camera,
+            entries: [
+                {
+                    binding: 0,
+                    resource: {
+                        buffer: this.viewport.camera.bufferGPU,
+                        offset: 0,
+                    }
+                },
+            ]
+        });
+
+        const stepParams = {
+            stepSize: stepSize, //~ do I need to somehow convert so that it's compatible with f32 in wgsl?
+            widthScale: this.viewport.width / 512.0,
+            heightScale: this.viewport.height / 512.0,
+        };
+        
+          const stepParamBufferSize = 3 * Float32Array.BYTES_PER_ELEMENT;
+          const stepParamBuffer = device.createBuffer({
+            size: stepParamBufferSize,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+          });
+
+        device.queue.writeBuffer(
+            stepParamBuffer,
+            0,
+            new Float32Array([
+                stepParams.stepSize,
+                stepParams.widthScale,
+                stepParams.heightScale,
+            ])
+        );
+
+        const dtParamsBindGroup = device.createBindGroup({
+            layout: this.graphicsLibrary.bindGroupLayouts.distanceTransformStepParams,
+            entries: [
+                { binding: 0, resource: {
+                    buffer: stepParamBuffer
+                } },
+            ]
+        });
+
+        passEncoder.setPipeline(this.graphicsLibrary.computePipelines.contours);
+        passEncoder.setBindGroup(0, cameraBindGroup);
+        passEncoder.setBindGroup(1, contoursBindGroup);
+        passEncoder.setBindGroup(2, dtParamsBindGroup);
+
+        passEncoder.dispatchWorkgroups(
+            512 / 8,
+            512 / 8,
+            1);
+        // passEncoder.dispatchWorkgroups(
+        //     Math.ceil((parameters.width + 7) / 8),
+        //     Math.ceil((parameters.height + 7) / 8),
+        //     1);
+
+        passEncoder.end();
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
     }
 
     private debug_clearContoursTexture() {

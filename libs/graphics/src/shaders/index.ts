@@ -70,7 +70,7 @@ export function createShaderModules(device: GPUDevice): ShaderModules {
 
         //#region Labeling
         contours: device.createShaderModule({ code: contours }),
-        distanceTransform: device.createShaderModule({ code: distanceTransform }),
+        distanceTransformStep: device.createShaderModule({ code: distanceTransform }),
         //#endregion
     };
 

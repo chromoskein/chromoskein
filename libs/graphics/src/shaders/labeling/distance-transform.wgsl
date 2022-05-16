@@ -10,13 +10,22 @@
   viewportSize : vec2<f32>,
 };
 
+struct DTStepParams {
+    stepSize: f32,
+    widthScale: f32,
+    heightScale: f32,
+}
+
 @group(0) @binding(0) var<uniform> camera : Camera; 
-@group(0) @binding(1) var<uniform> stepSize : f32;
-@group(0) @binding(2) var<uniform> widthScale : f32;
-@group(0) @binding(3) var<uniform> heightScale : f32;
 
 @group(1) @binding(0) var inputTex : texture_2d<f32>;
 @group(1) @binding(1) var outputTex : texture_storage_2d<rgba32float, write>;
+
+// @group(2) @binding(0) var<uniform> stepSize : f32;
+// @group(2) @binding(1) var<uniform> widthScale : f32;
+// @group(2) @binding(2) var<uniform> heightScale : f32;
+@group(2) @binding(0) var<uniform> params: DTStepParams;
+
 
 fn scaleDistance(a: vec2<f32>, b: vec2<f32>, widthScale: f32, heightScale: f32) -> f32 {
     let dx = (b.x - a.x) * widthScale;
@@ -42,7 +51,8 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   var centralVal = textureLoad(inputTex, coordinates, 0);
 
     // let k: f32 = stepSize / 512.0;
-    let k: i32 = i32(stepSize);
+    // let k: i32 = i32(stepSize);
+    let k: i32 = i32(params.stepSize);
     let offset: array<vec2<i32>, 8> = array<vec2<i32>, 8>(
         vec2<i32>(k, 0),
         vec2<i32>(-k, 0),
@@ -60,7 +70,7 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
         let val = textureLoad(inputTex, coordinates + off, 0); 
 
         let d1 = centralVal.z;
-        let d2 = scaleDistance(uv, val.xy, widthScale, heightScale);
+        let d2 = scaleDistance(uv, val.xy, params.widthScale, params.heightScale);
 
         if (d1 > d2) {
         centralVal = vec4(val.xy, d2, val.w);
