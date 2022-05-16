@@ -53,6 +53,7 @@ export class LabelLayoutGenerator {
         const format = 'rgba32float';
         this.pingTexture = this.graphicsLibrary.device.createTexture({ label: "DT: Ping (Labeling)", size, format: format, usage: usageFlags});
         this.pongTexture = this.graphicsLibrary.device.createTexture({ label: "DT: Pong (Labeling)", size, format: format, usage: usageFlags});
+        //~ TODO: this probably shouldn't be downscaled...
         this.distanceTransformTexture = this.graphicsLibrary.device.createTexture({ label: "DT: Final (Labeling)", size, format: format, usage: usageFlags});
     }
 
@@ -152,10 +153,10 @@ export class LabelLayoutGenerator {
 
     public computeDistanceTransform(contoursSeedTex: GPUTexture, distanceTransfromTex: GPUTexture): void {
         if (!this.graphicsLibrary || !this.pingTexture || !this.pongTexture) return;
-        console.log("Distance Transform starting...");
+        // console.log("Distance Transform starting...");
 
         // //~ TODO: copy contours seed to ping texture
-        // this.graphicsLibrary.blit(contoursSeedTex, this.pingTexture);
+        this.graphicsLibrary.blit(contoursSeedTex, this.pingTexture);
 
         // //~ TODO: Compute DT steps
         this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 2.0);
@@ -169,8 +170,9 @@ export class LabelLayoutGenerator {
         this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 512.0);
 
         // //~ TODO: copy result to final distance transform texture
-        // this.graphicsLibrary.blit(this.pongTexture, distanceTransfromTex);
-        console.log("Distance Transform finished!");
+        this.graphicsLibrary.blit(this.pongTexture, distanceTransfromTex);
+        // this.graphicsLibrary.blit(this.pingTexture, distanceTransfromTex);
+        // console.log("Distance Transform finished!");
     }
 
     public getLabelPositions(): Label[] {
@@ -239,6 +241,7 @@ export class LabelLayoutGenerator {
             ]
         });
 
+        console.log("stepSize = " + stepSize);
         const stepParams = {
             stepSize: stepSize, //~ do I need to somehow convert so that it's compatible with f32 in wgsl?
             widthScale: this.viewport.width / 512.0,
@@ -270,11 +273,13 @@ export class LabelLayoutGenerator {
             ]
         });
 
-        passEncoder.setPipeline(this.graphicsLibrary.computePipelines.contours);
+        // passEncoder.setPipeline(this.graphicsLibrary.computePipelines.contours);
+        passEncoder.setPipeline(this.graphicsLibrary.computePipelines.distanceTransform);
         passEncoder.setBindGroup(0, cameraBindGroup);
         passEncoder.setBindGroup(1, contoursBindGroup);
         passEncoder.setBindGroup(2, dtParamsBindGroup);
 
+        console.log("DT: dispatching workgroups!");
         passEncoder.dispatchWorkgroups(
             512 / 8,
             512 / 8,
@@ -352,6 +357,10 @@ export class LabelLayoutGenerator {
 
     public debug_getContoursTexture(): GPUTexture | null {
         return this.contoursTexture;
+    }
+
+    public debug_getDTTexture(): GPUTexture | null {
+        return this.distanceTransformTexture;
     }
 
     // #endregion

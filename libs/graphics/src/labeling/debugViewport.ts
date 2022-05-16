@@ -97,7 +97,8 @@ export class DebugViewport {
         const commandEncoder = device.createCommandEncoder();
 
         // const textureToShow = this._mainViewport.getIDBuffer();
-        const textureToShow = this._labelingGenerator.debug_getContoursTexture();
+        // const textureToShow = this._labelingGenerator.debug_getContoursTexture();
+        const textureToShow = this._labelingGenerator.debug_getDTTexture();
         if (!textureToShow) {
             return;
         }

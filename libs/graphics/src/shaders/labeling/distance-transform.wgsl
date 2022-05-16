@@ -21,9 +21,6 @@ struct DTStepParams {
 @group(1) @binding(0) var inputTex : texture_2d<f32>;
 @group(1) @binding(1) var outputTex : texture_storage_2d<rgba32float, write>;
 
-// @group(2) @binding(0) var<uniform> stepSize : f32;
-// @group(2) @binding(1) var<uniform> widthScale : f32;
-// @group(2) @binding(2) var<uniform> heightScale : f32;
 @group(2) @binding(0) var<uniform> params: DTStepParams;
 
 
@@ -40,18 +37,12 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     return;
   }
 
-//   let stepSize = 512.0; //~ TODO: should come from CPU
-//   let widthScale = 1.0; //~ TODO: should come from CPU
-//   let heightScale = 1.0; //~ TODO: should come from CPU
-
   let coordinates = vec2<i32>(GlobalInvocationID.xy);
   let textureCoordinates = vec2<f32>(coordinates) / camera.viewportSize;
   let uv = textureCoordinates;
 
   var centralVal = textureLoad(inputTex, coordinates, 0);
 
-    // let k: f32 = stepSize / 512.0;
-    // let k: i32 = i32(stepSize);
     let k: i32 = i32(params.stepSize);
     let offset: array<vec2<i32>, 8> = array<vec2<i32>, 8>(
         vec2<i32>(k, 0),
@@ -66,11 +57,11 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
     for(var j: i32 = 0; j < 8; j++) {
         let off = offset[j];
-        // let val = textureLoad(inputTex, uv + off); // this needs to sampled by (0,1) interval UV!!!
         let val = textureLoad(inputTex, coordinates + off, 0); 
 
         let d1 = centralVal.z;
         let d2 = scaleDistance(uv, val.xy, params.widthScale, params.heightScale);
+        // let d2 = scaleDistance(uv, val.xy, 1.0, 1.0);
 
         if (d1 > d2) {
         centralVal = vec4(val.xy, d2, val.w);
