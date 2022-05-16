@@ -61,7 +61,6 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
         let d1 = centralVal.z;
         let d2 = scaleDistance(uv, val.xy, params.widthScale, params.heightScale);
-        // let d2 = scaleDistance(uv, val.xy, 1.0, 1.0);
 
         if (d1 > d2) {
             centralVal = vec4(val.xy, d2, val.w);

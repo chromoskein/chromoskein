@@ -98,21 +98,15 @@ export class LabelLayoutGenerator {
 
     // #region High-level labeling workflow
 
-    public computeContours() : void {
+    public computeContours(inputIDTexture: GPUTexture, outputContoursTexture: GPUTexture) : void {
         // console.log("computeContours STARTING.");
         if (!this.viewport || !this.viewport.camera || !this.graphicsLibrary) {
             return;
         }
 
-        const idBuffer = this.viewport.getIDBuffer();
-        if (!idBuffer || !this.contoursTexture) { 
-            return; 
-        }
-
         this.debug_clearContoursTexture(); //~ just for testing whether the blitting pipeline works fine. it does.
 
         const device = this.graphicsLibrary.device;
-
         const commandEncoder = device.createCommandEncoder();
         const computePassEncoder = commandEncoder.beginComputePass();
 
@@ -137,8 +131,8 @@ export class LabelLayoutGenerator {
             contoursBindGroup: device.createBindGroup({
                 layout: this.graphicsLibrary.bindGroupLayouts.contours,
                 entries: [
-                    { binding: 0, resource: idBuffer.createView() },
-                    { binding: 1, resource: this.contoursTexture.createView() },
+                    { binding: 0, resource: inputIDTexture.createView() },
+                    { binding: 1, resource: outputContoursTexture.createView() },
                 ]
             }),
             passEncoder: computePassEncoder,
@@ -153,12 +147,11 @@ export class LabelLayoutGenerator {
 
     public computeDistanceTransform(contoursSeedTex: GPUTexture, distanceTransfromTex: GPUTexture): void {
         if (!this.graphicsLibrary || !this.pingTexture || !this.pongTexture) return;
-        // console.log("Distance Transform starting...");
 
-        // //~ TODO: copy contours seed to ping texture
+        //~ copy contours seed to ping texture
         this.graphicsLibrary.blit(contoursSeedTex, this.pingTexture);
 
-        // //~ TODO: Compute DT steps
+        //~ Compute DT steps
         this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 2.0);
         this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 4.0);
         this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 8.0);
@@ -169,15 +162,24 @@ export class LabelLayoutGenerator {
         this.computeDTStep(this.pongTexture, this.pingTexture, 512.0 / 256.0);
         this.computeDTStep(this.pingTexture, this.pongTexture, 512.0 / 512.0);
 
-        // //~ TODO: copy result to final distance transform texture
+        //~ copy result to final distance transform texture
         this.graphicsLibrary.blit(this.pongTexture, distanceTransfromTex);
-        // this.graphicsLibrary.blit(this.pingTexture, distanceTransfromTex);
-        // console.log("Distance Transform finished!");
     }
 
     public getLabelPositions(): Label[] {
-        this.computeContours();
+        if (!this.contoursTexture || !this.distanceTransformTexture) {
+            return [];
+        }
 
+        //~ contours
+        if (!this.viewport) return [];
+        const idBuffer = this.viewport.getIDBuffer();
+        if (!idBuffer) { 
+            return []; 
+        }
+        this.computeContours(idBuffer, this.contoursTexture);
+
+        //~ distance transform
         if (!this.contoursTexture || !this.distanceTransformTexture) return [];
         this.computeDistanceTransform(this.contoursTexture, this.distanceTransformTexture);
 
