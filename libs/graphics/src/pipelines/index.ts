@@ -1,6 +1,6 @@
 import { ShaderModules } from "../shaders";
 import { aabbsPipelineDescriptor, cylindersPipelineDescriptor, roundedConesPipelineDescriptor, quadraticBeziersPipelineDescriptor, spheresPipelineDescriptor, gBufferWorldPositionsBindGroupLayout } from "./primitives";
-import { cameraBindGroupLayout, primitivesBindGroupLayout, primitivesPipelineLayout, passthroughPipelineLayout, passthroughBindGroupLayout, passthroughPipelineDescriptor, renderGBufferBindGroupLayout, renderGBufferPipelineLayout, renderGBufferPipelineDescriptor, primitivesTextureBindGroupLayout, primitivesTexturePipelineLayout, cullObjectsBindGroupLayout, singleTextureLayout, textureBlitPipelineDescriptor, textureBlitPipelineLayout } from "./default_layouts";
+import { cameraBindGroupLayout, primitivesBindGroupLayout, primitivesPipelineLayout, passthroughPipelineLayout, passthroughBindGroupLayout, passthroughPipelineDescriptor, renderGBufferBindGroupLayout, renderGBufferPipelineLayout, renderGBufferPipelineDescriptor, primitivesTextureBindGroupLayout, primitivesTexturePipelineLayout, cullObjectsBindGroupLayout, singleTextureLayout, textureBlitPipelineDescriptor, textureBlitPipelineLayout, textureBlitFloatPipelineDescriptor } from "./default_layouts";
 import { BindGroupLayouts, PipelineLayouts, RenderPipelines, ComputePipelines } from "./shared";
 import { distanceMapBindGroupLayout, distanceMapPipelineDescriptor, tadmapPipelineDescriptor, distanceMapPipelineLayout } from "./2d";
 import { boundingVolumeHierarchyBindGroupLayout, rayTracingGBufferOutputBindGroupLayout, rayTracingAmbientOcclusionOutputBindGroupLayout, rayTracingAmbientOcclusionPipelineLayout, rayTracingGBufferPipelineLayout, rayTracingGBufferPipelineDescriptor, rayTracingAmbientOcclusionPipelineDescriptor } from "./ray_tracing";
@@ -72,6 +72,7 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         passthrough: device.createRenderPipeline(passthroughPipelineDescriptor(pipelineLayouts, shaderModules)),
         renderGBuffer: device.createRenderPipeline(renderGBufferPipelineDescriptor(pipelineLayouts, shaderModules)),
         textureBlit: device.createRenderPipeline(textureBlitPipelineDescriptor(pipelineLayouts, shaderModules)),
+        textureBlitFloat: device.createRenderPipeline(textureBlitFloatPipelineDescriptor(pipelineLayouts, shaderModules)),
     };
 
     const computePipelines = {
