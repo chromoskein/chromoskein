@@ -1,3 +1,4 @@
+import { Label } from "@fluentui/react";
 import { GraphicsLibrary } from "..";
 import {getRandomInt} from "../utils";
 import { ChromatinViewport } from "../viewports";
@@ -183,6 +184,10 @@ export class LabelLayoutGenerator {
         if (!this.contoursTexture || !this.distanceTransformTexture) return [];
         this.computeDistanceTransform(this.contoursTexture, this.distanceTransformTexture);
 
+        //~ max distance
+        this.computeMaxDistance();
+
+        //~ TODO: for now just returning a bunch of random labels
         return this.debug_getRandomLabelPositions();
     }
 
@@ -216,7 +221,6 @@ export class LabelLayoutGenerator {
         const device = this.graphicsLibrary.device;
 
         const commandEncoder = device.createCommandEncoder();
-        // const computePassEncoder = commandEncoder.beginComputePass();
         const passEncoder = commandEncoder.beginComputePass();
 
         const contoursBindGroup = device.createBindGroup({
@@ -243,7 +247,7 @@ export class LabelLayoutGenerator {
             ]
         });
 
-        console.log("stepSize = " + stepSize);
+        // console.log("stepSize = " + stepSize);
         const stepParams = {
             stepSize: stepSize, //~ do I need to somehow convert so that it's compatible with f32 in wgsl?
             widthScale: this.viewport.width / 512.0,
@@ -281,7 +285,7 @@ export class LabelLayoutGenerator {
         passEncoder.setBindGroup(1, contoursBindGroup);
         passEncoder.setBindGroup(2, dtParamsBindGroup);
 
-        console.log("DT: dispatching workgroups!");
+        // console.log("DT: dispatching workgroups!");
         passEncoder.dispatchWorkgroups(
             512 / 8,
             512 / 8,
@@ -294,6 +298,145 @@ export class LabelLayoutGenerator {
         passEncoder.end();
         const commandBuffer = commandEncoder.finish();
         device.queue.submit([commandBuffer]);
+
+    }
+
+    private async computeMaxDistance(): Promise<void> {
+        if (!this.graphicsLibrary) return; 
+
+        const device = this.graphicsLibrary.device;
+        const commandEncoder = device.createCommandEncoder();
+        const passEncoder = commandEncoder.beginComputePass();
+
+        if (!this.viewport) return;
+        const idBuffer = this.viewport.getIDBuffer();
+        if (!idBuffer) return;
+
+        if (!this.distanceTransformTexture) return;
+        const inputTexturesBindGroup = device.createBindGroup({
+            label: "Max DT: input textures bind group",
+            layout: this.graphicsLibrary.bindGroupLayouts.maxDTInputTextures,
+            entries: [
+                // { binding: 0, resource: inputTex.createView() },
+                // { binding: 1, resource: outputTex.createView() },
+                { binding: 0, resource: idBuffer.createView() },
+                { binding: 1, resource: this.distanceTransformTexture.createView() },
+            ]
+        })
+
+        if (!this.viewport || !this.viewport.camera) return;
+        const cameraBindGroup = device.createBindGroup({
+            label: "Camera bind group",
+            layout: this.graphicsLibrary.bindGroupLayouts.camera,
+            entries: [
+                {
+                    binding: 0,
+                    resource: {
+                        buffer: this.viewport.camera.bufferGPU,
+                        offset: 0,
+                    }
+                },
+            ]
+        });
+
+        //~ generating initial buffer:
+        const MAX_LABELS = 256;
+        const BUFFER_SIZE = MAX_LABELS * 4 * 4;
+        const labelCandidates = new Float32Array(new ArrayBuffer(BUFFER_SIZE));
+        for (let i = 0; i < MAX_LABELS; i++) {
+            labelCandidates[i * 4 + 0] = -1; // regionId (i32)
+            labelCandidates[i * 4 + 1] = 0; // dtValue (f32)
+            labelCandidates[i * 4 + 2] = 0; // uvPosition.x (vec2<f32>)
+            labelCandidates[i * 4 + 3] = 0; // uvPosition.y (vec2<f32>)
+        // //   inputBalls[i * 6 + 0] = randomBetween(2, 10); // radius
+        // //   inputBalls[i * 6 + 1] = 0; // padding
+        // //   inputBalls[i * 6 + 2] = randomBetween(0, ctx.canvas.width); // position.x
+        // //   inputBalls[i * 6 + 3] = randomBetween(0, ctx.canvas.height); // position.y
+        // //   inputBalls[i * 6 + 4] = randomBetween(-100, 100); // velocity.x
+        // //   inputBalls[i * 6 + 5] = randomBetween(-100, 100); // velocity.y
+        }
+
+        const labelsBufferGPU = device.createBuffer({
+            size: BUFFER_SIZE,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+          });
+          
+          const stagingBuffer = device.createBuffer({
+            size: BUFFER_SIZE,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+          });
+          
+          const candidatesBufferBindGroup = device.createBindGroup({
+            layout: this.graphicsLibrary.bindGroupLayouts.maxDTCandidatesBuffer,
+            entries: [{
+              binding: 0,
+              resource: {
+                buffer: labelsBufferGPU,
+              },
+            }],
+          });
+
+        device.queue.writeBuffer(labelsBufferGPU, 0, labelCandidates);
+
+        passEncoder.setPipeline(this.graphicsLibrary.computePipelines.maxDT);
+        passEncoder.setBindGroup(0, cameraBindGroup);
+        passEncoder.setBindGroup(1, inputTexturesBindGroup);
+        passEncoder.setBindGroup(2, candidatesBufferBindGroup);
+
+        // console.log("DT: dispatching workgroups!");
+        passEncoder.dispatchWorkgroups(
+            512 / 8,
+            512 / 8,
+            1);
+
+        passEncoder.end();
+        commandEncoder.copyBufferToBuffer(
+            labelsBufferGPU,
+            0, // Source offset
+            stagingBuffer,
+            0, // Destination offset
+            BUFFER_SIZE
+          );
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
+        //~ reading back the buffer
+        await stagingBuffer.mapAsync(GPUMapMode.READ, 0, BUFFER_SIZE);
+        const copyArrayBuffer = stagingBuffer.getMappedRange(0, BUFFER_SIZE);
+        const data = copyArrayBuffer.slice(0);
+        stagingBuffer.unmap();
+        // console.log(new Float32Array(data));
+        const dataArray = new Float32Array(data);
+        // console.log(dataArray);
+
+        // labelCandidates[i * 4 + 0] = -1; // regionId (i32)
+        // labelCandidates[i * 4 + 1] = 0; // dtValue (f32)
+        // labelCandidates[i * 4 + 2] = 0; // uvPosition.x (vec2<f32>)
+        // labelCandidates[i * 4 + 3] = 0; // uvPosition.y (vec2<f32>)
+
+        const labels: Label[] = [];
+        for (let i = 0; i < MAX_LABELS; i++) {
+            // console.log(i);
+            const regionId: number = dataArray[i * 4 + 0] as number;
+            const dtValue = dataArray[i * 4 + 1] as number;
+            const x = dataArray[i * 4 + 2] as number;
+            const y = dataArray[i * 4 + 3] as number;
+            const lbl = {
+                x: x,
+                y: y,
+                id: regionId,
+                text: "Label test",
+            };
+            // console.log(lbl);
+
+            if (lbl.id == -1) {
+                // break;
+            } else {
+                labels.push(lbl);
+            }
+        }
+        console.log("Labels:");
+        console.log(labels);
 
     }
 

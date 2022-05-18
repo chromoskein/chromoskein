@@ -130,7 +130,7 @@ export function passthroughPipelineDescriptor(pipelineLayouts: PipelineLayouts, 
             stripIndexFormat: 'uint32',
         },
     };
-};
+}
 
 export function renderGBufferBindGroupLayout(): GPUBindGroupLayoutDescriptor {
     return {
@@ -302,5 +302,5 @@ export function renderGBufferPipelineDescriptor(pipelineLayouts: PipelineLayouts
             stripIndexFormat: 'uint32',
         },
     };
-};
+}
 
