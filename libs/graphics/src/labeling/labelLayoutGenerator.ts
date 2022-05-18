@@ -167,7 +167,7 @@ export class LabelLayoutGenerator {
         this.graphicsLibrary.blit(this.pongTexture, distanceTransfromTex);
     }
 
-    public getLabelPositions(): Label[] {
+    public async getLabelPositions(): Promise<Label[]> {
         if (!this.contoursTexture || !this.distanceTransformTexture) {
             return [];
         }
@@ -185,10 +185,13 @@ export class LabelLayoutGenerator {
         this.computeDistanceTransform(this.contoursTexture, this.distanceTransformTexture);
 
         //~ max distance
-        this.computeMaxDistance();
+        // this.computeMaxDistance();
+        const labels = await this.computeMaxDistance();
+        // let labels = await this.computeMaxDistance();
 
         //~ TODO: for now just returning a bunch of random labels
-        return this.debug_getRandomLabelPositions();
+        // return this.debug_getRandomLabelPositions();
+        return labels;
     }
 
     // #endregion
@@ -301,18 +304,19 @@ export class LabelLayoutGenerator {
 
     }
 
-    private async computeMaxDistance(): Promise<void> {
-        if (!this.graphicsLibrary) return; 
+    // private async computeMaxDistance(): Promise<void> {
+    private async computeMaxDistance(): Promise<Label[]> {
+        if (!this.graphicsLibrary) return []; 
 
         const device = this.graphicsLibrary.device;
         const commandEncoder = device.createCommandEncoder();
         const passEncoder = commandEncoder.beginComputePass();
 
-        if (!this.viewport) return;
+        if (!this.viewport) return [];
         const idBuffer = this.viewport.getIDBuffer();
-        if (!idBuffer) return;
+        if (!idBuffer) return [];
 
-        if (!this.distanceTransformTexture) return;
+        if (!this.distanceTransformTexture) return [];
         const inputTexturesBindGroup = device.createBindGroup({
             label: "Max DT: input textures bind group",
             layout: this.graphicsLibrary.bindGroupLayouts.maxDTInputTextures,
@@ -324,7 +328,7 @@ export class LabelLayoutGenerator {
             ]
         })
 
-        if (!this.viewport || !this.viewport.camera) return;
+        if (!this.viewport || !this.viewport.camera) return [];
         const cameraBindGroup = device.createBindGroup({
             label: "Camera bind group",
             layout: this.graphicsLibrary.bindGroupLayouts.camera,
@@ -348,12 +352,6 @@ export class LabelLayoutGenerator {
             labelCandidates[i * 4 + 1] = 0; // dtValue (f32)
             labelCandidates[i * 4 + 2] = 0; // uvPosition.x (vec2<f32>)
             labelCandidates[i * 4 + 3] = 0; // uvPosition.y (vec2<f32>)
-        // //   inputBalls[i * 6 + 0] = randomBetween(2, 10); // radius
-        // //   inputBalls[i * 6 + 1] = 0; // padding
-        // //   inputBalls[i * 6 + 2] = randomBetween(0, ctx.canvas.width); // position.x
-        // //   inputBalls[i * 6 + 3] = randomBetween(0, ctx.canvas.height); // position.y
-        // //   inputBalls[i * 6 + 4] = randomBetween(-100, 100); // velocity.x
-        // //   inputBalls[i * 6 + 5] = randomBetween(-100, 100); // velocity.y
         }
 
         const labelsBufferGPU = device.createBuffer({
@@ -390,13 +388,7 @@ export class LabelLayoutGenerator {
             1);
 
         passEncoder.end();
-        commandEncoder.copyBufferToBuffer(
-            labelsBufferGPU,
-            0, // Source offset
-            stagingBuffer,
-            0, // Destination offset
-            BUFFER_SIZE
-          );
+        commandEncoder.copyBufferToBuffer(labelsBufferGPU, 0, stagingBuffer, 0, BUFFER_SIZE);
         const commandBuffer = commandEncoder.finish();
         device.queue.submit([commandBuffer]);
 
@@ -417,13 +409,16 @@ export class LabelLayoutGenerator {
         const labels: Label[] = [];
         for (let i = 0; i < MAX_LABELS; i++) {
             // console.log(i);
-            const regionId: number = dataArray[i * 4 + 0] as number;
+            const regionId = dataArray[i * 4 + 0] as number;
             const dtValue = dataArray[i * 4 + 1] as number;
             const x = dataArray[i * 4 + 2] as number;
             const y = dataArray[i * 4 + 3] as number;
+            //~ TODO: recalculate to screen/pixel coordinates
+            const xScreen = x * (this.viewport.width / 2.0);
+            const yScreen = y * (this.viewport.height / 2.0);
             const lbl = {
-                x: x,
-                y: y,
+                x: xScreen,
+                y: yScreen,
                 id: regionId,
                 text: "Label test",
             };
@@ -438,6 +433,7 @@ export class LabelLayoutGenerator {
         console.log("Labels:");
         console.log(labels);
 
+        return labels;
     }
 
     private debug_clearContoursTexture() {

@@ -89,7 +89,7 @@ export function ChromatinViewport(props: {
             const render = async (frametime: number) => {
                 await newViewport.render(frametime);
                 //~ label rendered scene. TODO: how does it work with async/await here???
-                setLabels(layoutGenerator.getLabelPositions());
+                setLabels(await layoutGenerator.getLabelPositions());
 
                 requestAnimationFrame(render);
             }
@@ -826,8 +826,8 @@ export function ChromatinViewport(props: {
 
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas data-tip data-for='tooltip' ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden' }} tabIndex={1} onClick={() => onClick()}></canvas>
-        {/* <LabelingOverlay labels={labels}></LabelingOverlay> */}
         <LabelingDebugViewport graphicsLibrary={props.graphicsLibrary} viewport={viewport} labelingGenerator={layoutGenerator}></LabelingDebugViewport>
+        <LabelingOverlay labels={labels}></LabelingOverlay>
     </div>
     );
 
