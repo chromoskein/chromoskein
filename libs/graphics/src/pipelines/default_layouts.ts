@@ -130,7 +130,7 @@ export function passthroughPipelineDescriptor(pipelineLayouts: PipelineLayouts, 
             stripIndexFormat: 'uint32',
         },
     };
-};
+}
 
 export function renderGBufferBindGroupLayout(): GPUBindGroupLayoutDescriptor {
     return {
@@ -200,6 +200,7 @@ export function renderGBufferBindGroupLayout(): GPUBindGroupLayoutDescriptor {
 
 export function singleTextureLayout(): GPUBindGroupLayoutDescriptor {
     return {
+        label: "Single Texture layout",
         entries: [
             {
                 binding: 0,
@@ -218,6 +219,7 @@ export function singleTextureLayout(): GPUBindGroupLayoutDescriptor {
 
 export function textureBlitPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPURenderPipelineDescriptor {
     return {
+        label: "Blit",
         layout: pipelineLayouts.textureBlit,
         vertex: {
             module: shaderModules.textureBlit,
@@ -229,6 +231,30 @@ export function textureBlitPipelineDescriptor(pipelineLayouts: PipelineLayouts, 
             targets: [
                 {
                     format: "bgra8unorm",
+                },
+            ]
+        },
+        primitive: {
+            topology: 'triangle-strip',
+            stripIndexFormat: 'uint32',
+        },
+    };
+}
+
+export function textureBlitFloatPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPURenderPipelineDescriptor {
+    return {
+        label: "Blit (Float)",
+        layout: pipelineLayouts.textureBlit,
+        vertex: {
+            module: shaderModules.textureBlit,
+            entryPoint: "main_vertex",
+        },
+        fragment: {
+            module: shaderModules.textureBlit,
+            entryPoint: "main_fragment",
+            targets: [
+                {
+                    format: "rgba32float",
                 },
             ]
         },
@@ -276,5 +302,5 @@ export function renderGBufferPipelineDescriptor(pipelineLayouts: PipelineLayouts
             stripIndexFormat: 'uint32',
         },
     };
-};
+}
 

@@ -1,10 +1,10 @@
 import { ShaderModules } from "../shaders";
 import { aabbsPipelineDescriptor, cylindersPipelineDescriptor, roundedConesPipelineDescriptor, quadraticBeziersPipelineDescriptor, spheresPipelineDescriptor, gBufferWorldPositionsBindGroupLayout } from "./primitives";
-import { cameraBindGroupLayout, primitivesBindGroupLayout, primitivesPipelineLayout, passthroughPipelineLayout, passthroughBindGroupLayout, passthroughPipelineDescriptor, renderGBufferBindGroupLayout, renderGBufferPipelineLayout, renderGBufferPipelineDescriptor, primitivesTextureBindGroupLayout, primitivesTexturePipelineLayout, cullObjectsBindGroupLayout, singleTextureLayout, textureBlitPipelineDescriptor, textureBlitPipelineLayout } from "./default_layouts";
+import { cameraBindGroupLayout, primitivesBindGroupLayout, primitivesPipelineLayout, passthroughPipelineLayout, passthroughBindGroupLayout, passthroughPipelineDescriptor, renderGBufferBindGroupLayout, renderGBufferPipelineLayout, renderGBufferPipelineDescriptor, primitivesTextureBindGroupLayout, primitivesTexturePipelineLayout, cullObjectsBindGroupLayout, singleTextureLayout, textureBlitPipelineDescriptor, textureBlitPipelineLayout, textureBlitFloatPipelineDescriptor } from "./default_layouts";
 import { BindGroupLayouts, PipelineLayouts, RenderPipelines, ComputePipelines } from "./shared";
 import { distanceMapBindGroupLayout, distanceMapPipelineDescriptor, tadmapPipelineDescriptor, distanceMapPipelineLayout } from "./2d";
 import { boundingVolumeHierarchyBindGroupLayout, rayTracingGBufferOutputBindGroupLayout, rayTracingAmbientOcclusionOutputBindGroupLayout, rayTracingAmbientOcclusionPipelineLayout, rayTracingGBufferPipelineLayout, rayTracingGBufferPipelineDescriptor, rayTracingAmbientOcclusionPipelineDescriptor } from "./ray_tracing";
-import { ssaoGBufferBindGroupLayout, ssaoGlobalsBindGroupLayout, ssaoPipelineLayout, ssaoJoinPipelineLayout, ssaoPipelineDescriptor, aoBlurPipelineDescriptor, aoBlurParametersBindGroupLayout, aoBlurIOBindGroupLayout, aoBlurPipelineLayout, ssaoJoinBindGroupLayout, ssaoJoinPipelineDescriptor, contoursBindGroupLayout, contoursPipelineLayout, contoursPipelineDescriptor } from "./postprocess";
+import { ssaoGBufferBindGroupLayout, ssaoGlobalsBindGroupLayout, ssaoPipelineLayout, ssaoJoinPipelineLayout, ssaoPipelineDescriptor, aoBlurPipelineDescriptor, aoBlurParametersBindGroupLayout, aoBlurIOBindGroupLayout, aoBlurPipelineLayout, ssaoJoinBindGroupLayout, ssaoJoinPipelineDescriptor, contoursBindGroupLayout, contoursPipelineLayout, contoursPipelineDescriptor, distanceTransformPipelineDescriptor, distanceTransformPipelineLayout, dtStepBindGroupLayout, maxDTPipelineLayout, maxDTPipelineDescriptor, maxDTInputTexturesBindGroupLayout, maxDTCandidatesBufferBindGroupLayout } from "./postprocess";
 import { pipeline } from "stream";
 
 export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderModules): [BindGroupLayouts, PipelineLayouts, RenderPipelines, ComputePipelines] {
@@ -33,6 +33,9 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         singleTexture: device.createBindGroupLayout(singleTextureLayout()),
         //~ labeling
         contours: device.createBindGroupLayout(contoursBindGroupLayout()),
+        distanceTransformStepParams: device.createBindGroupLayout(dtStepBindGroupLayout()),
+        maxDTInputTextures: device.createBindGroupLayout(maxDTInputTexturesBindGroupLayout()),
+        maxDTCandidatesBuffer: device.createBindGroupLayout(maxDTCandidatesBufferBindGroupLayout()),
     };
 
     const pipelineLayouts = {
@@ -50,6 +53,8 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         textureBlit: device.createPipelineLayout(textureBlitPipelineLayout(bindGroupLayouts)),
         //~ labeling
         contours: device.createPipelineLayout(contoursPipelineLayout(bindGroupLayouts)),
+        distanceTransform: device.createPipelineLayout(distanceTransformPipelineLayout(bindGroupLayouts)),
+        maxDT: device.createPipelineLayout(maxDTPipelineLayout(bindGroupLayouts)),
     };
 
     const renderPipelines = {
@@ -70,6 +75,7 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         passthrough: device.createRenderPipeline(passthroughPipelineDescriptor(pipelineLayouts, shaderModules)),
         renderGBuffer: device.createRenderPipeline(renderGBufferPipelineDescriptor(pipelineLayouts, shaderModules)),
         textureBlit: device.createRenderPipeline(textureBlitPipelineDescriptor(pipelineLayouts, shaderModules)),
+        textureBlitFloat: device.createRenderPipeline(textureBlitFloatPipelineDescriptor(pipelineLayouts, shaderModules)),
     };
 
     const computePipelines = {
@@ -80,6 +86,8 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         ssaoJoin: device.createComputePipeline(ssaoJoinPipelineDescriptor(pipelineLayouts, shaderModules)),
         //~ labeling
         contours: device.createComputePipeline(contoursPipelineDescriptor(pipelineLayouts, shaderModules)),
+        distanceTransform: device.createComputePipeline(distanceTransformPipelineDescriptor(pipelineLayouts, shaderModules)),
+        maxDT: device.createComputePipeline(maxDTPipelineDescriptor(pipelineLayouts, shaderModules)),
     };
 
     // console.timeEnd('createRenderPipelines');

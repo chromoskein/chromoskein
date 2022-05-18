@@ -140,4 +140,40 @@ export class GraphicsLibrary {
     public get dummy1DTextureView(): GPUTextureView {
         return this._dummy1DTextureView;
     }
+
+    public blit(src: GPUTexture, dst: GPUTexture): void {
+        const device = this.device;
+        const commandEncoder = device.createCommandEncoder();
+
+        const backgroundColor: GPUColorDict = { r: 0.3, g: 0.3, b: 0.3, a: 1.0 };
+        const passthroughPassEncoder = commandEncoder.beginRenderPass({
+            label: "Passthrough",
+            colorAttachments: [
+                {
+                    view: dst.createView(),
+                    clearValue: backgroundColor,
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                },
+            ],
+        });
+        // passthroughPassEncoder.setPipeline(this.renderPipelines.textureBlit);
+        passthroughPassEncoder.setPipeline(this.renderPipelines.textureBlitFloat);
+        passthroughPassEncoder.setBindGroup(0, device.createBindGroup({
+            layout: this.bindGroupLayouts.singleTexture,
+            entries: [
+                {
+                    binding: 0,
+                    resource: src.createView(),
+                },
+            ]
+        }));
+        passthroughPassEncoder.draw(3, 1, 0, 0);
+        passthroughPassEncoder.end();
+
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
+
+    }
 }

@@ -219,6 +219,8 @@ export function ssaoJoinPipelineDescriptor(pipelineLayouts: PipelineLayouts, sha
     };
 }
 
+//#region Contours (Labeling)
+
 export function contoursBindGroupLayout(): GPUBindGroupLayoutDescriptor {
     return {
         entries: [
@@ -262,5 +264,129 @@ export function contoursPipelineDescriptor(pipelineLayouts: PipelineLayouts, sha
             module: shaderModules.contours,
             entryPoint: "main",
         },
+    }
+}
+//#endregion
+
+//#region Distance Transform (Labeling)
+export function dtStepBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        entries: [
+            { //~ stepSize
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: 'uniform',
+                }
+            },
+            // { //~ widthScale
+            //     binding: 1,
+            //     visibility: GPUShaderStage.COMPUTE,
+            //     buffer: {
+            //         type: 'uniform',
+            //     }
+            // },
+            // { //~ heightScale
+            //     binding: 2,
+            //     visibility: GPUShaderStage.COMPUTE,
+            //     buffer: {
+            //         type: 'uniform',
+            //     }
+            // }
+        ],
+    }
+}
+
+export function distanceTransformPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
+    return {
+        bindGroupLayouts: [
+            bindGroupLayouts.camera, bindGroupLayouts.contours/*maybe don't reuse? */, bindGroupLayouts.distanceTransformStepParams,
+        ],
+    };
+}
+
+export function distanceTransformPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPUComputePipelineDescriptor {
+    return {
+        label: "Distance Transform step (Labeling)",
+        layout: pipelineLayouts.distanceTransform,
+        compute: {
+            module: shaderModules.distanceTransformStep,
+            entryPoint: "main",
+        },
+    }
+}
+//#endregion
+
+//#region Max Distance Transfrom (Labeling)
+export function maxDTInputTexturesBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        label: "Max DT: Input Textures",
+        entries: [
+            // ID Buffer (input)
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                texture: {
+                    sampleType: 'unfilterable-float',
+                    viewDimension: '2d',
+                    multisampled: false,
+                }
+            },
+            // Distance transform texture (input)
+            { 
+                binding: 1,
+                visibility: GPUShaderStage.COMPUTE,
+                texture: {
+                    sampleType: 'unfilterable-float',
+                    viewDimension: '2d',
+                    multisampled: false,
+                }
+            },
+            // // Contours (output)
+            // {
+            //     binding: 1,
+            //     visibility: GPUShaderStage.COMPUTE,
+            //     storageTexture: {
+            //         access: 'write-only',
+            //         format: 'rgba32float',
+            //         viewDimension: '2d',
+            //     }
+            // },
+        ],
+    }
+}
+
+export function maxDTCandidatesBufferBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        label: "Max DT: Buffer(s)",
+        entries: [
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: "storage",
+                }
+            },
+        ]
+    }
+}
+
+export function maxDTPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
+    return {
+        label: "Max DT pipeline layout",
+        bindGroupLayouts: [
+            bindGroupLayouts.camera, bindGroupLayouts.maxDTInputTextures, bindGroupLayouts.maxDTCandidatesBuffer,
+        ]
+    };
+}
+
+export function maxDTPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPUComputePipelineDescriptor {
+    return {
+        label: "Max Distance Transform (Labeling)",
+        layout: pipelineLayouts.maxDT,
+        compute: {
+            module: shaderModules.maxDT,
+            entryPoint: "main",
+        }
     }
 }

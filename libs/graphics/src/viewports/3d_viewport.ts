@@ -509,7 +509,8 @@ export class Viewport3D {
         },
         {
           view: this.gBuffer.selectionIDs.createView(),
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
+          // clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
+          clearValue: { r: -1.0, g: 0.0, b: 0.0, a: 0.0 },
           loadOp: 'clear',
           storeOp: 'store',
         }

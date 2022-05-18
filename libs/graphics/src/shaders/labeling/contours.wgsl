@@ -36,10 +36,10 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   let T = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, step), 0).x);
   let B = i32(textureLoad(gBufferID, vec2<i32>(coordinates) + vec2<i32>(0, -step), 0).x);
 
-  var seedValue = vec2<f32>(0.0, 0.0);
+  var seedValue = vec3<f32>(0.0, 0.0, 100.0); //~ when pixel is NOT on the edge
   if (!compareIDs(X, R, L, T, B)) {
-    seedValue = textureCoordinates;
+    seedValue = vec3<f32>(textureCoordinates, 0.0); //~ when pixel is on the edge
   }
  
-  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(seedValue, 0.0, 0.0));
+  textureStore(contours, vec2<i32>(GlobalInvocationID.xy), vec4<f32>(seedValue, 1.0));
 }
