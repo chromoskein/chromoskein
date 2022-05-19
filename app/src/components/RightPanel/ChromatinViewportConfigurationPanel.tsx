@@ -332,6 +332,12 @@ export function ChromatinViewportConfigurationPanel(props: {
         });
     }
 
+    const handleShowDebugViewportChange = () => {
+        updateConfiguration({
+            ...configuration,
+            showDebugViewport: !configuration.showDebugViewport
+        });
+    }
     const representationDropdownOptions = [
         { key: 1, text: 'Spheres' },
         { key: 2, text: 'Continuous Tube' },
@@ -642,5 +648,9 @@ export function ChromatinViewportConfigurationPanel(props: {
             dataReducer={props.dataReducer}
             selectionsReducer={props.selectionsReducer}
         ></SelectionsPart>
+
+        <Separator></Separator>
+        <Text nowrap block variant='large'>Debug Viewport</Text>
+        <Checkbox label="Show" checked={configuration.showDebugViewport} onChange={handleShowDebugViewportChange} />
     </div>
 }
