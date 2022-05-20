@@ -25,24 +25,21 @@ struct Candidate{
 
 @stage(compute) @workgroup_size(8, 8) fn 
 main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-    //~ this guard is bullshit IMHO
-    // if (f32(GlobalInvocationID.x) >= camera.viewportSize.x ||
-    //   f32(GlobalInvocationID.y) >= camera.viewportSize.y) {
-    //       return;
-    // }
-    if (f32(GlobalInvocationID.x) >= 512.0 ||
+     if (f32(GlobalInvocationID.x) >= 512.0 ||
       f32(GlobalInvocationID.y) >= 512.0) {
           return;
     }
+//    if (f32(GlobalInvocationID.x) >= 1024.0 ||
+//       f32(GlobalInvocationID.y) >= 1024.0) {
+//           return;
+//     }
 
-  let coordinates = vec2<i32>(GlobalInvocationID.xy);
-//   let textureCoordinates = vec2<f32>(coordinates) / camera.viewportSize;
+  let coordinates = vec2<i32>(GlobalInvocationID.xy); //~ range 0..511
   let textureCoordinates = vec2<f32>(coordinates) / vec2<f32>(512.0, 512.0);
+//   let textureCoordinates = vec2<f32>(coordinates) / vec2<f32>(1024.0, 1024.0);
   let fullscreenSize = textureDimensions(idTex);
-//   let fullscreenCoordinates = vec2<i32>(0, 0);
   let fullscreenCoordinates = vec2<i32>(textureCoordinates * vec2<f32>(fullscreenSize));
 
-//   let id = i32(textureLoad(idTex, coordinates, 0).x);
   let id = i32(textureLoad(idTex, fullscreenCoordinates, 0).x);
   let dtVal = textureLoad(dtTex, coordinates, 0);
 
@@ -50,11 +47,34 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       return;
   }
 
+  //~ debug
+  bestCandidates[123].regionId = 123.0;
+  bestCandidates[123].dtValue = 0.0;
+  bestCandidates[123].uvPosition = vec2<f32>(f32(fullscreenSize.x), f32(fullscreenSize.y));
+
+    if (dtVal.z > 1.0) {
+  bestCandidates[42].regionId = 42.0;
+  bestCandidates[42].dtValue = 123.0;
+  bestCandidates[42].uvPosition = vec2<f32>(0.5, 0.5);
+
+    }
+
   let bestSoFar = bestCandidates[id];
+//   let valDiff = bestSoFar.dtValue - dtVal.z;
+//   if ((valDiff < 0.0) && (abs(valDiff) > 0.0) && (abs(valDiff) > 0.01)) {
   if (dtVal.z > bestSoFar.dtValue) {
-    bestCandidates[id].regionId = f32(id);
-    bestCandidates[id].uvPosition = dtVal.xy;
-    bestCandidates[id].dtValue = dtVal.z;
+    // bestCandidates[id].regionId = f32(id);
+    // bestCandidates[id].uvPosition = dtVal.xy;
+    // bestCandidates[id].dtValue = dtVal.z;
+    // bestCandidates[id] = Candidate(
+    //     f32(id), 
+    //     dtVal.z,
+    //     textureCoordinates);
+    //     // dtVal.xy);
+
+    let newBest = Candidate(f32(id), dtVal.z, textureCoordinates);
+    // atomicStore(&(bestCandidates[id]), newBest);
+
   }
 
     //~ test
