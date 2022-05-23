@@ -345,8 +345,8 @@ async function getTextureAsArray(globals:
         const copyArrayBuffer = stagingBuffer.getMappedRange(0, BUFFER_SIZE);
         const data = copyArrayBuffer.slice(0);
         stagingBuffer.unmap();
-        console.log("~~~ DT Texture dump: ~~~")
-        console.log(new Float32Array(data));
+        // console.log("~~~ DT Texture dump: ~~~")
+        // console.log(new Float32Array(data));
         const dataArray = new Float32Array(data);
 
         //~ dealloc
