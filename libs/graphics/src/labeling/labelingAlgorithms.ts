@@ -156,12 +156,8 @@ export async function computeMaxDistanceCPU(globals:
             if (candidate.regionId < 0) {
                 continue;
             } else {
-                // const xScreen = candidate.x * (globals.viewport.width);
-                const xScreen = candidate.x * (globals.viewport.width / 2.0);
-                // const xScreen = candidate.x * (this.viewport.width / 4.0);
-                // const yScreen = candidate.y * (globals.viewport.height);
+                const xScreen = candidate.x * (globals.viewport.width / 2.0); //~ the 2 comes here because of window.devicePixelRatio! TODO: make general
                 const yScreen = candidate.y * (globals.viewport.height / 2.0);
-                // const yScreen = candidate.y * (this.viewport.height / 4.0);
 
                 const lbl = {
                     // x: candidate.x,
