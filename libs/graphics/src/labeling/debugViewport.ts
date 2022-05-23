@@ -98,7 +98,7 @@ export class DebugViewport {
 
         // const textureToShow = this._mainViewport.getIDBuffer();
         // const textureToShow = this._labelingGenerator.debug_getContoursTexture();
-        const textureToShow = this._labelingGenerator.debug_getDTTexture();
+        const textureToShow = this._labelingGenerator.getDTTexture();
         if (!textureToShow) {
             return;
         }
