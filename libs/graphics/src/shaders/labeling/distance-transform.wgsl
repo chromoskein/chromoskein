@@ -36,9 +36,13 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       f32(GlobalInvocationID.y) >= 512.0) {
     return;
   }
-
+  // if (f32(GlobalInvocationID.x) >= 1024.0 ||
+  //     f32(GlobalInvocationID.y) >= 1024.0) {
+  //   return;
+  // }
   let coordinates = vec2<i32>(GlobalInvocationID.xy);
   let textureCoordinates = vec2<f32>(coordinates) / vec2<f32>(512.0, 512.0);
+  // let textureCoordinates = vec2<f32>(coordinates) / vec2<f32>(1024.0, 1024.0);
   let uv = textureCoordinates;
 
   var centralVal = textureLoad(inputTex, coordinates, 0);
