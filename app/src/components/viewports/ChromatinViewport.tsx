@@ -480,6 +480,12 @@ export function ChromatinViewport(props: {
         // console.timeEnd('colorBins::selections');
     }, [viewport, globalSelections.selections, configuration.representation, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
 
+    //~ Propagate selections to labelLayoutGenerator
+    useEffect(() => {
+        const selectionNames = globalSelections.selections.map(sel => sel.name);
+        layoutGenerator.selections = selectionNames;
+    }, [globalSelections.selections, layoutGenerator]);
+
     // Color bins
     useEffect(() => {
         if (!viewport.canvas || !configuration.data) {

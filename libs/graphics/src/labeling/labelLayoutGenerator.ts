@@ -22,6 +22,7 @@ export class LabelLayoutGenerator {
 
     //~ internal state
     private lastFrameLabels: Label[] = [];
+    private _selections: string[] = [];
 
     //#region Constructor
     constructor(viewport: ChromatinViewport, graphicsLib: GraphicsLibrary) {
@@ -135,6 +136,10 @@ export class LabelLayoutGenerator {
 
     public getDTTexture(): GPUTexture | null {
         return this.distanceTransformTexture;
+    }
+
+    public set selections(s: string[]) {
+        this._selections = s;
     }
     //#endregion
 
