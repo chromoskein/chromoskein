@@ -80,11 +80,11 @@ export function writeRoundedConeToArrayBuffer(
     }
 
     if (selectionId) {
-        array.f32View.set([selectionId], /* TODO */ offsetWords + 24);
+        array.f32View.set([selectionId], /* TODO: is this right? */ offsetWords + 24);
     }
 
     if (selectionId2) {
-        array.f32View.set([selectionId2], /* TODO */ offsetWords + 28);
+        array.f32View.set([selectionId2], /* TODO: is this right? */ offsetWords + 28);
     }
 
     array.i32View.set([LowLevelStructure.RoundedCone], offsetWords + 31);

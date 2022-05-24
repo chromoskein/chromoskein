@@ -29,6 +29,7 @@ export class ContinuousTube implements HighLevelStructure {
     private _colorTextures: Array<GPUTexture | null>;
     // private _colorBindGroups: Array<GPUBindGroup>;
     //#endregion
+    private _ids: Array<number>;
 
     private _partOfBVH: boolean;
     private _dirtyBVH: boolean;
@@ -94,6 +95,10 @@ export class ContinuousTube implements HighLevelStructure {
 
         this._radius = radius;
         this._borderRadius = 0.33;
+
+        //~ Selection IDs for rendering into G-Buffer attachment
+        this._ids = new Array(this._points.length); //~ why the other ones are points.length - 1?????
+        this._ids.fill(-1);
     }
 
     public deallocate(): void {
@@ -516,5 +521,12 @@ export class ContinuousTube implements HighLevelStructure {
         }
 
         this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
+    public setSelectionIds(indices: number[], id: number): void {
+        for (let i = 0; i < indices.length; i++) {
+            this._ids[i] = id;
+        }
+        //~ TODO: write
     }
 }
