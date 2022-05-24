@@ -195,6 +195,8 @@ export class ContinuousTube implements HighLevelStructure {
                     borderColor: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
                     borderColor2: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
                     borderRatio: this._borderRadius,
+                    selectionId: 1,
+                    selectionId2: 1,
                 });
 
                 buffer.i32View.set([this._partOfBVH ? 1 : 0], (offset + i) * LL_STRUCTURE_SIZE + 29);
