@@ -482,8 +482,7 @@ export function ChromatinViewport(props: {
 
     //~ Propagate selections to labelLayoutGenerator
     useEffect(() => {
-        const selectionNames = globalSelections.selections.map(sel => sel.name);
-        layoutGenerator.selections = selectionNames;
+        layoutGenerator.selections = globalSelections.selections;
     }, [globalSelections.selections, layoutGenerator]);
 
     // Color bins
