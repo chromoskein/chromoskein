@@ -18,6 +18,8 @@ export function writeRoundedConeToArrayBuffer(
         borderColor = null,
         borderColor2 = null,
         borderRatio = 0.0,
+        selectionId = -1.0,
+        selectionId2 = -1.0
     }: {
         from?: vec3 | null;
         to?: vec3 | null;
@@ -29,6 +31,8 @@ export function writeRoundedConeToArrayBuffer(
         borderColor?: vec4 | null;
         borderColor2?: vec4 | null;
         borderRatio?: number | null;
+        selectionId?: number | null;
+        selectionId2?: number | null;
     } = {}
 ): void {
     const offsetBytes = offset * LL_STRUCTURE_SIZE_BYTES;
@@ -73,6 +77,14 @@ export function writeRoundedConeToArrayBuffer(
 
     if (borderRatio) {
         array.f32View.set([borderRatio], offsetWords + 20);
+    }
+
+    if (selectionId) {
+        array.f32View.set([selectionId], /* TODO: is this right? */ offsetWords + 24);
+    }
+
+    if (selectionId2) {
+        array.f32View.set([selectionId2], /* TODO: is this right? */ offsetWords + 28);
     }
 
     array.i32View.set([LowLevelStructure.RoundedCone], offsetWords + 31);

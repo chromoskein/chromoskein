@@ -6,7 +6,7 @@ import { useCustomCompareEffect, useDeepCompareEffect, useMouse, useMouseHovered
 import { ChromatinIntersection, ChromatinPart, ChromatinRepresentation, ContinuousTube, Sphere, Spheres, CullPlane, BinPosition } from "../../modules/graphics";
 import { vec3, vec4 } from "gl-matrix";
 import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Position3D, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "../../modules/storage/models/data";
-import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
+import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration } from "../hooks";
 import { useKey } from "rooks";
 import * as chroma from "chroma-js";
@@ -79,6 +79,7 @@ export function ChromatinViewport(props: {
     // 
     const [innerColors, setInnerColors] = useState<Array<Array<vec4>>>([]);
     const [borderColors, setBorderColors] = useState<Array<Array<vec4>>>([]);
+    const [binIds, setBinIds] = useState<number[][]>([]); //~ should be equivalent to Array<Array<number>>
 
     // Viewport Setup
     useEffect(() => {
@@ -494,6 +495,7 @@ export function ChromatinViewport(props: {
         // Color by mapping & selection
         // console.time('colorBins::selections');
         const allBorderColors: Array<Array<vec4>> = new Array(binPositions.chromosomes.length).fill([]);
+        const allBinIds: number[][] = new Array(binPositions.chromosomes.length).fill([]); //~ TODO: actually fill below...
         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
             const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
             if (!chromatinPart) {
@@ -503,6 +505,7 @@ export function ChromatinViewport(props: {
             const colors: Array<vec4> = [vec4.fromValues(1.0, 1.0, 1.0, 1.0)];
             const binsLength = chromatinPart.getBinsPositions().length;
             const finalColorIndices = new Uint16Array(binsLength);
+            const binIdsThisChromosome = new Array(binsLength).fill(-1);
             for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
                 const selection = selections[selectionIndex];
                 const associatedData = datum.selections.find(s => s.selectionID == selection.id) ?? getDefaultViewportSelectionOptions(selection.id);
@@ -517,6 +520,13 @@ export function ChromatinViewport(props: {
                 for (let i = 0; i < binsLength; i++) {
                     const j = chromosomeSlices[chromosomeIndex].from + i;
                     finalColorIndices[i] = selection.bins[j] * colorIndex + (1 - selection.bins[j]) * finalColorIndices[i];
+
+                    //~ selection IDs
+                    //~ TODO: check this later for cases where selections overlap...
+                    const binInSelection = selection.bins[i];
+                    if (binInSelection == 1) {
+                        binIdsThisChromosome[i] = selection.bins[i] * isoSelectionID.unwrap(selection.id); //~ (0 or 1) * selection.id
+                    } //~ otherwise, just leave what's there before
                 }
             }
 
@@ -526,11 +536,18 @@ export function ChromatinViewport(props: {
             }
 
             allBorderColors[chromosomeIndex] = chromatinPart.cacheColorArray(finalColors);
+            allBinIds[chromosomeIndex] = binIdsThisChromosome; 
         }
 
         setBorderColors(allBorderColors);
+        setBinIds(allBinIds);
         // console.timeEnd('colorBins::selections');
     }, [viewport, globalSelections.selections, configuration.representation, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
+
+    //~ Propagate selections to labelLayoutGenerator
+    useEffect(() => {
+        layoutGenerator.selections = globalSelections.selections;
+    }, [globalSelections.selections, layoutGenerator]);
 
     // Color bins
     useEffect(() => {
@@ -558,6 +575,8 @@ export function ChromatinViewport(props: {
 
                 if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
                     chromatinPart.structure.setBorderColorsCombined(borderColors[chromosomeIndex]);
+                    //~ DK: here's the interface point for writing IDs to GPU buffer
+                    chromatinPart.structure.setSelectionIds(binIds[chromosomeIndex]);
                 } else {
                     chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
                 }

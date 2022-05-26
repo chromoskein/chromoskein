@@ -3,6 +3,7 @@ import {getRandomInt} from "../utils";
 import { ChromatinViewport } from "../viewports";
 import { computeContours, computeDistanceTransform, computeMaxDistanceCPU } from "./labelingAlgorithms";
 import { Label } from "./label";
+import { Selection } from "../../storage/models/selections";
 
 
 const DOWNSCALED_TEX_SIZE = 512;
@@ -22,6 +23,7 @@ export class LabelLayoutGenerator {
 
     //~ internal state
     private lastFrameLabels: Label[] = [];
+    private _selections: Selection[] = [];
 
     //#region Constructor
     constructor(viewport: ChromatinViewport, graphicsLib: GraphicsLibrary) {
@@ -66,7 +68,11 @@ export class LabelLayoutGenerator {
 
         //~ Step 3: get label positions by computing max distance from contour
         // const labels = await this.computeMaxDistance();
-        const labelsCPU = await computeMaxDistanceCPU(globals, this.distanceTransformTexture, this.smallIDTexture);
+        const globalsWithSelections = {
+            ...globals,
+            selections: this.selections,
+        }
+        const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
 
         // return this.debug_getRandomLabelPositions();
         // return labels;
@@ -135,6 +141,15 @@ export class LabelLayoutGenerator {
 
     public getDTTexture(): GPUTexture | null {
         return this.distanceTransformTexture;
+    }
+
+    // public set selections(s: string[]) {
+    public set selections(s: Selection[]) {
+        this._selections = s;
+    }
+
+    public get selections(): Selection[] {
+        return this._selections;
     }
     //#endregion
 

@@ -29,6 +29,7 @@ export class ContinuousTube implements HighLevelStructure {
     private _colorTextures: Array<GPUTexture | null>;
     // private _colorBindGroups: Array<GPUBindGroup>;
     //#endregion
+    private _ids: Array<number>;
 
     private _partOfBVH: boolean;
     private _dirtyBVH: boolean;
@@ -94,6 +95,10 @@ export class ContinuousTube implements HighLevelStructure {
 
         this._radius = radius;
         this._borderRadius = 0.33;
+
+        //~ Selection IDs for rendering into G-Buffer attachment
+        this._ids = new Array(this._points.length); //~ why the other ones are points.length - 1?????
+        this._ids.fill(-1);
     }
 
     public deallocate(): void {
@@ -195,6 +200,8 @@ export class ContinuousTube implements HighLevelStructure {
                     borderColor: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
                     borderColor2: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
                     borderRatio: this._borderRadius,
+                    selectionId: 1,
+                    selectionId2: 1,
                 });
 
                 buffer.i32View.set([this._partOfBVH ? 1 : 0], (offset + i) * LL_STRUCTURE_SIZE + 29);
@@ -514,5 +521,32 @@ export class ContinuousTube implements HighLevelStructure {
         }
 
         this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
+    public setSelectionIds(binIds: number[]): void {
+        console.log("Act like you're writing stuff to GPU...");
+        console.log(binIds.length);
+        // console.log(binIds);
+
+        if (!this.buffer) {
+            return;
+        }
+
+        const f32View = this.buffer.f32View;
+        for (let i = 0; i < this._points.length - 1; i++) {
+            const id = binIds[i];
+            const id2 = binIds[i + 1];
+
+            const offset = this._roundedConesPosition + i;
+            const offsetWords = offset * LL_STRUCTURE_SIZE;
+
+            // f32View.set([id], offsetWords + 24);
+            f32View.set([id], offsetWords + 21);
+            // f32View.set([id2], offsetWords + 28);
+            f32View.set([id2], offsetWords + 22);
+        }
+
+        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
+
     }
 }

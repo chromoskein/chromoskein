@@ -55,8 +55,12 @@ struct BufferRoundedCone {
     // borderColor2: u32;
     //
     borderRatio: f32,
+    //
+    selectionId: f32, //~ 4 B
+    selectionId2: f32, //~ 4 B
 
-    padding: array<f32, 10>,
+    // padding: array<f32, 10>, //~ TODO: this padding now needs to change after adding selectionId fields
+    padding: array<f32, 8>, 
 
     ty: i32,
 };
@@ -86,6 +90,9 @@ struct VertexOutput {
   @location(8) borderColor2: vec4<f32>,
 
   @location(9) borderRatio: f32,
+
+  @location(10) selectionId: f32,
+  @location(11) selectionId2: f32,
 };
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32>
@@ -148,6 +155,11 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 
   let c = clamp(f32(InstanceIndex) / 30000.0 + 0.2, 0.0, 1.0);
 
+  let id = roundedConesBuffer.roundedCones[InstanceIndex].selectionId;
+  let id2 = roundedConesBuffer.roundedCones[InstanceIndex].selectionId2;
+  // let id = 2.0;
+  // let id2 = 2.0;
+
   return VertexOutput(
     vec4<f32>(position, vertexCenter.z, 1.0), 
     vec3<f32>(roundedCone.from.xyz),
@@ -162,6 +174,8 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
     unpack4x8unorm(roundedCone.colors[2]),
     unpack4x8unorm(roundedCone.colors[3]),
     roundedCone.borderRatio,
+    id,
+    id2,
   );
 }
 
@@ -275,6 +289,7 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
   var depth: vec4<f32> = camera.projectionView * vec4<f32>(intersection, 1.0);
   depth = depth * (1.0 / depth.w);
   var color: vec4<f32> = vec4<f32>(1.0); // vertexOutput.color;
+  var selectionId: f32 = -1.0; 
 
   let totalLength = length(vertexOutput.to - vertexOutput.from);
   let lengthOnIntersection = length(vertexOutput.from - (intersection - vertexOutput.radius * normal));
@@ -282,8 +297,10 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
 
   if (ratio < 0.5) {
     color = vertexOutput.color;
+    selectionId = vertexOutput.selectionId;
   } else {
     color = vertexOutput.color2;
+    selectionId = vertexOutput.selectionId2;
   }
 
   let shortRadius: f32 = (1.0 - vertexOutput.borderRatio) * vertexOutput.radius;
@@ -325,7 +342,8 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
     // dot(normal.xyz, normalize(camera.position.xyz - intersection.xyz)) * color,
     color,
     ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-    ${writeDepth ? 'vec4<f32>(1.0, 0.0, 0.0, 1.0),' : '' }
+    ${writeDepth ? 'vec4<f32>(selectionId, 0.0, 0.0, 1.0),' : '' }
+    // ${writeDepth ? 'vec4<f32>(3.0, 0.0, 0.0, 1.0),' : '' }
   );  
 }
 `};

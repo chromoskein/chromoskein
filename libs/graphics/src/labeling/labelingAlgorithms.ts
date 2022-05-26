@@ -1,4 +1,5 @@
 import { GraphicsLibrary } from "..";
+import { Selection, isoSelectionID } from "../../storage/models/selections";
 import { ChromatinViewport } from "../viewports";
 import { Label } from "./label";
 
@@ -95,6 +96,7 @@ export async function computeMaxDistanceCPU(globals:
     {
         graphicsLibrary: GraphicsLibrary,
         viewport: ChromatinViewport,
+        selections: Selection[],
     },
     dtTexture: GPUTexture, smallIdTexture: GPUTexture): Promise<Label[]> {
 
@@ -102,6 +104,12 @@ export async function computeMaxDistanceCPU(globals:
         const dtTextureContent = await getTextureAsArray(globals, dtTexture);
         // if (!this.smallIDTexture) return [];
         const smallIdTextureContent = await getTextureAsArray(globals, smallIdTexture);
+
+        if (!globals.selections) 
+        {
+            console.log("No selections!");
+            return [];
+        }
 
         //~ TODO: loop over pixels and pick best candidates for each region ID
         type Candidate = {
@@ -159,13 +167,15 @@ export async function computeMaxDistanceCPU(globals:
                 const xScreen = candidate.x * (globals.viewport.width / 2.0); //~ the 2 comes here because of window.devicePixelRatio! TODO: make general
                 const yScreen = candidate.y * (globals.viewport.height / 2.0);
 
+                const found = globals.selections.find(sel => sel.id == isoSelectionID.wrap(candidate.regionId));
+                const labelText = found ? found.name : "<LABEL Error>";
+
                 const lbl = {
-                    // x: candidate.x,
                     x: xScreen,
-                    // y: candidate.y,
                     y: yScreen,
                     id: candidate.regionId,
-                    text: "Label TEST",
+                    // text: "Label " + candidate.regionId,
+                    text: labelText,
                 }
                 labels.push(lbl);
             }
