@@ -523,10 +523,28 @@ export class ContinuousTube implements HighLevelStructure {
         this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
     }
 
-    public setSelectionIds(indices: number[], id: number): void {
-        for (let i = 0; i < indices.length; i++) {
-            this._ids[i] = id;
+    public setSelectionIds(binIds: number[]): void {
+        console.log("Act like you're writing stuff to GPU...");
+        console.log(binIds.length);
+        // console.log(binIds);
+
+        if (!this.buffer) {
+            return;
         }
-        //~ TODO: write
+
+        const f32View = this.buffer.f32View;
+        for (let i = 0; i < this._points.length - 1; i++) {
+            const id = binIds[i];
+            const id2 = binIds[i + 1];
+
+            const offset = this._roundedConesPosition + i;
+            const offsetWords = offset * LL_STRUCTURE_SIZE;
+
+            f32View.set([id], offsetWords + 24);
+            f32View.set([id2], offsetWords + 28);
+        }
+
+        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
+
     }
 }
