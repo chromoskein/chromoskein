@@ -540,8 +540,10 @@ export class ContinuousTube implements HighLevelStructure {
             const offset = this._roundedConesPosition + i;
             const offsetWords = offset * LL_STRUCTURE_SIZE;
 
-            f32View.set([id], offsetWords + 24);
-            f32View.set([id2], offsetWords + 28);
+            // f32View.set([id], offsetWords + 24);
+            f32View.set([id], offsetWords + 21);
+            // f32View.set([id2], offsetWords + 28);
+            f32View.set([id2], offsetWords + 22);
         }
 
         this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
