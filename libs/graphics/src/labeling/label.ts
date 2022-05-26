@@ -3,4 +3,5 @@ export type Label = {
     y: number;
     id: number;
     text: string;
+    color: { r: number, g: number, b: number, a: number },
 };

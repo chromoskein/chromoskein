@@ -73,6 +73,9 @@ export class LabelLayoutGenerator {
             selections: this.selections,
         }
         const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+        //~ debug output
+        console.log("labels = ");
+        console.log(labelsCPU);
 
         // return this.debug_getRandomLabelPositions();
         // return labels;
@@ -158,7 +161,8 @@ export class LabelLayoutGenerator {
         let retLabels = this.lastFrameLabels;
 
         if (this.lastFrameLabels.length == 0 || force) {
-            retLabels = Array.from({ length: 100 }, (_, index) => ({ id: index, x: getRandomInt(800), y: getRandomInt(600), text: "Label " + index }));
+            const black = {r: 0, g: 0, b: 0, a: 0};
+            retLabels = Array.from({ length: 100 }, (_, index) => ({ id: index, x: getRandomInt(800), y: getRandomInt(600), text: "Label " + index, color: black}));
             this.lastFrameLabels = retLabels;
         }
 
