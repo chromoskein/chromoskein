@@ -178,7 +178,7 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         },
 
         explodedViewScale: 0.0,
-        showDebugViewport: true,
+        showDebugViewport: false,
         showLabelingOverlay: false,
         showLabelAnchors: false,
     } as ChromatinViewportConfiguration;
