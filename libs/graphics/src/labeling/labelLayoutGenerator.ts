@@ -22,6 +22,7 @@ export class LabelLayoutGenerator {
     private smallIDTexture: GPUTexture | null = null;
 
     //~ internal state
+    private labelingEnabled = true;
     private lastFrameLabels: Label[] = [];
     private _selections: Selection[] = [];
 
@@ -43,6 +44,10 @@ export class LabelLayoutGenerator {
     //#region Main entry point
     public async getLabelPositions(): Promise<Label[]> {
         if (!this.graphicsLibrary || !this.viewport) return [];
+
+        if (!this.labelingEnabled) {
+            return [];
+        }
 
         //~ get together two global objects used throughout the algorithms
         const globals = {
@@ -74,8 +79,9 @@ export class LabelLayoutGenerator {
         }
         const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
         //~ debug output
-        console.log("labels = ");
-        console.log(labelsCPU);
+        // console.log("labels = ");
+        // console.log(labelsCPU);
+        console.log("Labels were recomputed.");
 
         // return this.debug_getRandomLabelPositions();
         // return labels;
@@ -144,6 +150,14 @@ export class LabelLayoutGenerator {
 
     public getDTTexture(): GPUTexture | null {
         return this.distanceTransformTexture;
+    }
+
+    public enableLabeling(): void {
+        this.labelingEnabled = true;
+    }
+
+    public disableLabeling(): void {
+        this.labelingEnabled = false;
     }
 
     // public set selections(s: string[]) {

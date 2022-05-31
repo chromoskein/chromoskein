@@ -89,7 +89,7 @@ export function ChromatinViewport(props: {
             // Draw the scene repeatedly
             const render = async (frametime: number) => {
                 await newViewport.render(frametime);
-                //~ label rendered scene. TODO: how does it work with async/await here???
+                //~ label rendered scene. 
                 setLabels(await layoutGenerator.getLabelPositions());
 
                 requestAnimationFrame(render);
@@ -497,6 +497,15 @@ export function ChromatinViewport(props: {
         layoutGenerator.selections = globalSelections.selections;
     }, [globalSelections.selections, layoutGenerator]);
 
+    //~ Turn label computation on/off (to save computation when label overlay is anyway disabled)
+    useEffect(() => {
+        if (configuration.showLabelingOverlay) {
+            layoutGenerator.enableLabeling();
+        } else {
+            layoutGenerator.disableLabeling();
+        }
+    }, [configuration.showLabelingOverlay, layoutGenerator]);
+
     // Color bins
     useEffect(() => {
         if (!viewport.canvas || !configuration.data) {
@@ -848,7 +857,9 @@ export function ChromatinViewport(props: {
         {configuration.showDebugViewport && (
             <LabelingDebugViewport graphicsLibrary={props.graphicsLibrary} viewport={viewport} labelingGenerator={layoutGenerator}></LabelingDebugViewport>
         )}
-        <LabelingOverlay labels={labels}></LabelingOverlay>
+        {configuration.showLabelingOverlay && (
+            <LabelingOverlay labels={labels} configuration={{showAnchors: configuration.showLabelAnchors,}}></LabelingOverlay>
+        )}
     </div>
     );
 

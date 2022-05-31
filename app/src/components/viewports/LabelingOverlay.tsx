@@ -6,7 +6,7 @@ import * as GraphicsModule from "../../modules/graphics";
  * @param props 
  * @returns 
  */
-export function LabelingOverlay(props: { labels: GraphicsModule.Label[] }): JSX.Element {
+export function LabelingOverlay(props: { labels: GraphicsModule.Label[], configuration: { showAnchors: boolean, } }): JSX.Element {
     const textRefs = useRef<Array<SVGTextElement | null>>([]);
     const bgRefs = useRef<Array<SVGGraphicsElement | null>>([]);
 
@@ -29,7 +29,9 @@ export function LabelingOverlay(props: { labels: GraphicsModule.Label[] }): JSX.
     return (
         <div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', left: '0', top: '0', pointerEvents: 'none' }}>
             <svg style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                {props.labels.map(({ id, x, y, text }: GraphicsModule.Label, i: number) => (<circle key={"anchor"+id} cx={x} cy={y} r={2} fill='red'></circle>))}
+                {props.configuration.showAnchors && (
+                    props.labels.map(({ id, x, y, text }: GraphicsModule.Label, i: number) => (<circle key={"anchor"+id} cx={x} cy={y} r={2} fill='red'></circle>))
+                )}
                 {props.labels.map(({ id, x, y, text, color }: GraphicsModule.Label, i: number) => (<rect ref={(el) => (bgRefs.current[i] = el)} key={id} fill={"rgb(" + 255 * color.r + ", " + 255 * color.g + ", " + 255 * color.b + ")"}>{text}</rect>))}
                 {props.labels.map(({ id, x, y, text }: GraphicsModule.Label, i: number) => (<text ref={(el) => (textRefs.current[i] = el)} key={id} x={x} y={y} fontSize={18} fill='white'>{text}</text>))}
             </svg>
