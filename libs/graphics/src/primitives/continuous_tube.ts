@@ -524,18 +524,23 @@ export class ContinuousTube implements HighLevelStructure {
     }
 
     public setSelectionIds(binIds: number[]): void {
-        console.log("Act like you're writing stuff to GPU...");
-        console.log(binIds.length);
-        // console.log(binIds);
-
         if (!this.buffer) {
             return;
         }
 
+        //~ add ids to beginning and end, because...dumb dumbs
+        const newBinIds = binIds.slice();
+        const firstElId = binIds[0];
+        const lastElId = binIds[binIds.length - 1];
+        newBinIds.unshift(firstElId);
+        newBinIds.push(lastElId);
+
         const f32View = this.buffer.f32View;
         for (let i = 0; i < this._points.length - 1; i++) {
-            const id = binIds[i];
-            const id2 = binIds[i + 1];
+            // const id = binIds[i];
+            // const id2 = binIds[i + 1];
+            const id = newBinIds[i];
+            const id2 = newBinIds[i + 1];
 
             const offset = this._roundedConesPosition + i;
             const offsetWords = offset * LL_STRUCTURE_SIZE;
