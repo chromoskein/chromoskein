@@ -22,6 +22,7 @@ export class LabelLayoutGenerator {
     private smallIDTexture: GPUTexture | null = null;
 
     //~ internal state
+    private labelingEnabled = true;
     private lastFrameLabels: Label[] = [];
     private _selections: Selection[] = [];
 
@@ -43,6 +44,10 @@ export class LabelLayoutGenerator {
     //#region Main entry point
     public async getLabelPositions(): Promise<Label[]> {
         if (!this.graphicsLibrary || !this.viewport) return [];
+
+        if (!this.labelingEnabled) {
+            return [];
+        }
 
         //~ get together two global objects used throughout the algorithms
         const globals = {
@@ -73,6 +78,10 @@ export class LabelLayoutGenerator {
             selections: this.selections,
         }
         const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+        //~ debug output
+        // console.log("labels = ");
+        // console.log(labelsCPU);
+        console.log("Labels were recomputed.");
 
         // return this.debug_getRandomLabelPositions();
         // return labels;
@@ -143,6 +152,14 @@ export class LabelLayoutGenerator {
         return this.distanceTransformTexture;
     }
 
+    public enableLabeling(): void {
+        this.labelingEnabled = true;
+    }
+
+    public disableLabeling(): void {
+        this.labelingEnabled = false;
+    }
+
     // public set selections(s: string[]) {
     public set selections(s: Selection[]) {
         this._selections = s;
@@ -158,7 +175,8 @@ export class LabelLayoutGenerator {
         let retLabels = this.lastFrameLabels;
 
         if (this.lastFrameLabels.length == 0 || force) {
-            retLabels = Array.from({ length: 100 }, (_, index) => ({ id: index, x: getRandomInt(800), y: getRandomInt(600), text: "Label " + index }));
+            const black = {r: 0, g: 0, b: 0, a: 0};
+            retLabels = Array.from({ length: 100 }, (_, index) => ({ id: index, x: getRandomInt(800), y: getRandomInt(600), text: "Label " + index, color: black}));
             this.lastFrameLabels = retLabels;
         }
 

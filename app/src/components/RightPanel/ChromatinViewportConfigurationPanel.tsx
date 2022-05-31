@@ -338,6 +338,18 @@ export function ChromatinViewportConfigurationPanel(props: {
             showDebugViewport: !configuration.showDebugViewport
         });
     }
+    const handleShowLabelingOverlayChange = () => {
+        updateConfiguration({
+            ...configuration,
+            showLabelingOverlay: !configuration.showLabelingOverlay,
+        });
+    }
+    const handleShowLabelAnchorsChange = () => {
+        updateConfiguration({
+            ...configuration,
+            showLabelAnchors: !configuration.showLabelAnchors,
+        });
+    }
     const representationDropdownOptions = [
         { key: 1, text: 'Spheres' },
         { key: 2, text: 'Continuous Tube' },
@@ -650,7 +662,12 @@ export function ChromatinViewportConfigurationPanel(props: {
         ></SelectionsPart>
 
         <Separator></Separator>
-        <Text nowrap block variant='large'>Debug Viewport</Text>
-        <Checkbox label="Show" checked={configuration.showDebugViewport} onChange={handleShowDebugViewportChange} />
+        <Text nowrap block variant='large'>Labeling</Text>
+        <Checkbox label="Show labels" checked={configuration.showLabelingOverlay} onChange={handleShowLabelingOverlayChange} />
+
+        <Separator></Separator>
+        <Checkbox label="Show anchors" checked={configuration.showLabelAnchors} onChange={handleShowLabelAnchorsChange} />
+        <Checkbox label="Show debug overlay" styles={{root: { marginTop: '10px'}}} checked={configuration.showDebugViewport} onChange={handleShowDebugViewportChange} />
+        <ComboBox label="Texture" options={[]} />
     </div>
 }

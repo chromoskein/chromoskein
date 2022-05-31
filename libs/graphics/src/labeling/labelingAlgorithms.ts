@@ -152,9 +152,9 @@ export async function computeMaxDistanceCPU(globals:
         }
 
         //~ debug
-        candidates[123] = {x: 0, y: 0, dtValue: 321, regionId: 123};
-        candidates[42] = {x: 0.5, y: 0.5, dtValue: 321, regionId: 42};
-        candidates[43] = {x: 1.0, y: 1.0, dtValue: 321, regionId: 43};
+        // candidates[123] = {x: 0, y: 0, dtValue: 321, regionId: 123};
+        // candidates[42] = {x: 0.5, y: 0.5, dtValue: 321, regionId: 42};
+        // candidates[43] = {x: 1.0, y: 1.0, dtValue: 321, regionId: 43};
 
         // if (!globals.viewport) return [];
 
@@ -168,7 +168,8 @@ export async function computeMaxDistanceCPU(globals:
                 const yScreen = candidate.y * (globals.viewport.height / 2.0);
 
                 const found = globals.selections.find(sel => sel.id == isoSelectionID.wrap(candidate.regionId));
-                const labelText = found ? found.name : "<LABEL Error>";
+                const labelText = found ? found.name : "<LABEL Error (id: "+ candidate.regionId + ")>";
+                const labelColor = found ? found.color : {r: 0, g: 0, b: 0, a: 0};
 
                 const lbl = {
                     x: xScreen,
@@ -176,6 +177,7 @@ export async function computeMaxDistanceCPU(globals:
                     id: candidate.regionId,
                     // text: "Label " + candidate.regionId,
                     text: labelText,
+                    color: labelColor,
                 }
                 labels.push(lbl);
             }
@@ -306,6 +308,7 @@ export async function computeMaxDistance(globals:
             y: yScreen,
             id: regionId,
             text: "Label test",
+            color: {r: 0, g: 0, b: 0, a: 0},
         };
         // console.log(lbl);
 

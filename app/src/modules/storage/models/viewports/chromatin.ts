@@ -108,6 +108,8 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
 
     explodedViewScale: number;
     showDebugViewport: boolean;
+    showLabelingOverlay: boolean;
+    showLabelAnchors: boolean;
 }
 
 export function chromatinDataConfigurationEqual(d1: IChromatinDataConfiguration, d2: IChromatinDataConfiguration): boolean {
@@ -176,6 +178,8 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         },
 
         explodedViewScale: 0.0,
-        showDebugViewport: true,
+        showDebugViewport: false,
+        showLabelingOverlay: false,
+        showLabelAnchors: false,
     } as ChromatinViewportConfiguration;
 }
