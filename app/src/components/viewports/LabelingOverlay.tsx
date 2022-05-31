@@ -22,8 +22,7 @@ export function LabelingOverlay(props: { labels: GraphicsModule.Label[] }): JSX.
             bgEl.setAttribute("y", SVGRect.y.toString());
             bgEl.setAttribute("width", SVGRect.width.toString());
             bgEl.setAttribute("height", SVGRect.height.toString());
-            // bgEl.setAttribute("fill", "rgb(" + 255 + ", " + 255 + ", " + 0 + ")");
-            bgEl.setAttribute("fill-opacity", "0.6");
+            bgEl.setAttribute("fill-opacity", "0.8");
         }
     });
 
