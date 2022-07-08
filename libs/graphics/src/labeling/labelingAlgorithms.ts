@@ -5,14 +5,25 @@ import { Label } from "./label";
 
 
 const DOWNSCALED_TEX_SIZE = 512;
+const timestepIndices = {
+    contours_Start: 0,
+    contours_End: 1,
+    dt_Start: 2,
+    dt_End: 3,
+    maxDt_Start: 4,
+    maxDt_End: 5,
+}
 
-export function computeContours(
+export async function computeContours(
     globals: {
         graphicsLibrary: GraphicsLibrary, 
-        viewport: ChromatinViewport
+        viewport: ChromatinViewport,
+        timestampsQuerySet: GPUQuerySet,
+        timestampsBuffer: GPUBuffer,
+        timestampsResolvedBuffer: GPUBuffer,
     }, 
     inputIDTexture: GPUTexture, 
-    outputContoursTexture: GPUTexture) : void 
+    outputContoursTexture: GPUTexture) : Promise<void>
     {
 
         if (!globals.viewport.camera) {
@@ -23,7 +34,11 @@ export function computeContours(
 
         const device = globals.graphicsLibrary.device;
         const commandEncoder = device.createCommandEncoder();
+
+        commandEncoder.writeTimestamp(globals.timestampsQuerySet, timestepIndices.contours_Start);
+
         const computePassEncoder = commandEncoder.beginComputePass();
+        
 
         const cameraBindGroup = device.createBindGroup({
             layout: globals.graphicsLibrary.bindGroupLayouts.camera,
@@ -55,8 +70,16 @@ export function computeContours(
         });
 
         computePassEncoder.end();
+
+        commandEncoder.writeTimestamp(globals.timestampsQuerySet, timestepIndices.contours_End);
+
+        commandEncoder.resolveQuerySet(globals.timestampsQuerySet, 0, 3, globals.timestampsBuffer, 0);
+        commandEncoder.copyBufferToBuffer(globals.timestampsBuffer, 0, globals.timestampsResolvedBuffer, 0, 4 * 8);
+
         const commandBuffer = commandEncoder.finish();
         device.queue.submit([commandBuffer]);
+
+        // await readTimestamps(globals.timestampsResolvedBuffer);
 
     }
 
@@ -323,6 +346,25 @@ export async function computeMaxDistance(globals:
     // console.log(labels);
 
     return labels;
+}
+
+async function readTimestamps(resolvedTimestampsBuffer: GPUBuffer) {
+    await resolvedTimestampsBuffer.mapAsync(GPUMapMode.READ);
+    const timestamps = resolvedTimestampsBuffer.getMappedRange();
+    const timestampsDataView = new DataView(new Uint8Array(timestamps).buffer);
+
+    const left = timestampsDataView.getUint32(0, true);
+    const right = timestampsDataView.getUint32(4, true);
+    const combined = left + 2 ** 32 * right;
+    const left2 = timestampsDataView.getUint32(8, true);
+    const right2 = timestampsDataView.getUint32(12, true);
+    const combined2 = left2 + 2 ** 32 * right2;
+    const left3 = timestampsDataView.getUint32(16, true);
+    const right3 = timestampsDataView.getUint32(20, true);
+    const combined3 = left3 + 2 ** 32 * right3;
+
+    resolvedTimestampsBuffer.unmap();
+    console.log((combined2 - combined) / 1000000.0, (combined3 - combined2) / 1000000.0);
 }
 
 async function getTextureAsArray(globals:

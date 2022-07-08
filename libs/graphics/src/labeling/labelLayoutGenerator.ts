@@ -1,7 +1,7 @@
 import { GraphicsLibrary } from "..";
 import {getRandomInt} from "../utils";
 import { ChromatinViewport } from "../viewports";
-import { computeContours, computeDistanceTransform, computeMaxDistanceCPU } from "./labelingAlgorithms";
+import { computeContours, computeDistanceTransform, computeMaxDistance, computeMaxDistanceCPU } from "./labelingAlgorithms";
 import { Label } from "./label";
 import { Selection } from "../../storage/models/selections";
 
@@ -26,6 +26,13 @@ export class LabelLayoutGenerator {
     private lastFrameLabels: Label[] = [];
     private _selections: Selection[] = [];
 
+    //#region Benchmarking
+    private timestampsQuerySet: GPUQuerySet;
+    private timestampsBuffer: GPUBuffer;
+    private timestampsResolvedBuffer: GPUBuffer;
+    //#endregion
+
+
     //#region Constructor
     constructor(viewport: ChromatinViewport, graphicsLib: GraphicsLibrary) {
         this._viewport = viewport;
@@ -38,6 +45,24 @@ export class LabelLayoutGenerator {
         }
 
         this.createFixedSizeTextures();
+
+        //#region Benchmarking
+        this.timestampsQuerySet = this.graphicsLibrary.device.createQuerySet({
+            type: 'timestamp',
+            count: 4,
+        });
+        this.timestampsBuffer = this.graphicsLibrary.device.createBuffer({
+            label: "timestampsBuffer",
+            size: 512,
+            usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
+        });
+        this.timestampsResolvedBuffer = this.graphicsLibrary.device.createBuffer({
+            label: "timestampsResolvedBuffer",
+            size: 512,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        //#endregion
+
     }
     //#endregion
 
@@ -53,6 +78,9 @@ export class LabelLayoutGenerator {
         const globals = {
             graphicsLibrary: this.graphicsLibrary,
             viewport: this.viewport,
+            timestampsQuerySet: this.timestampsQuerySet,
+            timestampsBuffer: this.timestampsBuffer,
+            timestampsResolvedBuffer: this.timestampsResolvedBuffer,
         }
 
         //~ get ID buffer (main input for labeling)
@@ -73,15 +101,21 @@ export class LabelLayoutGenerator {
 
         //~ Step 3: get label positions by computing max distance from contour
         // const labels = await this.computeMaxDistance();
+        // const maxDistTimeStart = console.time("maxDistanceCPU");
+        const maxDistTimeStart = performance.now();
         const globalsWithSelections = {
             ...globals,
             selections: this.selections,
         }
-        const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+        // const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+        const labelsCPU: Label[] = [];
         //~ debug output
-        // console.log("labels = ");
-        // console.log(labelsCPU);
-        console.log("Labels were recomputed.");
+        // const maxDistTimeEnd = console.time("maxDistanceCPU");
+        const maxDistTimeEnd = performance.now();
+        console.log("computeMaxDistanceCPU took: " + (maxDistTimeEnd - maxDistTimeStart) + " ms");
+        // console.log("Labels were recomputed.");
+
+        const labels = await computeMaxDistance(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
 
         // return this.debug_getRandomLabelPositions();
         // return labels;

@@ -23,6 +23,8 @@ struct Candidate{
 
 @group(2) @binding(0) var<storage, read_write> bestCandidates: array<Candidate>;
 
+var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
+
 @stage(compute) @workgroup_size(8, 8) fn 
 main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
      if (f32(GlobalInvocationID.x) >= 512.0 ||
