@@ -27,9 +27,9 @@ export class LabelLayoutGenerator {
     private _selections: Selection[] = [];
 
     //#region Benchmarking
-    private timestampsQuerySet: GPUQuerySet;
-    private timestampsBuffer: GPUBuffer;
-    private timestampsResolvedBuffer: GPUBuffer;
+    // private timestampsQuerySet: GPUQuerySet;
+    // private timestampsBuffer: GPUBuffer;
+    // private timestampsResolvedBuffer: GPUBuffer;
     //#endregion
 
 
@@ -47,20 +47,20 @@ export class LabelLayoutGenerator {
         this.createFixedSizeTextures();
 
         //#region Benchmarking
-        this.timestampsQuerySet = this.graphicsLibrary.device.createQuerySet({
-            type: 'timestamp',
-            count: 4,
-        });
-        this.timestampsBuffer = this.graphicsLibrary.device.createBuffer({
-            label: "timestampsBuffer",
-            size: 512,
-            usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
-        });
-        this.timestampsResolvedBuffer = this.graphicsLibrary.device.createBuffer({
-            label: "timestampsResolvedBuffer",
-            size: 512,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-        });
+        // this.timestampsQuerySet = this.graphicsLibrary.device.createQuerySet({
+        //     type: 'timestamp',
+        //     count: 4,
+        // });
+        // this.timestampsBuffer = this.graphicsLibrary.device.createBuffer({
+        //     label: "timestampsBuffer",
+        //     size: 512,
+        //     usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
+        // });
+        // this.timestampsResolvedBuffer = this.graphicsLibrary.device.createBuffer({
+        //     label: "timestampsResolvedBuffer",
+        //     size: 512,
+        //     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        // });
         //#endregion
 
     }
@@ -78,9 +78,9 @@ export class LabelLayoutGenerator {
         const globals = {
             graphicsLibrary: this.graphicsLibrary,
             viewport: this.viewport,
-            timestampsQuerySet: this.timestampsQuerySet,
-            timestampsBuffer: this.timestampsBuffer,
-            timestampsResolvedBuffer: this.timestampsResolvedBuffer,
+            // timestampsQuerySet: this.timestampsQuerySet,
+            // timestampsBuffer: this.timestampsBuffer,
+            // timestampsResolvedBuffer: this.timestampsResolvedBuffer,
         }
 
         //~ get ID buffer (main input for labeling)
@@ -107,18 +107,19 @@ export class LabelLayoutGenerator {
             ...globals,
             selections: this.selections,
         }
-        // const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
-        const labelsCPU: Label[] = [];
+        const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+        // const labelsCPU: Label[] = [];
         //~ debug output
         // const maxDistTimeEnd = console.time("maxDistanceCPU");
-        const maxDistTimeEnd = performance.now();
-        console.log("computeMaxDistanceCPU took: " + (maxDistTimeEnd - maxDistTimeStart) + " ms");
+        // const maxDistTimeEnd = performance.now();
+        // console.log("computeMaxDistanceCPU took: " + (maxDistTimeEnd - maxDistTimeStart) + " ms");
         // console.log("Labels were recomputed.");
 
-        const labels = await computeMaxDistance(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
+        // const labels = await computeMaxDistance(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
 
         // return this.debug_getRandomLabelPositions();
         // return labels;
+        // this.checkDeviceLimits();
         return labelsCPU;
     }
     //#endregion
@@ -215,6 +216,16 @@ export class LabelLayoutGenerator {
         }
 
         return retLabels;
+    }
+
+    private checkDeviceLimits() {
+        if (this.graphicsLibrary) {
+            console.log("maxComputeWorkgroupsPerDimension = " + this.graphicsLibrary.device.limits.maxComputeWorkgroupsPerDimension);
+            console.log("maxComputeWorkgroupSizeX = " + this.graphicsLibrary.device.limits.maxComputeWorkgroupSizeX);
+            console.log("maxComputeWorkgroupSizeY = " + this.graphicsLibrary.device.limits.maxComputeWorkgroupSizeY);
+            console.log("maxComputeWorkgroupSizeZ = " + this.graphicsLibrary.device.limits.maxComputeWorkgroupSizeZ);
+            console.log("maxComputeWorkgroupStorageSize = " + this.graphicsLibrary.device.limits.maxComputeWorkgroupStorageSize);
+        }
     }
     //#endregion
 

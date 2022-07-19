@@ -1,3 +1,4 @@
+import { randomUniform } from "d3";
 import { GraphicsLibrary } from "..";
 import { Selection, isoSelectionID } from "../../storage/models/selections";
 import { ChromatinViewport } from "../viewports";
@@ -18,9 +19,9 @@ export async function computeContours(
     globals: {
         graphicsLibrary: GraphicsLibrary, 
         viewport: ChromatinViewport,
-        timestampsQuerySet: GPUQuerySet,
-        timestampsBuffer: GPUBuffer,
-        timestampsResolvedBuffer: GPUBuffer,
+        // timestampsQuerySet: GPUQuerySet,
+        // timestampsBuffer: GPUBuffer,
+        // timestampsResolvedBuffer: GPUBuffer,
     }, 
     inputIDTexture: GPUTexture, 
     outputContoursTexture: GPUTexture) : Promise<void>
@@ -35,7 +36,7 @@ export async function computeContours(
         const device = globals.graphicsLibrary.device;
         const commandEncoder = device.createCommandEncoder();
 
-        commandEncoder.writeTimestamp(globals.timestampsQuerySet, timestepIndices.contours_Start);
+        // commandEncoder.writeTimestamp(globals.timestampsQuerySet, timestepIndices.contours_Start);
 
         const computePassEncoder = commandEncoder.beginComputePass();
         
@@ -71,10 +72,10 @@ export async function computeContours(
 
         computePassEncoder.end();
 
-        commandEncoder.writeTimestamp(globals.timestampsQuerySet, timestepIndices.contours_End);
+        // commandEncoder.writeTimestamp(globals.timestampsQuerySet, timestepIndices.contours_End);
 
-        commandEncoder.resolveQuerySet(globals.timestampsQuerySet, 0, 3, globals.timestampsBuffer, 0);
-        commandEncoder.copyBufferToBuffer(globals.timestampsBuffer, 0, globals.timestampsResolvedBuffer, 0, 4 * 8);
+        // commandEncoder.resolveQuerySet(globals.timestampsQuerySet, 0, 3, globals.timestampsBuffer, 0);
+        // commandEncoder.copyBufferToBuffer(globals.timestampsBuffer, 0, globals.timestampsResolvedBuffer, 0, 4 * 8);
 
         const commandBuffer = commandEncoder.finish();
         device.queue.submit([commandBuffer]);
@@ -168,7 +169,7 @@ export async function computeMaxDistanceCPU(globals:
                     const u = i / 512.0;
                     const v = j / 512.0;
                     // const newBest = {x: pixelVal.x, y: pixelVal.y, dtValue: pixelVal.z, regionId: id};
-                    const newBest = {x: u, y: v, dtValue: pixelVal.z, regionId: id};
+                    const newBest = { x: u, y: v, dtValue: pixelVal.z, regionId: id };
                     candidates[id] = newBest;
                 }
             }
@@ -210,6 +211,151 @@ export async function computeMaxDistanceCPU(globals:
         return labels;
     }
 
+export async function computeMaxDistance_New(
+    globals:
+        {
+            graphicsLibrary: GraphicsLibrary,
+            viewport: ChromatinViewport,
+            selections: Selection[],
+        },
+    idBuffer: GPUTexture, dtTexture: GPUTexture
+): Promise<Label[]> {
+
+    //~ DK: maybe I'll need to actually do this in steps:
+    //~ - get a number of selections => IDs that should be found in the ID buffer
+    //~ - for each, run a kernel looking for maximum value only under each ID
+    if (!globals.selections) {
+        console.log("No selections!");
+        return [];
+    }
+
+    //~ copy textures to buffer (2D -> 1D)
+    const dtTexValuesBuffer = transformTextureToBuffer(globals, dtTexture, 512, 512);
+    const idTexValuesBuffer = transformTextureToBuffer(globals, idBuffer, 512, 512);
+
+    const labels: Label[] = [];
+    const globalsNoSelections = { graphicsLibrary: globals.graphicsLibrary, viewport: globals.viewport };
+    //~ for each selection i'm looking for the biggest distance separately in each iteration
+    for (const sel of globals.selections) {
+        const lbl = await computeLabelPositionWithMaxDistanceGPU(globalsNoSelections, 
+                                                                sel, 
+                                                                dtTexValuesBuffer, 
+                                                                idTexValuesBuffer);
+        if (lbl != null) {
+            labels.push(lbl);
+        }
+    }
+    
+    return labels;
+}
+
+export async function computeLabelPositionWithMaxDistanceGPU(
+    globals:
+        {
+            graphicsLibrary: GraphicsLibrary,
+            viewport: ChromatinViewport,
+        },
+    forSelection: Selection,
+    idTexValuesBuffer: GPUBuffer, dtTexValuesBuffer: GPUBuffer): Promise<Label | null> {
+    
+    //~ bind buffers
+    const device = globals.graphicsLibrary.device;
+    const commandEncoder = device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginComputePass();
+
+    const inputBuffersBindGroup = device.createBindGroup({
+        label: "Max DT: input buffers bind group",
+        layout: globals.graphicsLibrary.bindGroupLayouts.maxDTInputTextures,
+        entries: [
+            { binding: 0, resource: { buffer: dtTexValuesBuffer } },
+            { binding: 1, resource: { buffer: idTexValuesBuffer } },
+        ]
+    })
+
+    if (!globals.viewport || !globals.viewport.camera) return null;
+    const parametersBufferGPU = device.createBuffer({
+        size: 1,
+        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.UNIFORM,
+    });
+    //~ TODO: upload the selection id parameter
+    const cameraBindGroup = device.createBindGroup({
+        label: "Camera bind group",
+        layout: globals.graphicsLibrary.bindGroupLayouts.camera,
+        entries: [
+            {
+                binding: 0,
+                resource: {
+                    buffer: globals.viewport.camera.bufferGPU,
+                    offset: 0,
+                }
+            },
+            {
+                binding: 1,
+                resource: {
+                    buffer: parametersBufferGPU,
+                }
+            }
+        ]
+    });
+
+    const resultBufferSize = 4 * 4; //~ just one vec4
+    const resultBuffer = device.createBuffer({
+        size: resultBufferSize,
+        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+    });
+
+
+    //~ dispatch kernel
+    passEncoder.setPipeline(globals.graphicsLibrary.computePipelines.maxDT);
+    passEncoder.setBindGroup(0, cameraBindGroup);
+    passEncoder.setBindGroup(1, inputBuffersBindGroup);
+
+    // console.log("DT: dispatching workgroups!");
+    passEncoder.dispatchWorkgroups(
+        DOWNSCALED_TEX_SIZE / 8,
+        DOWNSCALED_TEX_SIZE / 8,
+        1);
+
+    passEncoder.end();
+    // commandEncoder.copyBufferToBuffer(labelsBufferGPU, 0, stagingBuffer, 0, BUFFER_SIZE);
+    commandEncoder.copyBufferToBuffer(dtTexValuesBuffer, 0, resultBuffer, 0, resultBufferSize);
+    const commandBuffer = commandEncoder.finish();
+    device.queue.submit([commandBuffer]);
+
+    //~ reading back the buffer
+    await resultBuffer.mapAsync(GPUMapMode.READ, 0, resultBufferSize);
+    const copyArrayBuffer = resultBuffer.getMappedRange(0, resultBufferSize);
+    const data = copyArrayBuffer.slice(0);
+    resultBuffer.unmap();
+    // console.log(new Float32Array(data));
+    const dataArray = new Float32Array(data);
+    // console.log(dataArray);
+
+    const regionId = dataArray[0] as number;
+    const dtValue = dataArray[1] as number;
+    const x = dataArray[2] as number;
+    const y = dataArray[3] as number;
+    //~ TODO: recalculate to screen/pixel coordinates
+    const xScreen = x * (globals.viewport.width / 2.0);
+    const yScreen = y * (globals.viewport.height / 2.0);
+    const lbl = {
+        x: xScreen,
+        y: yScreen,
+        id: regionId,
+        text: "Label test",
+        color: { r: 0, g: 0, b: 0, a: 0 },
+    };
+
+    // if (lbl.id == -1) {
+    //     // break;
+    // } else {
+    //     labels.push(lbl);
+    //     console.log("regionId: %d, uvPosition: (%f, %f), dtValue: %f", regionId, x, y, dtValue);
+    // }
+    // }
+
+    return lbl;
+}
 
 export async function computeMaxDistance(globals:
     {
@@ -409,6 +555,33 @@ async function getTextureAsArray(globals:
 
         return dataArray;
     }
+
+function transformTextureToBuffer(
+    globals:
+        {
+            graphicsLibrary: GraphicsLibrary,
+            viewport: ChromatinViewport,
+        },
+    source: GPUTexture, width: number, height: number) : GPUBuffer
+{
+    const device = globals.graphicsLibrary.device;
+    const commandEncoder = device.createCommandEncoder();
+
+    const BUFFER_SIZE = width * height * 4 * 4;
+    const texBuffer = device.createBuffer({
+        size: BUFFER_SIZE,
+        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+    });
+
+    commandEncoder.copyTextureToBuffer(
+        { texture: source },
+        { buffer: texBuffer, bytesPerRow: width * 4 * 4 },
+        [width, height]);
+    const commandBuffer = commandEncoder.finish();
+    device.queue.submit([commandBuffer]);
+
+    return texBuffer;
+}
 
 function renderContoursPass(
     graphicsLibrary: GraphicsLibrary,
