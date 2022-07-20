@@ -1,7 +1,7 @@
 import { GraphicsLibrary } from "..";
 import {getRandomInt} from "../utils";
 import { ChromatinViewport } from "../viewports";
-import { computeContours, computeDistanceTransform, computeMaxDistance, computeMaxDistanceCPU } from "./labelingAlgorithms";
+import { computeContours, computeDistanceTransform, computeMaxDistanceCPU, computeMaxDistance_New } from "./labelingAlgorithms";
 import { Label } from "./label";
 import { Selection } from "../../storage/models/selections";
 
@@ -107,8 +107,9 @@ export class LabelLayoutGenerator {
             ...globals,
             selections: this.selections,
         }
-        const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
-        // const labelsCPU: Label[] = [];
+        // const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+        const labels = await computeMaxDistance_New(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
+        const labelsCPU: Label[] = [];
         //~ debug output
         // const maxDistTimeEnd = console.time("maxDistanceCPU");
         // const maxDistTimeEnd = performance.now();

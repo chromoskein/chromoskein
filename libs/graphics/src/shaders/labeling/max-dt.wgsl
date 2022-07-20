@@ -1,21 +1,21 @@
- struct Camera {
-  projection : mat4x4<f32>,
-  projectionInverse : mat4x4<f32>,
-  view : mat4x4<f32>,
-  viewInverse : mat4x4<f32>,
-  projectionView : mat4x4<f32>,
-  projectionViewInverse : mat4x4<f32>,
-  normalMatrix: mat4x4<f32>,
-  position : vec4<f32>,
-  viewportSize : vec2<f32>,
-};
+//  struct Camera {
+//   projection : mat4x4<f32>,
+//   projectionInverse : mat4x4<f32>,
+//   view : mat4x4<f32>,
+//   viewInverse : mat4x4<f32>,
+//   projectionView : mat4x4<f32>,
+//   projectionViewInverse : mat4x4<f32>,
+//   normalMatrix: mat4x4<f32>,
+//   position : vec4<f32>,
+//   viewportSize : vec2<f32>,
+// };
 
 struct Parameters {
   forSelection: u32,
 };
 
-@group(0) @binding(0) var<uniform> camera : Camera; 
-@group(0) @binding(1) var<uniform> parameters: Parameters; //~ TODO: actually send this uniform from CPU
+// @group(0) @binding(0) var<uniform> camera : Camera; 
+@group(0) @binding(0) var<uniform> parameters: Parameters; //~ TODO: actually send this uniform from CPU
 
 @group(1) @binding(0) var<storage, read_write> dtTexValues: array<vec4<f32>>;
 @group(1) @binding(1) var<storage, read_write> idTexValues: array<vec4<f32>>; //~ this could be just u32, but this buffer is filled by texture copy, so it has all the components
@@ -76,7 +76,7 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
   if (tid == 0) {
     // dtTexValues[WorkgroupID.x] = vec4(tileDistances[0], 1.0);
     // idTexValues[WorkgroupID.x] = vec4(tileIds[0]);
-    atomicStore(*(best[0]), i32(123));
+    atomicStore(&(best[0]), i32(123));
   }
  
 }

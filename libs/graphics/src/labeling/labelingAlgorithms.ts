@@ -265,7 +265,8 @@ export async function computeLabelPositionWithMaxDistanceGPU(
 
     const inputBuffersBindGroup = device.createBindGroup({
         label: "Max DT: input buffers bind group",
-        layout: globals.graphicsLibrary.bindGroupLayouts.maxDTInputTextures,
+        // layout: globals.graphicsLibrary.bindGroupLayouts.maxDTInputTextures,
+        layout: globals.graphicsLibrary.bindGroupLayouts.maxDTInputBuffers,
         entries: [
             { binding: 0, resource: { buffer: dtTexValuesBuffer } },
             { binding: 1, resource: { buffer: idTexValuesBuffer } },
@@ -274,23 +275,19 @@ export async function computeLabelPositionWithMaxDistanceGPU(
 
     if (!globals.viewport || !globals.viewport.camera) return null;
     const parametersBufferGPU = device.createBuffer({
-        size: 1,
-        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.UNIFORM,
+        label: "MaxDT: Parameters buffer",
+        size: 4,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
-    //~ TODO: upload the selection id parameter
-    const cameraBindGroup = device.createBindGroup({
-        label: "Camera bind group",
-        layout: globals.graphicsLibrary.bindGroupLayouts.camera,
+    //~ TODO: upload the selection id parameter:
+
+    const paramsBindGroup = device.createBindGroup({
+        label: "MaxDT Parameters Bind Group",
+        // layout: globals.graphicsLibrary.bindGroupLayouts.camera,
+        layout: globals.graphicsLibrary.bindGroupLayouts.maxDTParameters,
         entries: [
             {
                 binding: 0,
-                resource: {
-                    buffer: globals.viewport.camera.bufferGPU,
-                    offset: 0,
-                }
-            },
-            {
-                binding: 1,
                 resource: {
                     buffer: parametersBufferGPU,
                 }
@@ -300,6 +297,7 @@ export async function computeLabelPositionWithMaxDistanceGPU(
 
     const resultBufferSize = 4 * 4; //~ just one vec4
     const resultBuffer = device.createBuffer({
+        label: "MaxDT: Results buffer",
         size: resultBufferSize,
         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
@@ -307,7 +305,7 @@ export async function computeLabelPositionWithMaxDistanceGPU(
 
     //~ dispatch kernel
     passEncoder.setPipeline(globals.graphicsLibrary.computePipelines.maxDT);
-    passEncoder.setBindGroup(0, cameraBindGroup);
+    passEncoder.setBindGroup(0, paramsBindGroup);
     passEncoder.setBindGroup(1, inputBuffersBindGroup);
 
     // console.log("DT: dispatching workgroups!");
@@ -357,142 +355,142 @@ export async function computeLabelPositionWithMaxDistanceGPU(
     return lbl;
 }
 
-export async function computeMaxDistance(globals:
-    {
-        graphicsLibrary: GraphicsLibrary,
-        viewport: ChromatinViewport,
-    },
-    idBuffer: GPUTexture, dtTexture: GPUTexture): Promise<Label[]> {
-    if (!globals.graphicsLibrary) return [];
+// export async function computeMaxDistance(globals:
+//     {
+//         graphicsLibrary: GraphicsLibrary,
+//         viewport: ChromatinViewport,
+//     },
+//     idBuffer: GPUTexture, dtTexture: GPUTexture): Promise<Label[]> {
+//     if (!globals.graphicsLibrary) return [];
 
-    const device = globals.graphicsLibrary.device;
-    const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginComputePass();
+//     const device = globals.graphicsLibrary.device;
+//     const commandEncoder = device.createCommandEncoder();
+//     const passEncoder = commandEncoder.beginComputePass();
 
-    // if (!this.viewport) return [];
-    // const idBuffer = this.viewport.getIDBuffer();
-    // if (!idBuffer) return [];
+//     // if (!this.viewport) return [];
+//     // const idBuffer = this.viewport.getIDBuffer();
+//     // if (!idBuffer) return [];
 
-    // if (!this.distanceTransformTexture) return [];
-    const inputTexturesBindGroup = device.createBindGroup({
-        label: "Max DT: input textures bind group",
-        layout: globals.graphicsLibrary.bindGroupLayouts.maxDTInputTextures,
-        entries: [
-            { binding: 0, resource: idBuffer.createView() },
-            { binding: 1, resource: dtTexture.createView() },
-        ]
-    })
+//     // if (!this.distanceTransformTexture) return [];
+//     const inputTexturesBindGroup = device.createBindGroup({
+//         label: "Max DT: input textures bind group",
+//         layout: globals.graphicsLibrary.bindGroupLayouts.maxDTInputTextures,
+//         entries: [
+//             { binding: 0, resource: idBuffer.createView() },
+//             { binding: 1, resource: dtTexture.createView() },
+//         ]
+//     })
 
-    if (!globals.viewport || !globals.viewport.camera) return [];
-    const cameraBindGroup = device.createBindGroup({
-        label: "Camera bind group",
-        layout: globals.graphicsLibrary.bindGroupLayouts.camera,
-        entries: [
-            {
-                binding: 0,
-                resource: {
-                    buffer: globals.viewport.camera.bufferGPU,
-                    offset: 0,
-                }
-            },
-        ]
-    });
+//     if (!globals.viewport || !globals.viewport.camera) return [];
+//     const cameraBindGroup = device.createBindGroup({
+//         label: "Camera bind group",
+//         layout: globals.graphicsLibrary.bindGroupLayouts.camera,
+//         entries: [
+//             {
+//                 binding: 0,
+//                 resource: {
+//                     buffer: globals.viewport.camera.bufferGPU,
+//                     offset: 0,
+//                 }
+//             },
+//         ]
+//     });
 
-    //~ generating initial buffer:
-    const MAX_LABELS = 256;
-    const BUFFER_SIZE = MAX_LABELS * 4 * 4;
-    const labelCandidates = new Float32Array(new ArrayBuffer(BUFFER_SIZE));
-    for (let i = 0; i < MAX_LABELS; i++) {
-        labelCandidates[i * 4 + 0] = -1; // regionId (i32)
-        // labelCandidates[i * 4 + 1] = 1.0; // dtValue (f32)
-        labelCandidates[i * 4 + 1] = 0.0; // dtValue (f32)
-        labelCandidates[i * 4 + 2] = 0; // uvPosition.x (vec2<f32>)
-        labelCandidates[i * 4 + 3] = 0; // uvPosition.y (vec2<f32>)
-    }
+//     //~ generating initial buffer:
+//     const MAX_LABELS = 256;
+//     const BUFFER_SIZE = MAX_LABELS * 4 * 4;
+//     const labelCandidates = new Float32Array(new ArrayBuffer(BUFFER_SIZE));
+//     for (let i = 0; i < MAX_LABELS; i++) {
+//         labelCandidates[i * 4 + 0] = -1; // regionId (i32)
+//         // labelCandidates[i * 4 + 1] = 1.0; // dtValue (f32)
+//         labelCandidates[i * 4 + 1] = 0.0; // dtValue (f32)
+//         labelCandidates[i * 4 + 2] = 0; // uvPosition.x (vec2<f32>)
+//         labelCandidates[i * 4 + 3] = 0; // uvPosition.y (vec2<f32>)
+//     }
 
-    const labelsBufferGPU = device.createBuffer({
-        size: BUFFER_SIZE,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-    });
+//     const labelsBufferGPU = device.createBuffer({
+//         size: BUFFER_SIZE,
+//         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+//     });
 
-    const stagingBuffer = device.createBuffer({
-        size: BUFFER_SIZE,
-        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-    });
+//     const stagingBuffer = device.createBuffer({
+//         size: BUFFER_SIZE,
+//         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+//     });
 
-    const candidatesBufferBindGroup = device.createBindGroup({
-        layout: globals.graphicsLibrary.bindGroupLayouts.maxDTCandidatesBuffer,
-        entries: [{
-            binding: 0,
-            resource: {
-                buffer: labelsBufferGPU,
-            },
-        }],
-    });
+//     const candidatesBufferBindGroup = device.createBindGroup({
+//         layout: globals.graphicsLibrary.bindGroupLayouts.maxDTCandidatesBuffer,
+//         entries: [{
+//             binding: 0,
+//             resource: {
+//                 buffer: labelsBufferGPU,
+//             },
+//         }],
+//     });
 
-    device.queue.writeBuffer(labelsBufferGPU, 0, labelCandidates);
+//     device.queue.writeBuffer(labelsBufferGPU, 0, labelCandidates);
 
-    passEncoder.setPipeline(globals.graphicsLibrary.computePipelines.maxDT);
-    passEncoder.setBindGroup(0, cameraBindGroup);
-    passEncoder.setBindGroup(1, inputTexturesBindGroup);
-    passEncoder.setBindGroup(2, candidatesBufferBindGroup);
+//     passEncoder.setPipeline(globals.graphicsLibrary.computePipelines.maxDT);
+//     passEncoder.setBindGroup(0, cameraBindGroup);
+//     passEncoder.setBindGroup(1, inputTexturesBindGroup);
+//     passEncoder.setBindGroup(2, candidatesBufferBindGroup);
 
-    // console.log("DT: dispatching workgroups!");
-    passEncoder.dispatchWorkgroups(
-        DOWNSCALED_TEX_SIZE / 8,
-        DOWNSCALED_TEX_SIZE / 8,
-        1);
+//     // console.log("DT: dispatching workgroups!");
+//     passEncoder.dispatchWorkgroups(
+//         DOWNSCALED_TEX_SIZE / 8,
+//         DOWNSCALED_TEX_SIZE / 8,
+//         1);
 
-    passEncoder.end();
-    commandEncoder.copyBufferToBuffer(labelsBufferGPU, 0, stagingBuffer, 0, BUFFER_SIZE);
-    const commandBuffer = commandEncoder.finish();
-    device.queue.submit([commandBuffer]);
+//     passEncoder.end();
+//     commandEncoder.copyBufferToBuffer(labelsBufferGPU, 0, stagingBuffer, 0, BUFFER_SIZE);
+//     const commandBuffer = commandEncoder.finish();
+//     device.queue.submit([commandBuffer]);
 
-    //~ reading back the buffer
-    await stagingBuffer.mapAsync(GPUMapMode.READ, 0, BUFFER_SIZE);
-    const copyArrayBuffer = stagingBuffer.getMappedRange(0, BUFFER_SIZE);
-    const data = copyArrayBuffer.slice(0);
-    stagingBuffer.unmap();
-    // console.log(new Float32Array(data));
-    const dataArray = new Float32Array(data);
-    // console.log(dataArray);
+//     //~ reading back the buffer
+//     await stagingBuffer.mapAsync(GPUMapMode.READ, 0, BUFFER_SIZE);
+//     const copyArrayBuffer = stagingBuffer.getMappedRange(0, BUFFER_SIZE);
+//     const data = copyArrayBuffer.slice(0);
+//     stagingBuffer.unmap();
+//     // console.log(new Float32Array(data));
+//     const dataArray = new Float32Array(data);
+//     // console.log(dataArray);
 
-    // labelCandidates[i * 4 + 0] = -1; // regionId (i32)
-    // labelCandidates[i * 4 + 1] = 0; // dtValue (f32)
-    // labelCandidates[i * 4 + 2] = 0; // uvPosition.x (vec2<f32>)
-    // labelCandidates[i * 4 + 3] = 0; // uvPosition.y (vec2<f32>)
+//     // labelCandidates[i * 4 + 0] = -1; // regionId (i32)
+//     // labelCandidates[i * 4 + 1] = 0; // dtValue (f32)
+//     // labelCandidates[i * 4 + 2] = 0; // uvPosition.x (vec2<f32>)
+//     // labelCandidates[i * 4 + 3] = 0; // uvPosition.y (vec2<f32>)
 
-    const labels: Label[] = [];
-    for (let i = 0; i < MAX_LABELS; i++) {
-        // console.log(i);
-        const regionId = dataArray[i * 4 + 0] as number;
-        const dtValue = dataArray[i * 4 + 1] as number;
-        const x = dataArray[i * 4 + 2] as number;
-        const y = dataArray[i * 4 + 3] as number;
-        //~ TODO: recalculate to screen/pixel coordinates
-        const xScreen = x * (globals.viewport.width / 2.0);
-        const yScreen = y * (globals.viewport.height / 2.0);
-        const lbl = {
-            x: xScreen,
-            y: yScreen,
-            id: regionId,
-            text: "Label test",
-            color: {r: 0, g: 0, b: 0, a: 0},
-        };
-        // console.log(lbl);
+//     const labels: Label[] = [];
+//     for (let i = 0; i < MAX_LABELS; i++) {
+//         // console.log(i);
+//         const regionId = dataArray[i * 4 + 0] as number;
+//         const dtValue = dataArray[i * 4 + 1] as number;
+//         const x = dataArray[i * 4 + 2] as number;
+//         const y = dataArray[i * 4 + 3] as number;
+//         //~ TODO: recalculate to screen/pixel coordinates
+//         const xScreen = x * (globals.viewport.width / 2.0);
+//         const yScreen = y * (globals.viewport.height / 2.0);
+//         const lbl = {
+//             x: xScreen,
+//             y: yScreen,
+//             id: regionId,
+//             text: "Label test",
+//             color: {r: 0, g: 0, b: 0, a: 0},
+//         };
+//         // console.log(lbl);
 
-        if (lbl.id == -1) {
-            // break;
-        } else {
-            labels.push(lbl);
-            console.log("regionId: %d, uvPosition: (%f, %f), dtValue: %f", regionId, x, y, dtValue);
-        }
-    }
-    console.log("Labels:");
-    // console.log(labels);
+//         if (lbl.id == -1) {
+//             // break;
+//         } else {
+//             labels.push(lbl);
+//             console.log("regionId: %d, uvPosition: (%f, %f), dtValue: %f", regionId, x, y, dtValue);
+//         }
+//     }
+//     console.log("Labels:");
+//     // console.log(labels);
 
-    return labels;
-}
+//     return labels;
+// }
 
 async function readTimestamps(resolvedTimestampsBuffer: GPUBuffer) {
     await resolvedTimestampsBuffer.mapAsync(GPUMapMode.READ);
@@ -570,7 +568,8 @@ function transformTextureToBuffer(
     const BUFFER_SIZE = width * height * 4 * 4;
     const texBuffer = device.createBuffer({
         size: BUFFER_SIZE,
-        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+        // usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE,
     });
 
     commandEncoder.copyTextureToBuffer(

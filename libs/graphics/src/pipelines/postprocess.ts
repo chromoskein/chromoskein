@@ -342,16 +342,45 @@ export function maxDTInputTexturesBindGroupLayout(): GPUBindGroupLayoutDescripto
                     multisampled: false,
                 }
             },
-            // // Contours (output)
-            // {
-            //     binding: 1,
-            //     visibility: GPUShaderStage.COMPUTE,
-            //     storageTexture: {
-            //         access: 'write-only',
-            //         format: 'rgba32float',
-            //         viewDimension: '2d',
-            //     }
-            // },
+        ],
+    }
+}
+
+export function maxDTInputBuffersBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        label: "Max DT: Input Buffers",
+        entries: [
+            // ID Buffer (input)
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: "storage",
+                }
+            },
+            // Distance transform texture (input)
+            { 
+                binding: 1,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: "storage",
+                }
+            },
+        ],
+    }
+}
+
+export function maxDTParametersBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        label: "Max DT: Parameters",
+        entries: [
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: "uniform",
+                }
+            },
         ],
     }
 }
@@ -375,7 +404,8 @@ export function maxDTPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipe
     return {
         label: "Max DT pipeline layout",
         bindGroupLayouts: [
-            bindGroupLayouts.camera, bindGroupLayouts.maxDTInputTextures, bindGroupLayouts.maxDTCandidatesBuffer,
+            // bindGroupLayouts.camera, bindGroupLayouts.maxDTInputTextures, bindGroupLayouts.maxDTCandidatesBuffer,
+            bindGroupLayouts.maxDTParameters, bindGroupLayouts.maxDTInputBuffers,
         ]
     };
 }
