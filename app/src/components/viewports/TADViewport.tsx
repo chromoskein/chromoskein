@@ -1,13 +1,13 @@
 import useMouse, { MousePosition } from "@react-hook/mouse-position";
 import { vec2, vec4 } from "gl-matrix";
-import React, { Dispatch, Fragment, useEffect, useRef, useState } from "react";
+import { Dispatch, useEffect, useRef, useState } from "react";
 import { useDeepCompareEffect, useHoverDirty, useMouseWheel } from "react-use";
-import { useKey, usePrevious, usePreviousImmediate } from "rooks";
-import { ConfigurationAction, ConfigurationState, DistanceDataConfiguration, DistanceMapDataConfiguration, DistanceSelectionConfiguration, DistanceViewportConfiguration, DistanceViewportToolType } from "../../modules/storage/models/viewports";
+import { useKey, usePreviousImmediate } from "rooks";
+import { ConfigurationAction, ConfigurationState, DistanceMapDataConfiguration, DistanceViewportConfiguration, DistanceViewportToolType } from "../../modules/storage/models/viewports";
 import * as GraphicsModule from "../../modules/graphics";
-import { BinPosition, binsToCenterVec4, CameraConfigurationType, OrthoCameraConfiguration } from "../../modules/graphics";
-import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
-import { Data, DataAction, DataState, Positions3D } from "../../modules/storage/models/data";
+import { BinPosition, squareDiameter } from "../../modules/graphics";
+import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
+import { DataAction, DataState, Positions3D } from "../../modules/storage/models/data";
 import { useConfiguration, useSelections } from "../hooks";
 
 
@@ -485,7 +485,97 @@ export function TADViewport(props: {
     }, [viewport, binGroups, hoveredBins, viewport.cameraConfiguration.zoom, viewport.cameraConfiguration.translateX, viewport.cameraConfiguration.translateY]);
     //#endregion
 
-    console.log(hoveredBins, hoveredBinRanges)
+    const [currentBinsAmount, setCurrentBinsAmount] = useState(0);
+    const [tracksBlock, setTracksBlock] = useState<{
+        width: number;
+        left: number;
+        top: number;
+    } | null>(null);
+    // Selections Ranges
+    // Array (selections) of Array (ranges for each selection)
+    const [selectionsRanges, setSelectionsRanges] = useState<Array<Array<{
+        from: number,
+        to: number;
+    }>>>([]);
+
+    useEffect(() => {
+        if (!viewport) {
+            return;
+        }
+
+        const currentBins = viewport.sizes[viewport.currentLoD];
+        const currentSquareDiameter = Math.pow(2.0, viewport.currentLoD) * squareDiameter;
+
+        const beginPositionScreenSpace = viewport.worldSpaceToScreenSpace(vec4.fromValues(0.0, 0.0, 0.0, 1.0));
+        const endPosition = viewport.worldSpaceToScreenSpace(vec4.fromValues(currentSquareDiameter * currentBins, 0.0, 0.0, 1.0));
+
+        setCurrentBinsAmount(() => currentBins);
+        setTracksBlock(() => {
+            return {
+                width: endPosition[0] - beginPositionScreenSpace[0],
+                left: beginPositionScreenSpace[0],
+                top: beginPositionScreenSpace[1],
+            }
+        });
+    }, [viewport, mousePosition, mouseScroll]);
+
+    useEffect(() => {
+        const selectionsRanges: Array<Array<{
+            from: number,
+            to: number;
+        }>> = [];
+
+        for (const [selection] of selections) {
+            const selectionRanges: Array<{
+                from: number,
+                to: number;
+            }> = [];
+
+            // Bitset to ranges
+            const bins = selection.bins;
+            const binsPerBit = Math.pow(2.0, viewport.currentLoD);
+            const connectivityBitset: Array<0 | 1> = new Array(viewport.sizes[viewport.currentLoD]).fill(0);
+            for (let i = 0; i < connectivityBitset.length; i++) {
+                const sliceBegin = i * binsPerBit;
+                const sliceEnd = Math.min(i * binsPerBit + binsPerBit, bins.length);
+
+                if (bins.slice(sliceBegin, sliceEnd).reduce((p, c) => (c === 1) || p, false)) {
+                    connectivityBitset[i] = 1;
+                }
+            }
+            let expandingRange = false;
+            for (let i = 0; i < connectivityBitset.length; i++) {
+                const currentValue = connectivityBitset[i];
+
+                if (expandingRange && i == connectivityBitset.length - 1 && currentValue === 1) {
+                    selectionRanges[selectionRanges.length - 1].to = connectivityBitset.length;
+                    break;
+                }
+
+                if (currentValue === 0 && !expandingRange) continue;
+                if (currentValue === 1 && expandingRange) continue;
+
+                if (currentValue === 1 && !expandingRange) {
+                    // Start new range
+                    selectionRanges.push({
+                        from: i,
+                        to: i + 1
+                    });
+                    expandingRange = true;
+                }
+
+                if (currentValue === 0 && expandingRange) {
+                    // End the range
+                    selectionRanges[selectionRanges.length - 1].to = i;
+                    expandingRange = false;
+                }
+            }
+
+            selectionsRanges.push(selectionRanges);
+        }
+
+        setSelectionsRanges(() => selectionsRanges);
+    }, [viewport, data, allSelections, selections, viewport.currentLoD]);
 
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onClick={onClick}></canvas>
@@ -500,8 +590,36 @@ export function TADViewport(props: {
             {(viewport && hoveredBinRanges) && (
                 <text x={18} y={34} fontSize={18} fill='white'>Bins: [{hoveredBinRanges[0][0] + 1}-{hoveredBinRanges[0][1]} × {hoveredBinRanges[1][0] + 1}-{hoveredBinRanges[1][1]}]</text>
             )}
-            {svgNumbers}
+            {/* {svgNumbers} */}
         </svg>
+        {(currentBinsAmount && tracksBlock && !isNaN(tracksBlock.top)) && (<div className={'topDiv'}>
+            <div style={{
+                width: tracksBlock.width,
+                position: 'absolute',
+                top: tracksBlock.top,
+                left: tracksBlock.left,
+                color: 'white'
+            }}>
+                {(selections && selectionsRanges) && selectionsRanges.map((selectionRange, selectionRangeIndex) => {
+                    if (selections[selectionRangeIndex]) {
+                        return <div key={selectionRangeIndex} style={{
+                            width: '100%',
+                            height: '8px',
+                            display: 'grid',
+                            marginTop: '8px',
+                            gridTemplateColumns: 'repeat(' + currentBinsAmount + ', 1fr)'
+                        }}>
+                            {selectionRange.map((range, index) => {
+                                return <div key={index} style={{
+                                    backgroundColor: 'rgb(' + selections[selectionRangeIndex][0].color.r * 255 + ',' + selections[selectionRangeIndex][0].color.g * 255 + ',' + selections[selectionRangeIndex][0].color.b * 255 + ')',
+                                    gridColumn: (range.from + 1).toString() + ' / ' + (range.to + 1).toString()
+                                }}></div>
+                            })}
+                        </div>
+                    } else { return <div key={selectionRangeIndex}></div> }
+                })}
+            </div>
+        </div>)}
     </div>
     );
 }
