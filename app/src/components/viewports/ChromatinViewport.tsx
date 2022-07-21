@@ -747,7 +747,7 @@ export function ChromatinViewport(props: {
                 for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
                     const binPosition = binsPositions[binIndex];
 
-                    if (vec3.distance(binPosition, sphereCenter) < sphereRadius && !viewport.cullObjects[0].cullsPoint(binPosition)) {
+                    if (vec3.distance(binPosition, sphereCenter) < sphereRadius) {
                         newBins[offset + binIndex] = value;
                     }
                 }

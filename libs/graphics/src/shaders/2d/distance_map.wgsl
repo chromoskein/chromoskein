@@ -48,30 +48,30 @@ struct VertexOutput {
 
 @stage(vertex)
 fn main_vertex(@builtin(vertex_index) VertexIndex: u32, @builtin(instance_index) InstanceIndex: u32) -> VertexOutput {
-  let squareMultiples = pow(2.0, f32(globals.currentLoD));
-  let sideLength = squareMultiples * (sqrt(2.0) * 0.5);
-  let sideLength2 = squareMultiples * sqrt(2.0);
-  let stepVector: vec2<f32> = squareMultiples * normalize(vec2<f32>(1.0, 1.0));
-  let expandConstant = 0.001;
+    let squareMultiples = pow(2.0, f32(globals.currentLoD));
+    let sideLength = squareMultiples * (sqrt(2.0) * 0.5);
+    let sideLength2 = squareMultiples * sqrt(2.0);
+    let stepVector: vec2<f32> = squareMultiples * normalize(vec2<f32>(1.0, 1.0));
+    let expandConstant = 0.001;
 
-  let currentSize = globals.sizes[globals.currentLoD / u32(4)][globals.currentLoD % u32(4)];
-  let currentOffset = globals.offsets[globals.currentLoD / u32(4)][globals.currentLoD % u32(4)];
+    let currentSize = globals.sizes[globals.currentLoD / u32(4)][globals.currentLoD % u32(4)];
+    let currentOffset = globals.offsets[globals.currentLoD / u32(4)][globals.currentLoD % u32(4)];
 
-  let vertexIndex: u32 = u32(VertexIndex % u32(6));
+    let vertexIndex: u32 = u32(VertexIndex % u32(6));
 
-  let leftIndex: u32 = u32(InstanceIndex);
-  let diffIndex: u32 = u32(VertexIndex / u32(6));
-  let rightIndex: u32 = leftIndex + diffIndex;
+    let leftIndex: u32 = u32(InstanceIndex);
+    let diffIndex: u32 = u32(VertexIndex / u32(6));
+    let rightIndex: u32 = leftIndex + diffIndex;
 
-  var center: vec2<f32> = vec2<f32>(f32(leftIndex) * sideLength2 + sideLength, 0.0);
-  center = center + f32(diffIndex) * stepVector;
+    var center: vec2<f32> = vec2<f32>(f32(leftIndex) * sideLength2 + sideLength, 0.0);
+    center = center + f32(diffIndex) * stepVector;
 
-  let leftPosition = positionsBuffer.positions[currentOffset + leftIndex];  
-  let rightPosition = positionsBuffer.positions[currentOffset + rightIndex];  
-  let dist = distance(leftPosition, rightPosition) / globals.maxDistances[globals.currentLoD / u32(4)][globals.currentLoD % u32(4)];
+    let leftPosition = positionsBuffer.positions[currentOffset + leftIndex];
+    let rightPosition = positionsBuffer.positions[currentOffset + rightIndex];
+    let dist = distance(leftPosition, rightPosition) / globals.maxDistances[globals.currentLoD / u32(4)][globals.currentLoD % u32(4)];
 
-  var leftColor = colorsBuffer.colors[currentOffset + leftIndex].rgb;
-  var rightColor = colorsBuffer.colors[currentOffset + rightIndex].rgb;
+    var leftColor = colorsBuffer.colors[currentOffset + leftIndex].rgb;
+    var rightColor = colorsBuffer.colors[currentOffset + rightIndex].rgb;
 
   // if (all(leftColor != rightColor) && all(leftColor == vec3<f32>(1.0))) {
   //   leftColor = rightColor;
@@ -79,74 +79,73 @@ fn main_vertex(@builtin(vertex_index) VertexIndex: u32, @builtin(instance_index)
   //   rightColor = leftColor;
   // }
 
-  var position: vec2<f32>;
-  var uv: vec2<f32> = vec2<f32>(1.0, 0.0);
-  if (diffIndex == u32(0)) {
-    switch(i32(vertexIndex)) {
+    var position: vec2<f32>;
+    var uv: vec2<f32> = vec2<f32>(1.0, 0.0);
+    if (diffIndex == u32(0)) {
+        switch(i32(vertexIndex)) {
       // Half-Top Triangle
       case 0: {
-        position = center.xy + vec2<f32>(-sideLength - expandConstant, 0.0);           
-      }
+                position = center.xy + vec2<f32>(-sideLength - expandConstant, 0.0);
+            }
       case 1: {
-        position = center.xy + vec2<f32>(sideLength + expandConstant, 0.0); 
-          
-      }
+                position = center.xy + vec2<f32>(sideLength + expandConstant, 0.0);
+            }
       case 2: {
-        position = center.xy +  vec2<f32>(0.0, sideLength + expandConstant);           
-      }
+                position = center.xy + vec2<f32>(0.0, sideLength + expandConstant);
+            }
       // Discard the rest
       default: {
-        position = center.xy;
-      }
+                position = center.xy;
+            }
     }
-  } else {
-    switch(i32(vertexIndex)) {
+    } else {
+        switch(i32(vertexIndex)) {
       // Left Triangle
       case 0: {
-        uv = vec2<f32>(1.0, 0.0);
-        position = center.xy +  vec2<f32>(0.0, sideLength + expandConstant);  
-      }
+                uv = vec2<f32>(1.0, 0.0);
+                position = center.xy + vec2<f32>(0.0, sideLength + expandConstant);
+            }
       case 1: {
-        uv = vec2<f32>(1.0, 0.0);
-        position = center.xy + vec2<f32>(-sideLength - expandConstant, 0.0);                  
-      }
-      case 2: {    
-        uv = vec2<f32>(0.0, 0.0);        
-        position = center.xy + vec2<f32>(0.0, -sideLength - expandConstant);          
-      }
+                uv = vec2<f32>(1.0, 0.0);
+                position = center.xy + vec2<f32>(-sideLength - expandConstant, 0.0);
+            }
+      case 2: {
+                uv = vec2<f32>(0.0, 0.0);
+                position = center.xy + vec2<f32>(0.0, -sideLength - expandConstant);
+            }
       // Right Triangle
       case 3: {
-        uv = vec2<f32>(1.0, 0.0);
-        position = center.xy +  vec2<f32>(0.0, sideLength + expandConstant);         
-      }
+                uv = vec2<f32>(1.0, 0.0);
+                position = center.xy + vec2<f32>(0.0, sideLength + expandConstant);
+            }
       case 4: {
-        uv = vec2<f32>(0.0, 0.0);
-        position = center.xy + vec2<f32>(sideLength + expandConstant, 0.0);           
-      }
+                uv = vec2<f32>(0.0, 0.0);
+                position = center.xy + vec2<f32>(sideLength + expandConstant, 0.0);
+            }
       default: { // 5
-        uv = vec2<f32>(0.0, 0.0);
-        position = center.xy + vec2<f32>(0.0, -sideLength - expandConstant);  
+                uv = vec2<f32>(0.0, 0.0);
+                position = center.xy + vec2<f32>(0.0, -sideLength - expandConstant);  
       }
     }
-  }
+    }
 
-  if (leftIndex == rightIndex) {
+    if (leftIndex == rightIndex) {
+        return VertexOutput(
+            camera.projectionView * vec4<f32>(position, 0.0, 1.0),
+            0.0,
+            uv,
+            leftColor,
+            rightColor
+        );
+    }
+
     return VertexOutput(
-      camera.projectionView * vec4<f32>(position, 0.0, 1.0),
-      0.0,
-      uv,
-      leftColor,
-      rightColor
+        camera.projectionView * vec4<f32>(position, 0.0, 1.0),
+        dist,
+        uv,
+        leftColor,
+        rightColor
     );
-  }
-
-  return VertexOutput(
-    camera.projectionView * vec4<f32>(position, 0.0, 1.0),
-    dist,
-    uv,
-    leftColor,
-    rightColor
-  );
 }
 
 struct FragmentOutput {
@@ -160,16 +159,28 @@ fn main_fragment(
     @location(2) leftColor: vec3<f32>,
     @location(3) rightColor: vec3<f32>,
 ) -> FragmentOutput {
-  var finalColor: vec3<f32>;
+    var finalColor: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);
 
-  if (uv.x > 0.5) {
-    finalColor = leftColor;
-  } else {
-    finalColor = rightColor;
-  }
+    var newWeight = weight * 2.0;
+    newWeight = log2(newWeight + 1.0);
 
-  finalColor = 0.5 * vec3<f32>(weight) + 0.5 * finalColor;
-  return FragmentOutput(
-    vec4<f32>(finalColor, 1.0)
-  );
+    // finalColor = mix(vec3<f32>(1.0, 0.4509803921568627, 0.4509803921568627), vec3<f32>(0.01, 0.6117647058823529, 1.0), newWeight);
+
+    let colors = array<vec3<f32>, 4>(
+        vec3<f32>(0.0),        
+        vec3<f32>(1.0, 0.0, 0.0),
+        vec3<f32>(1.0, 1.0, 0.0),
+        vec3<f32>(1.0),
+    );
+    if (newWeight < 0.33) {
+        finalColor = mix(colors[0], colors[1], newWeight / 0.33);
+    } else if (newWeight < 0.66) {
+        finalColor = mix(colors[1], colors[2], (newWeight - 0.33) / 0.33);
+    } else {
+        finalColor = mix(colors[2], colors[3], (newWeight - 0.66) / 0.33);
+    }
+
+    return FragmentOutput(
+        vec4<f32>(finalColor, 1.0)
+    );
 }

@@ -4,6 +4,30 @@ import { ChromatinModel, parsePdb } from "./parsePDB";
 import { toNumber } from "lodash";
 import { vec3 } from "gl-matrix";
 
+export function normalizePoints(points: Array<vec3>): Array<vec3> {
+    // Normalize
+    let max = vec3.clone(points[0]);
+    let min = vec3.clone(points[0]);
+    for (const position of points) {
+        max = vec3.max(max, max, position);
+        min = vec3.min(min, min, position);
+    }
+    const center = vec3.scale(vec3.create(), vec3.add(vec3.create(), min, max), 0.5);
+
+    const centeredPositions = points.map(p => vec3.sub(vec3.create(), p, center));
+
+    max = vec3.sub(vec3.create(), max, center);
+    min = vec3.sub(vec3.create(), min, center);
+
+    const bbSizeLengthsVec3 = vec3.sub(vec3.create(), max, min);
+    const bbSizeLengths = [Math.abs(bbSizeLengthsVec3[0]), Math.abs(bbSizeLengthsVec3[1]), Math.abs(bbSizeLengthsVec3[2])];
+
+    const maxLength = Math.max(...bbSizeLengths);
+    const scale = 1.0 / maxLength;
+
+    return centeredPositions.map(p => vec3.scale(vec3.create(), p, scale));
+}
+
 export const enum FileType {
     PDB,
     CSV,
@@ -135,18 +159,28 @@ function parseCSVToObjects(content: string, config: ParseCSVConfiguration): Pars
 }
 
 export function parseResultToXYZ(parseResult: ParseResultCSV, columns: Array<string | number>): Array<{ x: number, y: number, z: number }> {
-    const positions: Array<{ x: number, y: number, z: number }> = [];
+    let positions: Array<vec3> = [];
 
     for (let i = 0; i < parseResult.rows.length; i++) {
         const row = parseResult.rows[i];
-        positions.push({
-            x: parseFloat(row[columns[0]]),
-            y: parseFloat(row[columns[1]]),
-            z: parseFloat(row[columns[2]])
-        });
+        positions.push([
+            parseFloat(row[columns[0]]),
+            parseFloat(row[columns[1]]),
+            parseFloat(row[columns[2]])
+        ]);
     }
 
-    return positions;
+    console.log(positions);
+
+    positions = normalizePoints(positions);
+
+    return positions.map(v => {
+        return {
+            x: v[0],
+            y: v[1],
+            z: v[2]
+        }
+    });
 }
 
 export function parseResultToSparse1D(parseResult: ParseResultCSV, columns: Array<string | number>): Array<{ from: number, to: number, value: number }> {
