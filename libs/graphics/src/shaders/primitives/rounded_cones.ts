@@ -96,7 +96,7 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32>
     return c.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
-@stage(vertex)
+@vertex
 fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
                @builtin(instance_index) InstanceIndex : u32
 ) -> VertexOutput {
@@ -171,7 +171,7 @@ struct FragmentOutput {
   ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}
 };
 
-@stage(fragment)
+@fragment
 fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
   // Fragment in framebuffer/window coordinates
   var fragmentNormalizedSpace: vec4<f32> = vec4<f32>(vertexOutput.Position.xyz, 1.0); 

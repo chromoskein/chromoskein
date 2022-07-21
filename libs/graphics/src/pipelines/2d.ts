@@ -47,6 +47,7 @@ export function distanceMapPipelineLayout(bindGroupLayouts: BindGroupLayouts): G
 
 export function tadmapPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPURenderPipelineDescriptor {
     return {
+        layout: 'auto',
         vertex: {
             module: shaderModules.tadmap,
             entryPoint: "main_vertex",

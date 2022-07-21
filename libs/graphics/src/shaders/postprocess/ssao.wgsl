@@ -37,7 +37,7 @@ fn ndcToViewSpace(ndc: vec4<f32>) -> vec4<f32> {
   return viewSpace;
 }
 
-@stage(compute) @workgroup_size(8, 8) fn
+@compute @workgroup_size(8, 8) fn
 main(@builtin(global_invocation_id) GlobalInvocationID
      : vec3<u32>) {
   if (f32(GlobalInvocationID.x) >= camera.viewportSize.x ||

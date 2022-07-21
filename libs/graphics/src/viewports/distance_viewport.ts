@@ -177,8 +177,8 @@ export class DistanceViewport {
             device: this.graphicsLibrary.device,
             format: 'bgra8unorm',
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
-            compositingAlphaMode: "opaque",
-            size,
+            alphaMode: "opaque",
+            // size,
         });
 
         this._camera.width = width;

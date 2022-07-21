@@ -15,7 +15,7 @@ struct VertexOutput {
   @location(0) textureCoordinates : vec2<f32>,
 };
 
-@stage(vertex)
+@vertex
 fn main_vertex(@builtin(vertex_index) VertexIndex : u32)
         -> VertexOutput {
     return VertexOutput(
@@ -45,7 +45,7 @@ struct Globals {
 @group(0) @binding(5) var<uniform> globals: Globals;
 @group(0) @binding(6) var<uniform> camera : Camera;
 
-@stage(fragment)
+@fragment
 fn main_fragment(@builtin(position) Position : vec4<f32>,
         @location(0) textureCoordinates : vec2<f32>)
      -> @location(0) vec4<f32> {

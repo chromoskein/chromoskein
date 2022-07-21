@@ -302,8 +302,8 @@ export class Viewport3D {
       device: this.graphicsLibrary.device,
       format: 'bgra8unorm',
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
-      compositingAlphaMode: "opaque",
-      size,
+      alphaMode: 'opaque',
+      // size,
     });
 
     this.depthTexture = this.graphicsLibrary.device.createTexture({

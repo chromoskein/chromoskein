@@ -1,10 +1,10 @@
 // The minimunm distance a ray must travel before we consider an intersection.
 // This is to prevent a ray from intersecting a surface it just bounced off of.
-let minimumRayHitTime: f32 = 0.0001;
+const minimumRayHitTime: f32 = 0.0001;
 
 // after a hit, it moves the ray this far along the normal away from a surface.
 // Helps prevent incorrect intersections when rays bounce off of objects.
-let rayNormalNudge: f32 = 0.001;
+const rayNormalNudge: f32 = 0.001;
 
 struct BoundingBox {
   min: vec3<f32>,
@@ -79,7 +79,7 @@ fn rayBoundingBoxInteresctionT(inverseRay: Ray, boundingBox: BoundingBox) -> Bou
   return BoundingBoxIntersection(maxMin, maxMin <= minMax);
 }
 
-@stage(compute) @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16)
 fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   if (f32(GlobalInvocationID.x) >= camera.viewportSize.x || f32(GlobalInvocationID.y) >= camera.viewportSize.y) {
     return;

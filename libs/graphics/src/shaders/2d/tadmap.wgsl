@@ -44,7 +44,7 @@ struct VertexOutput {
   @location(2) color : vec3<f32>,
 };
 
-@stage(vertex)
+@vertex
 fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
                @builtin(instance_index) InstanceIndex : u32
 ) -> VertexOutput {
@@ -153,7 +153,7 @@ struct FragmentOutput {
   @location(0) color : vec4<f32>,
 };
 
-@stage(fragment)
+@fragment
 fn main_fragment(
                  @location(0) uv: vec2<f32>,
                  @location(1) weight : f32,

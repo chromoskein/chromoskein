@@ -2,7 +2,7 @@
 @group(0) @binding(1) var gBufferAmbientOcclusionFar: texture_2d<f32>;
 @group(0) @binding(2) var gBufferAmbientOcclusionOutput: texture_storage_2d<r32float, write>;
 
-@stage(compute) @workgroup_size(8, 8) fn
+@compute @workgroup_size(8, 8) fn
 main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
   let textureSize: vec2<i32> = textureDimensions(gBufferAmbientOcclusionNear);
 
