@@ -272,57 +272,55 @@ export function TADViewport(props: {
 
     //#region Selections
     // Color selections
-    // useEffect(() => {
-    //     if (!configuration.data) return;
-    //     if (configuration.data.type == DistanceMapDataConfiguration.Selection) return;
+    useEffect(() => {
+        if (!configuration.data) return;
+        if (configuration.data.type == DistanceMapDataConfiguration.Selection) return;
 
-    //     // console.time('tadViewport::selections');
-    //     const selectionColorIndex = 1;
-    //     const colors = [
-    //         vec4.fromValues(1.0, 1.0, 1.0, 1.0),
-    //         vec4.fromValues(1.0, 0.0, 0.0, 1.0)
-    //     ];
-    //     const binsLength = viewport.sizes[0];
-    //     const finalColorIndices = new Uint16Array(binsLength);
-    //     for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
-    //         const selection = selections[selectionIndex][0];
+        // console.time('tadViewport::selections');
+        const selectionColorIndex = 1;
+        const colors = [
+            vec4.fromValues(1.0, 1.0, 1.0, 1.0),
+            vec4.fromValues(1.0, 0.0, 0.0, 1.0)
+        ];
+        const binsLength = viewport.sizes[0];
+        const finalColorIndices = new Uint16Array(binsLength);
+        for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
+            const selection = selections[selectionIndex][0];
 
-    //         colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
-    //         const colorIndex = colors.length - 1;
+            colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
 
+            const selectionID = configuration.selectedSelectionID; 
+            const selectedSelectionIndex = selections.findIndex(s => s[0].id == selectionID);
 
-    //         for (let i = 0; i < binsLength; i++) {
-    //             finalColorIndices[i] = selection.bins[i] * colorIndex + (1 - selection.bins[i]) * finalColorIndices[i];
+            for (let i = 0; i < binsLength; i++) {
+                if (selectedSelectionIndex == selectionIndex && hoveredBins) {
+                    const lodUnit = Math.pow(2, viewport.currentLoD);
+                    const minFrom = hoveredBins.from * lodUnit;
+                    const minTo = hoveredBins.to * lodUnit;
 
-    //             if (hoveredBins) {
-    //                 const lodUnit = Math.pow(2, viewport.currentLoD);
-    //                 const minFrom = hoveredBins.from * lodUnit;
-    //                 const minTo = hoveredBins.to * lodUnit;
+                    if (configuration.tool.type == DistanceViewportToolType.PairSelection) {
+                        if (i >= minFrom && i < minFrom + lodUnit) {
+                            finalColorIndices[i] = colors.length - 1;
+                        }
+                        if (i >= minTo && i < minTo + lodUnit) {
+                            finalColorIndices[i] = colors.length - 1;
+                        }
+                    }
 
-    //                 if (configuration.tool.type == DistanceViewportToolType.PairSelection) {
-    //                     if (i >= minFrom && i < minFrom + lodUnit) {
-    //                         finalColorIndices[i] = selectionColorIndex;
-    //                     }
-    //                     if (i >= minTo && i < minTo + lodUnit) {
-    //                         finalColorIndices[i] = selectionColorIndex;
-    //                     }
-    //                 }
+                    if (configuration.tool.type == DistanceViewportToolType.TriangleSelection) {
+                        if (i >= minFrom && i < minTo + lodUnit) {
+                            finalColorIndices[i] = colors.length - 1;
+                        }
+                    }
 
-    //                 if (configuration.tool.type == DistanceViewportToolType.TriangleSelection) {
-    //                     if (i >= minFrom && i < minTo + lodUnit) {
-    //                         finalColorIndices[i] = selectionColorIndex;
-    //                     }
-    //                 }
+                }
+            }
+        }
 
-    //             }
-
-
-    //         }
-    //     }
-
-    //     viewport.setColors(colors, finalColorIndices);
-    //     // console.timeEnd('tadViewport::selections');
-    // }, [selections, hoveredBins]);
+        console.log(colors);
+        viewport.setColors(colors, finalColorIndices);
+        // console.timeEnd('tadViewport::selections');
+    }, [viewport, configuration.data, configuration.selectedSelectionID, allSelections, selections, hoveredBins]);
 
     // Compute hovered bins
     useEffect(() => {

@@ -2,8 +2,8 @@ import { CameraConfigurationType, Ortho2DCamera, OrthoCameraConfiguration } from
 import { vec2, vec4 } from "gl-matrix";
 import { GraphicsLibrary } from "..";
 
-const squareRadius = 0.7071;
-const squareDiameter = 2.0 * squareRadius;
+export const squareRadius = 0.7071;
+export const squareDiameter = 2.0 * squareRadius;
 
 export class BinPosition {
     from = 0;

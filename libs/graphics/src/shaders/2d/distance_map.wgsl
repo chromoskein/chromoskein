@@ -167,7 +167,7 @@ fn main_fragment(
     // finalColor = mix(vec3<f32>(1.0, 0.4509803921568627, 0.4509803921568627), vec3<f32>(0.01, 0.6117647058823529, 1.0), newWeight);
 
     let colors = array<vec3<f32>, 4>(
-        vec3<f32>(0.0),        
+        vec3<f32>(0.0),
         vec3<f32>(1.0, 0.0, 0.0),
         vec3<f32>(1.0, 1.0, 0.0),
         vec3<f32>(1.0),
@@ -180,7 +180,27 @@ fn main_fragment(
         finalColor = mix(colors[2], colors[3], (newWeight - 0.66) / 0.33);
     }
 
-    return FragmentOutput(
-        vec4<f32>(finalColor, 1.0)
-    );
+    if (all(rightColor == vec3<f32>(1.0)) || all(leftColor == vec3<f32>(1.0))) {
+                return FragmentOutput(
+            vec4<f32>(finalColor, 1.0)
+        );
+    } else {
+        return FragmentOutput(
+            vec4<f32>(leftColor, 1.0)
+        );
+    }
+
+    // if (all(leftColor == rightColor) && all(rightColor != vec3<f32>(1.0))) { 
+    //     return FragmentOutput(
+    //         vec4<f32>(leftColor, 1.0)
+    //     );
+    // } else {
+    //     return FragmentOutput(
+    //         vec4<f32>(finalColor, 1.0)
+    //     );
+    // }
+
+    // return FragmentOutput(
+    //     vec4<f32>(rightColor, 1.0)
+    // );
 }
