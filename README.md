@@ -31,5 +31,9 @@ Run dev server
 
 
 
-### Pages
-Pushing to `main` branch triggers publish on https://visitlab.pages.fi.muni.cz/chromatin/chromoskein/
+### Demo
+Exemplary deployed version of ChromoSkein is available at https://visitlab.pages.fi.muni.cz/chromatin/chromoskein/
+
+A demo workspace with sample dataset can be found under Workspace > Open exemplary workspace
+
+![Demo workspace](app/demo-workspace.png)
