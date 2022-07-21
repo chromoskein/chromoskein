@@ -72,8 +72,6 @@ export function TADViewport(props: {
     const [binGroups, setBinGroups] = useState<Array<Array<number>>>([]);
     const [svgNumbers, setSvgNumbers] = useState<Array<JSX.Element>>([]);
 
-
-
     const updatePositions = () => {
         if (!viewport || !viewport.canvas) {
             return;
@@ -91,7 +89,6 @@ export function TADViewport(props: {
             && previousConfiguration.data.id === configuration.data.id) {
             return;
         }
-
 
         let maxBin = 0;
         if (configuration.data && configuration.data.type === DistanceMapDataConfiguration.Data) {
@@ -120,36 +117,36 @@ export function TADViewport(props: {
             }
         }
 
-        if (configuration.data && configuration.data.type === DistanceMapDataConfiguration.Selection) {
-            const selectedSelection = allSelections.selections.filter(s => s.id == configuration.data!.id).at(0);
+        // if (configuration.data && configuration.data.type === DistanceMapDataConfiguration.Selection) {
+        //     const selectedSelection = allSelections.selections.filter(s => s.id == configuration.data!.id).at(0);
 
-            if (selectedSelection) {
-                const dataID = selectedSelection.dataID;
+        //     if (selectedSelection) {
+        //         const dataID = selectedSelection.dataID;
 
-                const d = data.data.filter(d => d.id === dataID).at(0);
-                if (!d) {
-                    return;
-                }
+        //         const d = data.data.filter(d => d.id === dataID).at(0);
+        //         if (!d) {
+        //             return;
+        //         }
 
-                const values = d.values as Positions3D;
+        //         const values = d.values as Positions3D;
 
-                const positions = [];
-                const binNumbersAnnotation: Array<number> = [];
+        //         const positions = [];
+        //         const binNumbersAnnotation: Array<number> = [];
 
-                for (let i = 0; i < selectedSelection.bins.length; i++) {
-                    if (selectedSelection.bins[i] == 1) {
-                        positions.push(vec4.fromValues(values[i].x, values[i].y, values[i].z, 1.0));
-                        binNumbersAnnotation.push(i);
-                    }
-                }
+        //         for (let i = 0; i < selectedSelection.bins.length; i++) {
+        //             if (selectedSelection.bins[i] == 1) {
+        //                 positions.push(vec4.fromValues(values[i].x, values[i].y, values[i].z, 1.0));
+        //                 binNumbersAnnotation.push(i);
+        //             }
+        //         }
 
-                const groupedBinNumbersAnnotations = groupSubsequentNumbers(binNumbersAnnotation);
-                setBinNumbers(() => binNumbersAnnotation);
-                setBinGroups(() => groupedBinNumbersAnnotations);
-                maxBin = positions.length;
-                viewport.setPositions(positions);
-            }
-        }
+        //         const groupedBinNumbersAnnotations = groupSubsequentNumbers(binNumbersAnnotation);
+        //         setBinNumbers(() => binNumbersAnnotation);
+        //         setBinGroups(() => groupedBinNumbersAnnotations);
+        //         maxBin = positions.length;
+        //         viewport.setPositions(positions);
+        //     }
+        // }
 
         updateConfiguration({
             ...configuration,
@@ -275,69 +272,69 @@ export function TADViewport(props: {
 
     //#region Selections
     // Color selections
-    useEffect(() => {
-        if (!configuration.data) return;
-        if (configuration.data.type == DistanceMapDataConfiguration.Selection) return;
+    // useEffect(() => {
+    //     if (!configuration.data) return;
+    //     if (configuration.data.type == DistanceMapDataConfiguration.Selection) return;
 
-        // console.time('tadViewport::selections');
-        const selectionColorIndex = 1;
-        const colors = [
-            vec4.fromValues(1.0, 1.0, 1.0, 1.0),
-            vec4.fromValues(1.0, 0.0, 0.0, 1.0)
-        ];
-        const binsLength = viewport.sizes[0];
-        const finalColorIndices = new Uint16Array(binsLength);
-        for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
-            const selection = selections[selectionIndex][0];
+    //     // console.time('tadViewport::selections');
+    //     const selectionColorIndex = 1;
+    //     const colors = [
+    //         vec4.fromValues(1.0, 1.0, 1.0, 1.0),
+    //         vec4.fromValues(1.0, 0.0, 0.0, 1.0)
+    //     ];
+    //     const binsLength = viewport.sizes[0];
+    //     const finalColorIndices = new Uint16Array(binsLength);
+    //     for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
+    //         const selection = selections[selectionIndex][0];
 
-            colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
-            const colorIndex = colors.length - 1;
-
-
-            for (let i = 0; i < binsLength; i++) {
-                finalColorIndices[i] = selection.bins[i] * colorIndex + (1 - selection.bins[i]) * finalColorIndices[i];
-
-                if (hoveredBins) {
-                    const lodUnit = Math.pow(2, viewport.currentLoD);
-                    const minFrom = hoveredBins.from * lodUnit;
-                    const minTo = hoveredBins.to * lodUnit;
-
-                    if (configuration.tool.type == DistanceViewportToolType.PairSelection) {
-                        if (i >= minFrom && i < minFrom + lodUnit) {
-                            finalColorIndices[i] = selectionColorIndex;
-                        }
-                        if (i >= minTo && i < minTo + lodUnit) {
-                            finalColorIndices[i] = selectionColorIndex;
-                        }
-                    }
-
-                    if (configuration.tool.type == DistanceViewportToolType.TriangleSelection) {
-                        if (i >= minFrom && i < minTo + lodUnit) {
-                            finalColorIndices[i] = selectionColorIndex;
-                        }
-                    }
-
-                }
+    //         colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
+    //         const colorIndex = colors.length - 1;
 
 
-            }
-        }
+    //         for (let i = 0; i < binsLength; i++) {
+    //             finalColorIndices[i] = selection.bins[i] * colorIndex + (1 - selection.bins[i]) * finalColorIndices[i];
 
-        viewport.setColors(colors, finalColorIndices);
-        // console.timeEnd('tadViewport::selections');
-    }, [selections, hoveredBins]);
+    //             if (hoveredBins) {
+    //                 const lodUnit = Math.pow(2, viewport.currentLoD);
+    //                 const minFrom = hoveredBins.from * lodUnit;
+    //                 const minTo = hoveredBins.to * lodUnit;
+
+    //                 if (configuration.tool.type == DistanceViewportToolType.PairSelection) {
+    //                     if (i >= minFrom && i < minFrom + lodUnit) {
+    //                         finalColorIndices[i] = selectionColorIndex;
+    //                     }
+    //                     if (i >= minTo && i < minTo + lodUnit) {
+    //                         finalColorIndices[i] = selectionColorIndex;
+    //                     }
+    //                 }
+
+    //                 if (configuration.tool.type == DistanceViewportToolType.TriangleSelection) {
+    //                     if (i >= minFrom && i < minTo + lodUnit) {
+    //                         finalColorIndices[i] = selectionColorIndex;
+    //                     }
+    //                 }
+
+    //             }
+
+
+    //         }
+    //     }
+
+    //     viewport.setColors(colors, finalColorIndices);
+    //     // console.timeEnd('tadViewport::selections');
+    // }, [selections, hoveredBins]);
 
     // Compute hovered bins
     useEffect(() => {
         if (!viewport || !isBeingHovered || !mousePosition || !mousePosition.x || !mousePosition.y) {
-            setHoveredBins(null);
-            setHoveredBinRanges(null);
+            setHoveredBins(() => null);
+            setHoveredBinRanges(() => null);
             return;
         }
 
         const hoveredElement = viewport.getHoveredElement(vec2.fromValues(mousePosition.x * window.devicePixelRatio, mousePosition.y * window.devicePixelRatio), viewport.currentLoD);
 
-        setHoveredBins(hoveredElement);
+        setHoveredBins(() => hoveredElement);
 
         if (hoveredElement && viewport.currentLoD > 0) {
             const newRanges: [[number, number], [number, number]] = [[0, 0], [0, 0]];
@@ -349,7 +346,9 @@ export function TADViewport(props: {
                 newRanges[i] = [from, to];
             }
 
-            setHoveredBinRanges(newRanges);
+            setHoveredBinRanges(() => newRanges);
+        } else {
+            setHoveredBinRanges(() => null);
         }
     }, [viewport, mousePosition, mouseScroll, isBeingHovered]);
 
@@ -486,18 +485,20 @@ export function TADViewport(props: {
     }, [viewport, binGroups, hoveredBins, viewport.cameraConfiguration.zoom, viewport.cameraConfiguration.translateX, viewport.cameraConfiguration.translateY]);
     //#endregion
 
+    console.log(hoveredBins, hoveredBinRanges)
+
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onClick={onClick}></canvas>
         <svg style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
             {(viewport && hoveredBins && !hoveredBinRanges) && (
                 <g>
-                    <text x={18} y={34} fontSize={18} fill='white'>{`Bin numbers: [${binNumbers[hoveredBins.from]} × ${binNumbers[hoveredBins.to]}]`}</text>
-                    <text x={18} y={56} fontSize={18} fill='grey'>{`Bin indices: [${hoveredBins.from} × ${hoveredBins.to}]`}</text>
+                    {/* <text x={18} y={34} fontSize={18} fill='white'>{`Bin numbers: [${binNumbers[hoveredBins.from]} × ${binNumbers[hoveredBins.to]}]`}</text> */}
+                    <text x={18} y={34} fontSize={18} fill='white'>Bins: {`[${hoveredBins.from + 1} × ${hoveredBins.to + 1}]`}</text>
                 </g>
 
             )}
             {(viewport && hoveredBinRanges) && (
-                <text x={18} y={34} fontSize={18} fill='white'>[{hoveredBinRanges[0][0]}-{hoveredBinRanges[0][1]}, {hoveredBinRanges[1][0]}-{hoveredBinRanges[1][1]}]</text>
+                <text x={18} y={34} fontSize={18} fill='white'>Bins: [{hoveredBinRanges[0][0] + 1}-{hoveredBinRanges[0][1]} × {hoveredBinRanges[1][0] + 1}-{hoveredBinRanges[1][1]}]</text>
             )}
             {svgNumbers}
         </svg>
