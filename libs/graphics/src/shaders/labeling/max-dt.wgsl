@@ -11,7 +11,8 @@
 // };
 
 struct Parameters {
-  forSelection: u32,
+  forSelection: f32,
+  iteration: f32, //~ iteration id, to catch the first one primarily
 };
 
 // @group(0) @binding(0) var<uniform> camera : Camera; 
@@ -20,53 +21,67 @@ struct Parameters {
 @group(1) @binding(0) var<storage, read_write> dtTexValues: array<vec4<f32>>;
 @group(1) @binding(1) var<storage, read_write> idTexValues: array<vec4<f32>>; //~ this could be just u32, but this buffer is filled by texture copy, so it has all the components
 
-var<workgroup> tileDistances : array<vec3<f32>, 128>;
-var<workgroup> tileIds : array<i32, 128>;
+var<workgroup> tileDistances : array<vec3<f32>, 128>; //~ (seedU, seedV, distance, 1.0)
+// var<workgroup> tileIds : array<i32, 128>;
+var<workgroup> tileIds : array<vec3<f32>, 128>;
 
 var<workgroup> best : array<atomic<i32>, 256>;
 
+// @compute @workgroup_size(64, 1, 1) fn 
 @compute @workgroup_size(8, 8) fn 
 main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>, 
      @builtin(local_invocation_id) LocalInvocationID : vec3<u32>,
      @builtin(workgroup_id) WorkgroupID: vec3<u32>) {
-     if (f32(GlobalInvocationID.x) >= 512.0 ||
-         f32(GlobalInvocationID.y) >= 512.0) {
-          return;
-    }
 
-  let coordinates = vec2<i32>(GlobalInvocationID.xy); //~ range 0..511
-  // let tid = LocalInvocationID.xy;
-  let tid = LocalInvocationID.x;
-  let g_tid = GlobalInvocationID.x;
+  const blockWith = 8;
+  const imageWidth = 512;
+  let tid = LocalInvocationID.y * blockWith + LocalInvocationID.x;
+  let g_tid = GlobalInvocationID.y * imageWidth + GlobalInvocationID.x;
+  //~ getting the (u,v) coordinates of thread
+  let tid_u = GlobalInvocationID.x;
+  let tid_v = GlobalInvocationID.y;
   
   //~ global buffer loads
-  let id = i32(idTexValues[g_tid].x);
+  let idVal = idTexValues[g_tid];
   let dtVal = dtTexValues[g_tid];
   //~ store in shared memory:
   tileDistances[tid] = dtVal.xyz;
-  tileIds[tid] = id;
+  if (u32(parameters.iteration) == 1) {
+    tileIds[tid] = vec3(idVal.x, f32(tid_u), f32(tid_v)); //~ first iteration: save UV
+    // tileIds[tid] = vec3(idVal.x, 123, 456); //~ first iteration: save UV
+  } else {
+    tileIds[tid] = vec3(idVal.xyz); //~ just copy
+    // tileIds[tid] = vec3(idVal.x, 123, 456); //~ just copy
+  }
 
   workgroupBarrier();
 
-  if (id < 0) {
-      return;
-  }
-
-  //~ where should this divergence be? to be most efficient?
-  if (u32(id) != parameters.forSelection) {
-    return;
-  }
-
-  let TODO: i32 = 4;
+  let wantedId = u32(parameters.forSelection);
+  let TODO: i32 = blockWith * blockWith;
   for (var stride: i32 = 1; stride < TODO; stride++) {
     if (i32(tid) % (2*stride) == 0) {
       let distA = tileDistances[tid];
       let distB = tileDistances[i32(tid) + stride];
-      if (distA.z > distB.z) {
-        tileDistances[tid] = distA;
-      } else {
+      let idA = tileIds[tid]; //~ can be: what I want or not (different or -1)
+      let idB = tileIds[i32(tid) + stride];
+      
+      if (u32(idA.x) != wantedId) && (u32(idB.x) == wantedId) {
+        //~ pick B
         tileDistances[tid] = distB;
+        tileIds[tid] = idB;
       }
+      if (u32(idA.x) == wantedId) && (u32(idB.x) != wantedId) {
+        //~ pick A
+        tileDistances[tid] = distA;
+        tileIds[tid] = idA;
+      }
+      if (u32(idA.x) == wantedId) && (u32(idB.x) == wantedId) {
+        if (distB.z > distA.z) {
+          tileDistances[tid] = distB;
+          tileIds[tid] = idB;
+      }
+      }
+
       workgroupBarrier();
     }
   }
@@ -74,9 +89,9 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
 
 
   if (tid == 0) {
-    // dtTexValues[WorkgroupID.x] = vec4(tileDistances[0], 1.0);
-    // idTexValues[WorkgroupID.x] = vec4(tileIds[0]);
-    atomicStore(&(best[0]), i32(123));
+    dtTexValues[WorkgroupID.x] = vec4(tileDistances[0], 1.0);
+    idTexValues[WorkgroupID.x] = vec4(tileIds[0], 1.0);
+    // atomicStore(&(best[0]), i32(123));
   }
  
 }

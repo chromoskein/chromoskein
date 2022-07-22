@@ -108,7 +108,7 @@ export class LabelLayoutGenerator {
             selections: this.selections,
         }
         // const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
-        const labels = await computeMaxDistance_New(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
+        const labelsGPU = await computeMaxDistance_New(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
         const labelsCPU: Label[] = [];
         //~ debug output
         // const maxDistTimeEnd = console.time("maxDistanceCPU");
@@ -121,7 +121,9 @@ export class LabelLayoutGenerator {
         // return this.debug_getRandomLabelPositions();
         // return labels;
         // this.checkDeviceLimits();
-        return labelsCPU;
+        const labels = labelsGPU;
+        // const labels = labelsCPU;
+        return labels;
     }
     //#endregion
 
