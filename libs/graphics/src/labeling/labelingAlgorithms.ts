@@ -234,10 +234,9 @@ export async function computeMaxDistance_New(
     const idTexValuesBuffer = transformTextureToBuffer(globals, idBuffer, 512, 512);
 
     const labels: Label[] = [];
-    const globalsNoSelections = { graphicsLibrary: globals.graphicsLibrary, viewport: globals.viewport };
     //~ for each selection i'm looking for the biggest distance separately in each iteration
     for (const sel of globals.selections) {
-        const lbl = await computeLabelPositionWithMaxDistanceGPU(globalsNoSelections, 
+        const lbl = await computeLabelPositionWithMaxDistanceGPU(globals, 
                                                                 sel, 
                                                                 idTexValuesBuffer, 
                                                                 dtTexValuesBuffer);
@@ -258,15 +257,14 @@ export async function computeLabelPositionWithMaxDistanceGPU(
         {
             graphicsLibrary: GraphicsLibrary,
             viewport: ChromatinViewport,
+            selections: Selection[],
         },
     forSelection: Selection,
     idTexValuesBuffer: GPUBuffer, dtTexValuesBuffer: GPUBuffer): Promise<Label | null> {
     
     //~ bind buffers
     const device = globals.graphicsLibrary.device;
-    const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginComputePass();
-
+    
     const inputBuffersBindGroup = device.createBindGroup({
         label: "Max DT: input buffers bind group",
         layout: globals.graphicsLibrary.bindGroupLayouts.maxDTInputBuffers,
@@ -323,59 +321,70 @@ export async function computeLabelPositionWithMaxDistanceGPU(
         size: resultBufferSize,
         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
-    
+    const wholeIdBufferSize = 4 * 4 * 512 * 512;
+    const debugIdBufferBefore = device.createBuffer({
+        label: "MaxDT: DEBUG before (IDs)",
+        size: wholeIdBufferSize,
+        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+    });
+    const debugIdBufferAfter = device.createBuffer({
+        label: "MaxDT: DEBUG after (IDs)",
+        size: wholeIdBufferSize,
+        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+    });
+
+    const commandEncoder = device.createCommandEncoder();
+
+    //~ debug
+    commandEncoder.copyBufferToBuffer(idTexValuesBuffer, 0, debugIdBufferBefore, 0, wholeIdBufferSize);
+        
     //~ dispatch kernel
+    const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(globals.graphicsLibrary.computePipelines.maxDT);
     passEncoder.setBindGroup(0, paramsBindGroup);
     passEncoder.setBindGroup(1, inputBuffersBindGroup);
 
-    // const ITERATIONS_NUM = 1;
-    const WORKGROUP_SIZE_X = 64; //~ make sure this is what the actual shader has
-    let threadsNum = DOWNSCALED_TEX_SIZE * DOWNSCALED_TEX_SIZE;
+    //~ params
+    const selID = isoSelectionID.unwrap(forSelection.id);
     let iteration = 1;
-    // while (threadsNum >= WORKGROUP_SIZE_X) {
-        {
-            const buffer = new Float32Array(2);
-            const selID = isoSelectionID.unwrap(forSelection.id);
-            buffer.set([selID, iteration], 0);
+    //~ invocation size
+    let threadsNum = DOWNSCALED_TEX_SIZE * DOWNSCALED_TEX_SIZE; //~ currently 512*512 = 262144
+    const threadsPerWorkgroup = 64;
+    // while (threadsNum >= threadsPerWorkgroup) {
+        uploadMaxDistanceKernelParameters(device, parametersBufferGPU, selID, iteration);
 
-            device.queue.writeBuffer(
-                parametersBufferGPU,
-                0,
-                buffer.buffer,
-                buffer.byteOffset,
-                buffer.byteLength,
-            );
-        }
-
-        const workgroupsNum = threadsNum / WORKGROUP_SIZE_X;
+        const workgroupsNum = threadsNum / threadsPerWorkgroup;
         const blockWidth = Math.sqrt(workgroupsNum); //~ defining this in 2D because I need the UVs from thread IDs
         passEncoder.dispatchWorkgroups(blockWidth, blockWidth, 1);
-        // passEncoder.dispatchWorkgroups(workgroupsNum, 1, 1);
 
-        //~ update for next iteration
         iteration += 1;
-        threadsNum = threadsNum / WORKGROUP_SIZE_X;
+        threadsNum = threadsNum / threadsPerWorkgroup; // = workgroupsNum
     // }
-
     passEncoder.end();
+
+    //~ debug
+    commandEncoder.copyBufferToBuffer(idTexValuesBuffer, 0, debugIdBufferAfter, 0, wholeIdBufferSize);
+
+    //~ copy results to staging buffers
     commandEncoder.copyBufferToBuffer(dtTexValuesBuffer, 0, resultBuffer, 0, resultBufferSize);
     commandEncoder.copyBufferToBuffer(idTexValuesBuffer, 0, resultIdBuffer, 0, resultIdBufferSize);
     const commandBuffer = commandEncoder.finish();
     device.queue.submit([commandBuffer]);
 
-    async function readGPUBuffer(buffer: GPUBuffer, size: number): Promise<Float32Array> {
-        await buffer.mapAsync(GPUMapMode.READ, 0, size);
-        const copyArrayBuffer = buffer.getMappedRange(0, size);
-        const data = copyArrayBuffer.slice(0);
-        buffer.unmap();
-        const dataArray = new Float32Array(data);
-        return dataArray;
-    }
-
     //~ reading back the buffer
     const resultDtArray = await readGPUBuffer(resultBuffer, resultBufferSize);
     const resultIdArray = await readGPUBuffer(resultIdBuffer, resultIdBufferSize);
+
+    //~ debug as fuck
+    const debugIdArrayBefore = await readGPUBuffer(debugIdBufferBefore, wholeIdBufferSize);
+    const debugIdArrayAfter = await readGPUBuffer(debugIdBufferAfter, wholeIdBufferSize);
+    // for (let i = 0; i < debugIdArrayBefore.length; i += 4) {
+    //     console.log("%.2f %.2f %.2f %.2f", debugIdArrayBefore[i], 
+    //     debugIdArrayBefore[i+1], debugIdArrayBefore[i+2], debugIdArrayBefore[i+3] );
+    // }
+    // console.log(debugIdArrayBefore);
+    // console.log(debugIdArrayAfter);
+
 
     const regionId = resultIdArray[0] as number;
     const x = resultIdArray[1] as number;
@@ -390,17 +399,44 @@ export async function computeLabelPositionWithMaxDistanceGPU(
         //~ TODO: recalculate to screen/pixel coordinates
         const xScreen = x * (globals.viewport.width / 2.0);
         const yScreen = y * (globals.viewport.height / 2.0);
+
+        const found = globals.selections.find(sel => sel.id == isoSelectionID.wrap(regionId));
+        const labelText = found ? found.name : "<LABEL Error (id: " + regionId + ")>";
+        const labelColor = found ? found.color : { r: 0, g: 0, b: 0, a: 0 };
+
         const lbl = {
             x: xScreen,
             y: yScreen,
             id: regionId,
-            text: "Label test",
-            color: { r: 0, g: 0, b: 0, a: 0 },
+            text: labelText,
+            color: labelColor,
         };
 
         return lbl;
     }
+}
 
+function uploadMaxDistanceKernelParameters(device: GPUDevice, bufferGPU: GPUBuffer, 
+                                selectionId: number, iteration: number): void {
+        const buffer = new Float32Array(2);
+        buffer.set([selectionId, iteration], 0);
+
+        device.queue.writeBuffer(
+            bufferGPU,
+            0,
+            buffer.buffer,
+            buffer.byteOffset,
+            buffer.byteLength,
+        );
+    }
+
+async function readGPUBuffer(buffer: GPUBuffer, size: number): Promise<Float32Array> {
+    await buffer.mapAsync(GPUMapMode.READ, 0, size);
+    const copyArrayBuffer = buffer.getMappedRange(0, size);
+    const data = copyArrayBuffer.slice(0);
+    buffer.unmap();
+    const dataArray = new Float32Array(data);
+    return dataArray;
 }
 
 // export async function computeMaxDistance(globals:

@@ -31,7 +31,8 @@ var<workgroup> best : array<atomic<i32>, 256>;
 @compute @workgroup_size(8, 8) fn 
 main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>, 
      @builtin(local_invocation_id) LocalInvocationID : vec3<u32>,
-     @builtin(workgroup_id) WorkgroupID: vec3<u32>) {
+     @builtin(workgroup_id) WorkgroupID: vec3<u32>,
+     @builtin(num_workgroups) NumWorkgroups: vec3<u32>) {
 
   const blockWith = 8;
   const imageWidth = 512;
@@ -48,15 +49,13 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
   tileDistances[tid] = dtVal.xyz;
   if (u32(parameters.iteration) == 1) {
     tileIds[tid] = vec3(idVal.x, f32(tid_u), f32(tid_v)); //~ first iteration: save UV
-    // tileIds[tid] = vec3(idVal.x, 123, 456); //~ first iteration: save UV
   } else {
     tileIds[tid] = vec3(idVal.xyz); //~ just copy
-    // tileIds[tid] = vec3(idVal.x, 123, 456); //~ just copy
   }
 
   workgroupBarrier();
 
-  let wantedId = u32(parameters.forSelection);
+  let wantedId = i32(parameters.forSelection);
   let TODO: i32 = blockWith * blockWith;
   for (var stride: i32 = 1; stride < TODO; stride++) {
     if (i32(tid) % (2*stride) == 0) {
@@ -65,17 +64,17 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
       let idA = tileIds[tid]; //~ can be: what I want or not (different or -1)
       let idB = tileIds[i32(tid) + stride];
       
-      if (u32(idA.x) != wantedId) && (u32(idB.x) == wantedId) {
+      if (i32(idA.x) != wantedId) && (i32(idB.x) == wantedId) {
         //~ pick B
         tileDistances[tid] = distB;
         tileIds[tid] = idB;
       }
-      if (u32(idA.x) == wantedId) && (u32(idB.x) != wantedId) {
+      if (i32(idA.x) == wantedId) && (i32(idB.x) != wantedId) {
         //~ pick A
         tileDistances[tid] = distA;
         tileIds[tid] = idA;
       }
-      if (u32(idA.x) == wantedId) && (u32(idB.x) == wantedId) {
+      if (i32(idA.x) == wantedId) && (i32(idB.x) == wantedId) {
         if (distB.z > distA.z) {
           tileDistances[tid] = distB;
           tileIds[tid] = idB;
@@ -89,8 +88,9 @@ main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
 
 
   if (tid == 0) {
-    dtTexValues[WorkgroupID.x] = vec4(tileDistances[0], 1.0);
-    idTexValues[WorkgroupID.x] = vec4(tileIds[0], 1.0);
+    let writeIndex = WorkgroupID.y * NumWorkgroups.x + WorkgroupID.x;
+    dtTexValues[writeIndex] = vec4(tileDistances[0], 1.0);
+    idTexValues[writeIndex] = vec4(tileIds[0], 1.0);
     // atomicStore(&(best[0]), i32(123));
   }
  
