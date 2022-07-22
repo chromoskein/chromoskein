@@ -376,6 +376,8 @@ export class Viewport3D {
     const renderPipelines = this.graphicsLibrary.renderPipelines;
     const bindGroupLayouts = this.graphicsLibrary.bindGroupLayouts;
 
+    // console.log(this._canvas, this.width);
+
     //~ Compute Delta Time
     const dt = frametime - this._lastFrametime;
     this._lastFrametime = frametime;
@@ -384,11 +386,13 @@ export class Viewport3D {
       this._context == null ||
       this.depthTexture == null ||
       this.outputTexture == null ||
-      this.gBuffer == null 
-      // this.scene.bvh == null
+      this.gBuffer == null || 
+      this._canvas.width == 0 || this._canvas.height == 0
       ) {
       return;
     }
+
+    // console.log('render ', this._canvas.width);
 
     const textureView = this._context.getCurrentTexture().createView();
 

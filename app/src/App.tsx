@@ -65,6 +65,9 @@ function App(): JSX.Element {
       device.onuncapturederror = (error: GPUUncapturedErrorEvent) => {
         setDeviceError(error);
       };
+      device.lost.then(() => {
+        console.log('device was lost');
+      });
 
       setDeviceError(null);
       setDevice(device);

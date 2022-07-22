@@ -57,7 +57,7 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         roundedConesWriteDepth: device.createRenderPipeline(roundedConesPipelineDescriptor(pipelineLayouts, shaderModules, true)),
         roundedConesDiscardDepth: device.createRenderPipeline(roundedConesPipelineDescriptor(pipelineLayouts, shaderModules, false)),
 
-        tadmap: device.createRenderPipeline(tadmapPipelineDescriptor(pipelineLayouts, shaderModules)),
+        // tadmap: device.createRenderPipeline(tadmapPipelineDescriptor(pipelineLayouts, shaderModules)),
         distanceMap: device.createRenderPipeline(distanceMapPipelineDescriptor(pipelineLayouts, shaderModules)),
 
         passthrough: device.createRenderPipeline(passthroughPipelineDescriptor(pipelineLayouts, shaderModules)),

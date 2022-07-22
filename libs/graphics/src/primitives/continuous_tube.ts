@@ -496,7 +496,7 @@ export class ContinuousTube implements HighLevelStructure {
     }
 
     public setBorderColorsCombined(colors: Array<vec4>): void {
-        if (!this.buffer) {
+        if (!this.buffer || colors.length * 2 < this._points.length) {
             return;
         }
 
