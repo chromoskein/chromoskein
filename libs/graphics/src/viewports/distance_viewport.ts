@@ -117,9 +117,12 @@ export class DistanceViewport {
                 const entry = entries.find((entry: ResizeObserverEntry) => entry.target === parent);
 
                 if (entry instanceof ResizeObserverEntry && entry.devicePixelContentBoxSize) {
-                    this.resize(
-                        entry.devicePixelContentBoxSize[0].inlineSize,
-                        entry.devicePixelContentBoxSize[0].blockSize);
+                    const newWidth = entry.devicePixelContentBoxSize[0].inlineSize;
+                    const newHeight = entry.devicePixelContentBoxSize[0].blockSize;
+
+                    if (newWidth > 0 && newHeight > 0) {
+                        this.resize(newWidth, newHeight);
+                    }
                 }
             });
 
@@ -587,7 +590,7 @@ export class DistanceViewport {
             } else {
                 newSize = evenStrategy ? Math.floor(currentSize / 2) : Math.floor(currentSize / 2) + 1;
             }
-            
+
             const previousOffset = this.globals.offsets[currentLoD - 1];
             const currentOffset = previousOffset + this.globals.sizes[currentLoD - 1];
 
@@ -636,13 +639,13 @@ export class DistanceViewport {
         vec4.transformMat4(result, worldSpace, this._camera.viewProjectionMatrix);
         vec4.scale(result, result, 1.0 / result[3]);
         vec4.scale(result, result, 0.5);
-        
+
         result[0] = result[0] + 0.5;
         result[1] = 1.0 - (result[1] + 0.5);
         result[2] = result[2] + 0.5;
 
         return vec2.fromValues(
-            result[0] * (this.width / window.devicePixelRatio), 
+            result[0] * (this.width / window.devicePixelRatio),
             result[1] * (this.height / window.devicePixelRatio)
         );
     }

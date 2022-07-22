@@ -91,9 +91,12 @@ export class Viewport3D {
         const entry = entries.find((entry: ResizeObserverEntry) => entry.target === parent);
 
         if (entry instanceof ResizeObserverEntry && entry.devicePixelContentBoxSize) {
-          this.resize(
-            entry.devicePixelContentBoxSize[0].inlineSize,
-            entry.devicePixelContentBoxSize[0].blockSize);
+          const newWidth = entry.devicePixelContentBoxSize[0].inlineSize;
+          const newHeight = entry.devicePixelContentBoxSize[0].blockSize;
+
+          if (newWidth > 0 && newHeight > 0) {
+            this.resize(newWidth, newHeight);
+          }
         }
       });
 
