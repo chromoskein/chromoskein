@@ -1,4 +1,5 @@
 import { saveAs } from 'file-saver';
+import { parse } from 'papaparse';
 import { ApplicationState } from './state';
 
 export async function saveToFile(states: ApplicationState): Promise<void> {
@@ -15,7 +16,15 @@ export async function saveToFile(states: ApplicationState): Promise<void> {
 export type TextFile = { name: string, content: string };
 
 export function loadFromJson(json: string): ApplicationState {
-    return JSON.parse(json);
+    const parsed: ApplicationState = JSON.parse(json);
+
+    // Fix TypedArray conversion to Object
+    if (parsed.selections) {
+        for (const selection of parsed.selections.selections) {
+            selection.bins = new Uint16Array(Array.from(Object.values(selection.bins)));
+        }       
+    }
+    return parsed;
 }
 
 export function loadFromFile(file: TextFile): ApplicationState {

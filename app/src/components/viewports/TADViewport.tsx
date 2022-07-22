@@ -317,7 +317,6 @@ export function TADViewport(props: {
             }
         }
 
-        console.log(colors);
         viewport.setColors(colors, finalColorIndices);
         // console.timeEnd('tadViewport::selections');
     }, [viewport, configuration.data, configuration.selectedSelectionID, allSelections, selections, hoveredBins]);
