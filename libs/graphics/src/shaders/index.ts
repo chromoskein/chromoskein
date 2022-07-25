@@ -26,6 +26,7 @@ import ssaoJoin from "./postprocess/ssao_join.wgsl";
 import contours from "./labeling/contours.wgsl";
 import distanceTransform from "./labeling/distance-transform.wgsl";
 import maxDT from "./labeling/max-dt.wgsl";
+import maxDTAtomics from "./labeling/max-dt-atomics.wgsl";
 
 export interface ShaderModules {
     [key: string]: GPUShaderModule;
@@ -73,6 +74,7 @@ export function createShaderModules(device: GPUDevice): ShaderModules {
         contours: device.createShaderModule({ code: contours }),
         distanceTransformStep: device.createShaderModule({ code: distanceTransform }),
         maxDT: device.createShaderModule({ code: maxDT }),
+        maxDTAtomics: device.createShaderModule({ code: maxDTAtomics }),
         //#endregion
     };
 

@@ -342,16 +342,45 @@ export function maxDTInputTexturesBindGroupLayout(): GPUBindGroupLayoutDescripto
                     multisampled: false,
                 }
             },
-            // // Contours (output)
-            // {
-            //     binding: 1,
-            //     visibility: GPUShaderStage.COMPUTE,
-            //     storageTexture: {
-            //         access: 'write-only',
-            //         format: 'rgba32float',
-            //         viewDimension: '2d',
-            //     }
-            // },
+        ],
+    }
+}
+
+export function maxDTInputBuffersBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        label: "Max DT: Input Buffers",
+        entries: [
+            // ID Buffer (input)
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: "storage",
+                }
+            },
+            // Distance transform texture (input)
+            { 
+                binding: 1,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: "storage",
+                }
+            },
+        ],
+    }
+}
+
+export function maxDTParametersBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        label: "Max DT: Parameters",
+        entries: [
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: "uniform",
+                }
+            },
         ],
     }
 }
@@ -371,11 +400,36 @@ export function maxDTCandidatesBufferBindGroupLayout(): GPUBindGroupLayoutDescri
     }
 }
 
+export function maxDTOutputBufferBindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+        label: "Max DT: Output buffer",
+        entries: [
+            {
+                binding: 0,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: {
+                    type: "storage",
+                }
+            },
+        ]
+    }
+}
+
 export function maxDTPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
     return {
         label: "Max DT pipeline layout",
         bindGroupLayouts: [
-            bindGroupLayouts.camera, bindGroupLayouts.maxDTInputTextures, bindGroupLayouts.maxDTCandidatesBuffer,
+            // bindGroupLayouts.camera, bindGroupLayouts.maxDTInputTextures, bindGroupLayouts.maxDTCandidatesBuffer,
+            bindGroupLayouts.maxDTParameters, bindGroupLayouts.maxDTInputBuffers,
+        ]
+    };
+}
+
+export function maxDTAtomicsPipelineLayout(bindGroupLayouts: BindGroupLayouts): GPUPipelineLayoutDescriptor {
+    return {
+        label: "Max DT pipeline layout (atomics version)",
+        bindGroupLayouts: [
+            bindGroupLayouts.maxDTInputTextures, bindGroupLayouts.maxDTOutputBuffer,
         ]
     };
 }
@@ -386,6 +440,17 @@ export function maxDTPipelineDescriptor(pipelineLayouts: PipelineLayouts, shader
         layout: pipelineLayouts.maxDT,
         compute: {
             module: shaderModules.maxDT,
+            entryPoint: "main",
+        }
+    }
+}
+
+export function maxDTAtomicsPipelineDescriptor(pipelineLayouts: PipelineLayouts, shaderModules: ShaderModules): GPUComputePipelineDescriptor {
+    return {
+        label: "Max Distance Transform - atomics version (Labeling)",
+        layout: pipelineLayouts.maxDTAtomics,
+        compute: {
+            module: shaderModules.maxDTAtomics,
             entryPoint: "main",
         }
     }
