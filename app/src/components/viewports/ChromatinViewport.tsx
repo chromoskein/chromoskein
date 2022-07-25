@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, Dispatch } from "react";
 import * as GraphicsModule from "../../modules/graphics";
+import { sasa } from "../../modules/sasa";
 import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, chromatinDataConfigurationEqual, getDefaultViewportSelectionOptions, IChromatinDataConfiguration, ChromatinViewportToolType, ConfigurationActionKind } from "../../modules/storage/models/viewports";
 import { useCustomCompareEffect, useDeepCompareEffect, useMouse, useMouseHovered, usePrevious } from "react-use";
 import { ChromatinIntersection, ChromatinPart, ChromatinRepresentation, ContinuousTube, Sphere, Spheres, CullPlane, BinPosition } from "../../modules/graphics";
@@ -271,7 +272,6 @@ export function ChromatinViewport(props: {
 
             return allColors;
         }
-
         if (configuration.colorMappingMode == '1d-density') {
 
             const data1d: Array<{ chromosome: string, from: number, to: number }> | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
@@ -409,6 +409,25 @@ export function ChromatinViewport(props: {
             const colorScale = chroma.scale('YlGnBu'); //pick better color scale
             setInnerColors(() => mapScaleToChromatin(order, colorScale));
         }
+
+        if (configuration.colorMappingMode == 'sasa') {
+            const globalSasaValues: Array<number> = [];
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const partInfo = chromatineSlices[chromosomeIndex];
+                const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to);
+                globalSasaValues.push(...sasa(chromosomePositions, {
+                    method: 'constant',
+                    constant: 0.1,
+                    probe_size: 0,
+                }, 1));
+            }
+
+
+            const colorScale = chroma.scale(['white', 'green']);
+
+            setInnerColors(() => mapScaleToChromatin(globalSasaValues, colorScale));
+        }
+
 
 
     }, [viewport, globalSelections.selections, configuration.representation, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);

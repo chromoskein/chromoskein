@@ -56,6 +56,11 @@ export function ChromatinViewportConfigurationPanel(props: {
                 key: 'linear-order',
                 id: 'linear-order',
                 text: 'Linear order'
+            },
+            {
+                key: 'sasa',
+                id: 'sasa',
+                text: 'Solvent Accesibility Surface Area'
             }
         ]
     const data3DOptions = data.data
@@ -491,6 +496,29 @@ export function ChromatinViewportConfigurationPanel(props: {
                     }
                 />)
             }</>
+        }
+
+        {configuration.colorMappingMode == 'sasa' && <>
+            <ComboBox
+                label="Method"
+                allowFreeform={false}
+                autoComplete={'on'}
+                options={[{
+                    key: 'generated',
+                    id: 'generated',
+                    text: 'Generated radii'
+                },
+                {
+                    key: 'constant',
+                    id: 'constant',
+                    text: 'Constant radii',
+                }
+                ]}
+                // onChange={setColorMappingData}
+                style={{ marginTop: '8px', padding: '4px' }}
+                shouldRestoreFocus={false}
+            />
+        </>
         }
 
         {configuration.colorMappingMode == '1d-density' && <>
