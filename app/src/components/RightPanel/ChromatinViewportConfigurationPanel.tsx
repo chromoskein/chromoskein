@@ -48,20 +48,25 @@ export function ChromatinViewportConfigurationPanel(props: {
                 text: 'Signals'
             },
             {
-                key: '1d-density',
-                id: '1d-density',
-                text: 'Denisity of annotations'
-            },
-            {
                 key: 'linear-order',
                 id: 'linear-order',
                 text: 'Linear order'
             },
             {
+                key: '1d-density',
+                id: '1d-density',
+                text: 'Denisity of annotations'
+            },
+            {
+                key: '3d-density',
+                id: '3d-density',
+                text: 'Density of bins'
+            },
+            {
                 key: 'sasa',
                 id: 'sasa',
                 text: 'Solvent Accesibility Surface Area'
-            }
+            },
         ]
     const data3DOptions = data.data
         .filter(d => d.type == '3d-positions')
@@ -519,6 +524,18 @@ export function ChromatinViewportConfigurationPanel(props: {
                 shouldRestoreFocus={false}
             />
         </>
+        }
+
+        {configuration.colorMappingMode == '3d-density' && configuration.data &&
+            <Slider
+                label="Probe size"
+                min={0} //minimum distance between any two bins (all will be white but two)
+                max={10} //maximum distance between any two bins (all will be red)
+                step={0.1}
+            // value={toNumber(configuration.data.threed_density_radius)}
+            // showValue={false}
+            // onChange={(value) => setRadius(value)}
+            />
         }
 
         {configuration.colorMappingMode == '1d-density' && <>

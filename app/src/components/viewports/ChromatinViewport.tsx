@@ -15,6 +15,7 @@ import { iso } from "newtype-ts";
 import { quantile } from "simple-statistics";
 import _, { identity } from "lodash";
 import { Spline } from "../../modules/graphics/primitives/spline";
+import { density } from "../../modules/density";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
@@ -411,21 +412,53 @@ export function ChromatinViewport(props: {
         }
 
         if (configuration.colorMappingMode == 'sasa') {
+
+            //TODO: per chromosome or whole chromosome
+
             const globalSasaValues: Array<number> = [];
             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
                 const partInfo = chromatineSlices[chromosomeIndex];
-                const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to);
+                const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
+                console.log(chromosomePositions);
                 globalSasaValues.push(...sasa(chromosomePositions, {
                     method: 'constant',
-                    constant: 0.1,
-                    probe_size: 0,
-                }, 1));
+                    constant: 0.1, // TODO: user setting
+                    probe_size: 0, // TODO: user setting
+                }, 100));
             }
 
+            //TODO: fix underlying bug where the data3d.values sometimes don't contain last bin of the chromosome
+            if (globalSasaValues.length < data3D.values.length) {
+                globalSasaValues.push(globalSasaValues.reduce((a, b) => a + b, 0) / globalSasaValues.length);
+            }
 
             const colorScale = chroma.scale(['white', 'green']);
 
             setInnerColors(() => mapScaleToChromatin(globalSasaValues, colorScale));
+        }
+
+        if (configuration.colorMappingMode == '3d-density') {
+            //TODO: per chromosome or whole chromosome
+
+            const densities: Array<number> = [];
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const partInfo = chromatineSlices[chromosomeIndex];
+                const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
+                densities.push(...density(
+                    chromosomePositions,
+                    0.1 // TODO: user setting
+                ));
+            }
+
+            //TODO: fix underlying bug where the data3d.values sometimes don't contain last bin of the chromosome
+            if (densities.length < data3D.values.length) {
+                densities.push(densities.reduce((a, b) => a + b, 0) / densities.length);
+            }
+            const colorScale = chroma.scale(['white', 'red']);
+
+            setInnerColors(() => mapScaleToChromatin(densities, colorScale));
+
+
         }
 
 
