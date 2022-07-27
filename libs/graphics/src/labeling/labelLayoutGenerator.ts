@@ -100,30 +100,17 @@ export class LabelLayoutGenerator {
         computeDistanceTransform(globals, this.pingTexture, this.pongTexture, this.contoursTexture, this.distanceTransformTexture);
 
         //~ Step 3: get label positions by computing max distance from contour
-        // const labels = await this.computeMaxDistance();
-        // const maxDistTimeStart = console.time("maxDistanceCPU");
-        const maxDistTimeStart = performance.now();
         const globalsWithSelections = {
             ...globals,
             selections: this.selections,
         }
-        // const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+        const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
         // const labelsGPU = await computeMaxDistance_New(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
-        const labelsGPU = await computeMaxDistance_NewUsingAtomics(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
-        const labelsCPU: Label[] = [];
-        //~ debug output
-        // const maxDistTimeEnd = console.time("maxDistanceCPU");
-        // const maxDistTimeEnd = performance.now();
-        // console.log("computeMaxDistanceCPU took: " + (maxDistTimeEnd - maxDistTimeStart) + " ms");
-        // console.log("Labels were recomputed.");
+        // const labelsGPU = await computeMaxDistance_NewUsingAtomics(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
+        // const labelsCPU: Label[] = [];
 
-        // const labels = await computeMaxDistance(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
-
-        // return this.debug_getRandomLabelPositions();
-        // return labels;
-        // this.checkDeviceLimits();
-        const labels = labelsGPU;
-        // const labels = labelsCPU;
+        // const labels = labelsGPU;
+        const labels = labelsCPU;
         return labels;
     }
     //#endregion

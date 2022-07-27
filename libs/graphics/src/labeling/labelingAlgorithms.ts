@@ -123,93 +123,80 @@ export async function computeMaxDistanceCPU(globals:
         selections: Selection[],
     },
     dtTexture: GPUTexture, smallIdTexture: GPUTexture): Promise<Label[]> {
+    const maxDistTimeStart = performance.now();
 
-        //~ TODO: copy dtTexture content to a buffer
-        const dtTextureContent = await getTextureAsArray(globals, dtTexture);
-        // if (!this.smallIDTexture) return [];
-        const smallIdTextureContent = await getTextureAsArray(globals, smallIdTexture);
+    const dtTextureContent = await getTextureAsArray(globals, dtTexture);
+    const smallIdTextureContent = await getTextureAsArray(globals, smallIdTexture);
 
-        if (!globals.selections) 
-        {
-            console.log("No selections!");
-            return [];
-        }
-
-        //~ TODO: loop over pixels and pick best candidates for each region ID
-        type Candidate = {
-            x: number,
-            y: number,
-            dtValue: number,
-            regionId: number,
-        }
-        const candidates = new Array<Candidate>(256);
-        //~ init
-        for (let c = 0; c < 256; c++) {
-            candidates[c] = {x: 0, y: 0, dtValue: 0, regionId: -1};
-        }
-
-        const t = dtTextureContent;
-        const tId = smallIdTextureContent;
-        // const w = 512;
-        const h = 512;
-        for (let i = 0; i < 512; i++) {
-            for (let j = 0; j < 512; j++) {
-                const index = j * (h * 4) + i * 4;
-                const pixelVal = { 
-                    x: t[index + 0], 
-                    y: t[index + 1], 
-                    z: t[index + 2], 
-                    w: t[index + 3]
-                };
-                // const id = pixelVal.w;
-                const id = tId[index + 0];
-                const currentBest = candidates[id];
-                if (!currentBest) continue;
-                if (pixelVal.z > currentBest.dtValue) {
-                    const u = i / 512.0;
-                    const v = j / 512.0;
-                    // const newBest = {x: pixelVal.x, y: pixelVal.y, dtValue: pixelVal.z, regionId: id};
-                    const newBest = { x: u, y: v, dtValue: pixelVal.z, regionId: id };
-                    candidates[id] = newBest;
-                }
-            }
-        }
-
-        //~ debug
-        // candidates[123] = {x: 0, y: 0, dtValue: 321, regionId: 123};
-        // candidates[42] = {x: 0.5, y: 0.5, dtValue: 321, regionId: 42};
-        // candidates[43] = {x: 1.0, y: 1.0, dtValue: 321, regionId: 43};
-
-        // if (!globals.viewport) return [];
-
-        const labels: Label[] = [];
-        for (let c = 0; c < 256; c++) {
-            const candidate = candidates[c];
-            if (candidate.regionId < 0) {
-                continue;
-            } else {
-                const xScreen = candidate.x * (globals.viewport.width / 2.0); //~ the 2 comes here because of window.devicePixelRatio! TODO: make general
-                const yScreen = candidate.y * (globals.viewport.height / 2.0);
-
-                const found = globals.selections.find(sel => sel.id == isoSelectionID.wrap(candidate.regionId));
-                const labelText = found ? found.name : "<LABEL Error (id: "+ candidate.regionId + ")>";
-                const labelColor = found ? found.color : {r: 0, g: 0, b: 0, a: 0};
-
-                const lbl = {
-                    x: xScreen,
-                    y: yScreen,
-                    id: candidate.regionId,
-                    // text: "Label " + candidate.regionId,
-                    text: labelText,
-                    color: labelColor,
-                }
-                labels.push(lbl);
-            }
-        }
-            
-        // return [];
-        return labels;
+    if (!globals.selections) {
+        console.log("No selections!");
+        return [];
     }
+
+    type Candidate = {
+        x: number,
+        y: number,
+        dtValue: number,
+        regionId: number,
+    }
+    const candidates = new Array<Candidate>(256);
+    //~ init
+    for (let c = 0; c < 256; c++) {
+        candidates[c] = { x: 0, y: 0, dtValue: 0, regionId: -1 };
+    }
+
+    const t = dtTextureContent;
+    const tId = smallIdTextureContent;
+    const pixelsNum = 512 * 512;
+    const valuesNum = 4 * pixelsNum; //~ the array has and index for each vec4 component
+    for (let index = 0; index < valuesNum; index += 4) {
+        const pixelVal = {
+            x: t[index + 0],
+            y: t[index + 1],
+            z: t[index + 2],
+            w: t[index + 3]
+        };
+        const id = tId[index + 0];
+        const currentBest = candidates[id];
+        if (!currentBest) continue;
+        const i = (index / 4) % 512;
+        const j = (index / 4) / 512;
+        if (pixelVal.z > currentBest.dtValue) {
+            const u = i / 512.0;
+            const v = j / 512.0;
+            const newBest = { x: u, y: v, dtValue: pixelVal.z, regionId: id };
+            candidates[id] = newBest;
+        }
+    }
+
+    const labels: Label[] = [];
+    for (let c = 0; c < 256; c++) {
+        const candidate = candidates[c];
+        if (candidate.regionId < 0) {
+            continue;
+        } else {
+            const xScreen = candidate.x * (globals.viewport.width / 2.0); //~ the 2 comes here because of window.devicePixelRatio! TODO: make general
+            const yScreen = candidate.y * (globals.viewport.height / 2.0);
+
+            const found = globals.selections.find(sel => sel.id == isoSelectionID.wrap(candidate.regionId));
+            const labelText = found ? found.name : "<LABEL Error (id: " + candidate.regionId + ")>";
+            const labelColor = found ? found.color : { r: 0, g: 0, b: 0, a: 0 };
+
+            const lbl = {
+                x: xScreen,
+                y: yScreen,
+                id: candidate.regionId,
+                text: labelText,
+                color: labelColor,
+            }
+            labels.push(lbl);
+        }
+    }
+    const maxDistTimeEnd = performance.now();
+    console.log("computeMaxDistanceCPU took: " + (maxDistTimeEnd - maxDistTimeStart) + " ms");
+
+    return labels;
+}
 
 export async function computeMaxDistance_NewUsingAtomics(
     globals:
