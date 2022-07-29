@@ -25,6 +25,7 @@ export class LabelLayoutGenerator {
     private labelingEnabled = true;
     private lastFrameLabels: Label[] = [];
     private _selections: Selection[] = [];
+    private debug_useCPUmaxDist = false;
 
     //#region Benchmarking
     // private timestampsQuerySet: GPUQuerySet;
@@ -104,13 +105,14 @@ export class LabelLayoutGenerator {
             ...globals,
             selections: this.selections,
         }
-        // const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
-        const labelsGPU = await computeMaxDistance_GPU(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
-        // const labelsGPU = await computeMaxDistance_NewUsingAtomics(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
-        // const labelsCPU: Label[] = [];
-
-        const labels = labelsGPU;
-        // const labels = labelsCPU;
+        let labels: Label[] = [];
+        if (this.debug_useCPUmaxDist) {
+            const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+            labels = labelsCPU;
+        } else {
+            const labelsGPU = await computeMaxDistance_GPU(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
+            labels = labelsGPU;
+        }
         return labels;
     }
     //#endregion
@@ -184,6 +186,10 @@ export class LabelLayoutGenerator {
 
     public disableLabeling(): void {
         this.labelingEnabled = false;
+    }
+
+    public set useMaxDistCPU(use: boolean) {
+        this.debug_useCPUmaxDist = use;
     }
 
     // public set selections(s: string[]) {

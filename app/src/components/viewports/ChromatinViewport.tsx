@@ -558,6 +558,11 @@ export function ChromatinViewport(props: {
         }
     }, [configuration.showLabelingOverlay, layoutGenerator]);
 
+    //~ propagate debug setting: whether labeling uses CPU or GPU implementation for the final step
+    useEffect(() => {
+        layoutGenerator.useMaxDistCPU = configuration.useMaxDistCPU;
+    }, [configuration.useMaxDistCPU, layoutGenerator]);
+
     // Color bins
     useEffect(() => {
         if (!viewport.canvas || !configuration.data) {

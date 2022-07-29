@@ -344,6 +344,12 @@ export function ChromatinViewportConfigurationPanel(props: {
             showLabelingOverlay: !configuration.showLabelingOverlay,
         });
     }
+    const handleUseMaxDistCPUChange = () => {
+        updateConfiguration({
+            ...configuration,
+            useMaxDistCPU: !configuration.useMaxDistCPU,
+        });
+    }
     const handleShowLabelAnchorsChange = () => {
         updateConfiguration({
             ...configuration,
@@ -664,6 +670,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         <Separator></Separator>
         <Text nowrap block variant='large'>Labeling</Text>
         <Checkbox label="Show labels" checked={configuration.showLabelingOverlay} onChange={handleShowLabelingOverlayChange} />
+        <Checkbox label="Max Dist on CPU" checked={configuration.useMaxDistCPU} onChange={handleUseMaxDistCPUChange} />
 
         <Separator></Separator>
         <Checkbox label="Show anchors" checked={configuration.showLabelAnchors} onChange={handleShowLabelAnchorsChange} />

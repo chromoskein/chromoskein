@@ -110,6 +110,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     showDebugViewport: boolean;
     showLabelingOverlay: boolean;
     showLabelAnchors: boolean;
+    useMaxDistCPU: boolean;
 }
 
 export function chromatinDataConfigurationEqual(d1: IChromatinDataConfiguration, d2: IChromatinDataConfiguration): boolean {
@@ -181,5 +182,6 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         showDebugViewport: false,
         showLabelingOverlay: false,
         showLabelAnchors: false,
+        useMaxDistCPU: false,
     } as ChromatinViewportConfiguration;
 }
