@@ -360,7 +360,8 @@ export class Viewport3D {
       selectionIDs: this.graphicsLibrary.device.createTexture({
         label: "Selection ID (gBuffer)",
         size,
-        format: 'r32float', //~ make the most compact possible: 'r8unorm'???
+        // format: 'r32float', //~ make the most compact possible: 'r8unorm'???
+        format: 'rgba32float', //~ make the most compact possible: 'r8unorm'???
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
       }),
       globals: {

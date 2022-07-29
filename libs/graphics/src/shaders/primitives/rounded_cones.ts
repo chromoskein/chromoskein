@@ -336,13 +336,19 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
       }
   }
 
+  //~ DK: getting UVs of the fragment:
+  var fragmentScreenSpace = vec2<f32>(0, 0);
+  fragmentScreenSpace.x = fragmentNormalizedSpace.x / 2.0 + 0.5;
+  fragmentScreenSpace.y = fragmentNormalizedSpace.y / 2.0 + 0.5;
+
   // Final write
   return FragmentOutput(
     ${writeDepth ? 'depth.z,' : ''}
     // dot(normal.xyz, normalize(camera.position.xyz - intersection.xyz)) * color,
     color,
     ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-    ${writeDepth ? 'vec4<f32>(selectionId, 0.0, 0.0, 1.0),' : '' }
+    ${writeDepth ? 'vec4<f32>(selectionId, fragmentScreenSpace.x, fragmentScreenSpace.y, 1.0),' : '' }
+ 
     // ${writeDepth ? 'vec4<f32>(3.0, 0.0, 0.0, 1.0),' : '' }
   );  
 }

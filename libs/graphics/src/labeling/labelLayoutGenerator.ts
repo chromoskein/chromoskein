@@ -1,7 +1,7 @@
 import { GraphicsLibrary } from "..";
 import {getRandomInt} from "../utils";
 import { ChromatinViewport } from "../viewports";
-import { computeContours, computeDistanceTransform, computeMaxDistanceCPU, computeMaxDistance_New, computeMaxDistance_NewUsingAtomics } from "./labelingAlgorithms";
+import { computeContours, computeDistanceTransform, computeMaxDistanceCPU, computeMaxDistance_GPU, computeMaxDistance_NewUsingAtomics } from "./labelingAlgorithms";
 import { Label } from "./label";
 import { Selection } from "../../storage/models/selections";
 
@@ -104,13 +104,13 @@ export class LabelLayoutGenerator {
             ...globals,
             selections: this.selections,
         }
-        const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
-        // const labelsGPU = await computeMaxDistance_New(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
+        // const labelsCPU = await computeMaxDistanceCPU(globalsWithSelections, this.distanceTransformTexture, this.smallIDTexture);
+        const labelsGPU = await computeMaxDistance_GPU(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
         // const labelsGPU = await computeMaxDistance_NewUsingAtomics(globalsWithSelections, this.smallIDTexture, this.distanceTransformTexture);
         // const labelsCPU: Label[] = [];
 
-        // const labels = labelsGPU;
-        const labels = labelsCPU;
+        const labels = labelsGPU;
+        // const labels = labelsCPU;
         return labels;
     }
     //#endregion

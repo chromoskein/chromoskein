@@ -49,7 +49,8 @@ const gBufferOutputsWithID = (writeDepth: boolean): Array<GPUColorTargetState> =
     },
     //~ Selection ID
     {
-        format: "r32float",
+        // format: "r32float",
+        format: "rgba32float",
     }
 ] : [
     // Color
