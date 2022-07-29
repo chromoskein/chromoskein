@@ -551,18 +551,18 @@ export function ChromatinViewport(props: {
 
     //~ Turn label computation on/off (to save computation when label overlay is anyway disabled)
     useEffect(() => {
-        if (configuration.showLabelingOverlay) {
+        if (configuration.labeling.showLabelingOverlay) {
             layoutGenerator.enableLabeling();
         } else {
             layoutGenerator.disableLabeling();
         }
-    }, [configuration.showLabelingOverlay, layoutGenerator]);
+    }, [configuration.labeling.showLabelingOverlay, layoutGenerator]);
 
     //~ propagate debug setting: whether labeling uses CPU or GPU implementation for the final step
     useEffect(() => {
-        layoutGenerator.useMaxDistCPU = configuration.useMaxDistCPU;
-    }, [configuration.useMaxDistCPU, layoutGenerator]);
-
+        layoutGenerator.useMaxDistCPU = configuration.labeling.useMaxDistCPU;
+    }, [configuration.labeling.useMaxDistCPU, layoutGenerator]);
+    
     // Color bins
     useEffect(() => {
         if (!viewport.canvas || !configuration.data) {
@@ -911,11 +911,11 @@ export function ChromatinViewport(props: {
 
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas data-tip data-for='tooltip' ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden' }} tabIndex={1} onClick={() => onClick()}></canvas>
-        {configuration.showDebugViewport && (
-            <LabelingDebugViewport graphicsLibrary={props.graphicsLibrary} viewport={viewport} labelingGenerator={layoutGenerator}></LabelingDebugViewport>
+        {configuration.labeling.showDebugViewport && (
+            <LabelingDebugViewport graphicsLibrary={props.graphicsLibrary} viewport={viewport} labelingGenerator={layoutGenerator} shownTexture={configuration.labeling.shownDebugTexture}></LabelingDebugViewport>
         )}
-        {configuration.showLabelingOverlay && (
-            <LabelingOverlay labels={labels} configuration={{showAnchors: configuration.showLabelAnchors,}}></LabelingOverlay>
+        {configuration.labeling.showLabelingOverlay && (
+            <LabelingOverlay labels={labels} configuration={{showAnchors: configuration.labeling.showLabelAnchors,}}></LabelingOverlay>
         )}
     </div>
     );

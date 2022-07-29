@@ -6,7 +6,7 @@ import './RightPanel.scss';
 import { ChromatinRepresentation, SmoothCamera, SmoothCameraConfiguration } from "../../modules/graphics";
 import { Text } from '@fluentui/react/lib/Text';
 
-import { ChromatinViewportAggregationFunction, ChromatinViewportColorMappingMode, ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, TooltipNumericAggregation, TooltipTextAggregation, ViewportConfigurationType } from '../../modules/storage/models/viewports';
+import { ChromatinViewportAggregationFunction, ChromatinViewportColorMappingMode, ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, LabelingDebugTexture, TooltipNumericAggregation, TooltipTextAggregation, ViewportConfigurationType } from '../../modules/storage/models/viewports';
 import { BinPositionsData, DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration, useSelections, useViewportName } from "../hooks";
@@ -156,6 +156,17 @@ export function ChromatinViewportConfigurationPanel(props: {
             { key: 'count', id: 'count', text: 'Count' },
         ]
 
+    const labelingDebugTextureOptions: Array<
+        {
+            key: LabelingDebugTexture,
+            id: string,
+            text: string
+        }> = [
+            { key: 'id', id: 'id', text: 'ID Buffer' },
+            { key: 'contours', id: 'contours', text: 'Contours' },
+            { key: 'dt', id: 'dt', text: 'Distance Transform' },
+        ]
+
 
     const [isBackgroundColorCalloutVisible, setIsBackgroundColorCalloutVisible] = useState<boolean>(false);
 
@@ -292,6 +303,22 @@ export function ChromatinViewportConfigurationPanel(props: {
         }
     }
 
+    const setShownDebugTexture = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+        if (option) {
+            updateConfiguration({
+                ...configuration,
+                labeling: {
+                    ...configuration.labeling,
+                    shownDebugTexture: String(option.key) as LabelingDebugTexture,
+                }
+                // tooltip: {
+                //     ...configuration.tooltip,
+                //     tooltipTextAggregation: String(option.key) as TooltipTextAggregation,
+                // },
+            });
+        }
+    }
+
     const setRadius = (radius: number) => {
         if (!configuration.data) return;
 
@@ -335,25 +362,37 @@ export function ChromatinViewportConfigurationPanel(props: {
     const handleShowDebugViewportChange = () => {
         updateConfiguration({
             ...configuration,
-            showDebugViewport: !configuration.showDebugViewport
+            labeling: {
+                ...configuration.labeling,
+                showDebugViewport: !configuration.labeling.showDebugViewport,
+            }
         });
     }
     const handleShowLabelingOverlayChange = () => {
         updateConfiguration({
             ...configuration,
-            showLabelingOverlay: !configuration.showLabelingOverlay,
+            labeling: {
+                ...configuration.labeling,
+                showLabelingOverlay: !configuration.labeling.showLabelingOverlay,
+            }
         });
     }
     const handleUseMaxDistCPUChange = () => {
         updateConfiguration({
             ...configuration,
-            useMaxDistCPU: !configuration.useMaxDistCPU,
+            labeling: {
+                ...configuration.labeling,
+                useMaxDistCPU: !configuration.labeling.useMaxDistCPU,
+            }
         });
     }
     const handleShowLabelAnchorsChange = () => {
         updateConfiguration({
             ...configuration,
-            showLabelAnchors: !configuration.showLabelAnchors,
+            labeling: {
+                ...configuration.labeling,
+                showLabelAnchors: !configuration.labeling.showLabelAnchors,
+            }
         });
     }
     const representationDropdownOptions = [
@@ -669,12 +708,12 @@ export function ChromatinViewportConfigurationPanel(props: {
 
         <Separator></Separator>
         <Text nowrap block variant='large'>Labeling</Text>
-        <Checkbox label="Show labels" checked={configuration.showLabelingOverlay} onChange={handleShowLabelingOverlayChange} />
-        <Checkbox label="Max Dist on CPU" checked={configuration.useMaxDistCPU} onChange={handleUseMaxDistCPUChange} />
+        <Checkbox label="Show labels" checked={configuration.labeling.showLabelingOverlay} onChange={handleShowLabelingOverlayChange} />
+        <Checkbox label="Max Dist on CPU" checked={configuration.labeling.useMaxDistCPU} onChange={handleUseMaxDistCPUChange} />
 
         <Separator></Separator>
-        <Checkbox label="Show anchors" checked={configuration.showLabelAnchors} onChange={handleShowLabelAnchorsChange} />
-        <Checkbox label="Show debug overlay" styles={{root: { marginTop: '10px'}}} checked={configuration.showDebugViewport} onChange={handleShowDebugViewportChange} />
-        <ComboBox label="Texture" options={[]} />
+        <Checkbox label="Show anchors" checked={configuration.labeling.showLabelAnchors} onChange={handleShowLabelAnchorsChange} />
+        <Checkbox label="Show debug overlay" styles={{root: { marginTop: '10px'}}} checked={configuration.labeling.showDebugViewport} onChange={handleShowDebugViewportChange} />
+        <ComboBox label="Texture" options={labelingDebugTextureOptions} onChange={setShownDebugTexture} />
     </div>
 }

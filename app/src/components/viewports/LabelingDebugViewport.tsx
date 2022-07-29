@@ -1,12 +1,18 @@
 import * as GraphicsModule from "../../modules/graphics";
 import { useEffect, useRef, useState } from "react";
+import { LabelingDebugTexture } from "../../modules/storage/models/viewports";
 
 /**
  * Provides a debug layer able to show intermediate textures from the labeling process. Implemented as a canvas.
  * @param props 
  * @returns 
  */
-export function LabelingDebugViewport(props: {graphicsLibrary: GraphicsModule.GraphicsLibrary, viewport: GraphicsModule.ChromatinViewport, labelingGenerator: GraphicsModule.LabelLayoutGenerator}): JSX.Element {
+export function LabelingDebugViewport(props: {
+    graphicsLibrary: GraphicsModule.GraphicsLibrary,
+    viewport: GraphicsModule.ChromatinViewport,
+    labelingGenerator: GraphicsModule.LabelLayoutGenerator,
+    shownTexture: LabelingDebugTexture,
+}): JSX.Element {
 
     const canvasElement = useRef<HTMLCanvasElement>(null);
     const [labelingDebugViewport, setLabelingDebugViewport] = useState<GraphicsModule.DebugViewport>(() => new GraphicsModule.DebugViewport(props.graphicsLibrary, props.viewport, props.labelingGenerator, canvasElement.current));
@@ -50,6 +56,11 @@ export function LabelingDebugViewport(props: {graphicsLibrary: GraphicsModule.Gr
         labelingDebugViewport.resize(props.viewport.width, props.viewport.height);
         props.labelingGenerator.resizeTextures(props.viewport.width, props.viewport.height);
     }, [labelingDebugViewport, props.labelingGenerator, props.viewport.width, props.viewport.height]);
+
+    //~ on change of shown debug texture
+    useEffect(() => {
+        labelingDebugViewport.shownDebugTexture = props.shownTexture;
+    }, [props.shownTexture, labelingDebugViewport]);
 
     return <canvas ref={canvasElement} tabIndex={-1}></canvas>
     // return <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, pointerEvents: 'none'}} tabIndex={-1}></canvas>

@@ -1,4 +1,5 @@
 import { GraphicsLibrary, LabelLayoutGenerator } from "..";
+import { LabelingDebugTexture } from "../../storage/models/viewports";
 import { ChromatinViewport } from "../viewports/chromatin_viewport";
 
 /**
@@ -8,6 +9,7 @@ export class DebugViewport {
     //~ High-level inputs
     private _mainViewport: ChromatinViewport;
     private _labelingGenerator: LabelLayoutGenerator;
+    private _shownDebugTexture: LabelingDebugTexture;
 
     //~ Low-level internals
     protected graphicsLibrary: GraphicsLibrary;
@@ -23,6 +25,7 @@ export class DebugViewport {
         this._canvas = canvas;
         this._mainViewport = viewport;
         this._labelingGenerator = labelingGenerator;
+        this._shownDebugTexture = 'id';
 
         if (this._canvas == null) return;
 
@@ -96,7 +99,23 @@ export class DebugViewport {
         // console.log("gonna render!");
         const commandEncoder = device.createCommandEncoder();
 
-        const textureToShow = this._mainViewport.getIDBuffer();
+
+        // hereIneedTheDebugViewPortInformation
+        let textureToShow = null;
+        switch (this._shownDebugTexture) {
+            case 'id':
+                textureToShow = this._mainViewport.getIDBuffer();
+                break;
+            case 'contours':
+                textureToShow = this._labelingGenerator.getContoursTexture();
+                break;
+            case 'dt':
+                textureToShow = this._labelingGenerator.getDTTexture();
+                break;
+            default:
+                break;
+        }
+        // const textureToShow = this._mainViewport.getIDBuffer();
         // const textureToShow = this._labelingGenerator.getContoursTexture();
         // const textureToShow = this._labelingGenerator.getDTTexture();
         if (!textureToShow) {
@@ -133,6 +152,9 @@ export class DebugViewport {
     }
 
 
+    public set shownDebugTexture(tex: LabelingDebugTexture) {
+        this._shownDebugTexture = tex;
+    }
 
     public deallocate(): void {
         //~ TODO

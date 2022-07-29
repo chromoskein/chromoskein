@@ -50,6 +50,7 @@ export type ChromatinViewportAggregationFunction = "min" | "max" | "median" | "m
 export type ChromatinViewportColorMappingMode = 'none' | 'centromers' | '1d-numerical' | '1d-density' | 'linear-order' | 'sasa' | '3d-density';
 export type TooltipTextAggregation = 'none' | 'count';
 export type TooltipNumericAggregation = 'none' | 'min' | 'max' | 'median' | 'mean' | 'sum';
+export type LabelingDebugTexture = 'id' | 'contours' | 'dt';
 
 export type Cutaway = {
     name: string,
@@ -107,10 +108,13 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     tool: ChromatinViewportTool | NoViewportTool;
 
     explodedViewScale: number;
-    showDebugViewport: boolean;
-    showLabelingOverlay: boolean;
-    showLabelAnchors: boolean;
-    useMaxDistCPU: boolean;
+    labeling: {
+        showDebugViewport: boolean;
+        showLabelingOverlay: boolean;
+        showLabelAnchors: boolean;
+        useMaxDistCPU: boolean;
+        shownDebugTexture: LabelingDebugTexture,
+    }
 }
 
 export function chromatinDataConfigurationEqual(d1: IChromatinDataConfiguration, d2: IChromatinDataConfiguration): boolean {
@@ -179,9 +183,13 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         },
 
         explodedViewScale: 0.0,
-        showDebugViewport: false,
-        showLabelingOverlay: false,
-        showLabelAnchors: false,
-        useMaxDistCPU: false,
+        labeling: {
+            showDebugViewport: false,
+            showLabelingOverlay: false,
+            showLabelAnchors: false,
+            useMaxDistCPU: false,
+            shownDebugTexture: 'id',
+        },
+
     } as ChromatinViewportConfiguration;
 }
