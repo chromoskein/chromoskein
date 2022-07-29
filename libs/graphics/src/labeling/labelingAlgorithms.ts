@@ -457,6 +457,13 @@ export async function computeLabelPositionWithMaxDistanceGPU(
     const dtValue = resultDtArray[2] as number;
 
     const lbl = makeLabel(globals, regionId, x, y);
+    if (lbl) {
+        if (lbl.id != selID) {
+            // lbl = null;
+            return null;
+        }
+    }
+    
     return lbl;
 }
 
