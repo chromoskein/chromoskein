@@ -115,6 +115,18 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
         useMaxDistCPU: boolean;
         shownDebugTexture: LabelingDebugTexture,
     }
+
+    sasa: {
+        method: 'constant' | 'generated';
+        probeSize: number;
+        accuracy: number;
+        individual: boolean
+    }
+
+    density: {
+        probeSize: number;
+        individual: boolean;
+    }
 }
 
 export function chromatinDataConfigurationEqual(d1: IChromatinDataConfiguration, d2: IChromatinDataConfiguration): boolean {
@@ -190,6 +202,19 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
             useMaxDistCPU: false,
             shownDebugTexture: 'id',
         },
+
+        sasa: {
+            method: 'constant',
+            constant: 0.1,
+            probeSize: 0,
+            accuracy: 100,
+            individual: false
+        },
+
+        density: {
+            probeSize: 0.1,
+            individual: false
+        }
 
     } as ChromatinViewportConfiguration;
 }

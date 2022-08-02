@@ -425,25 +425,35 @@ export function ChromatinViewport(props: {
         }
 
         if (configuration.colorMappingMode == 'sasa') {
-
+            if (configuration.sasa.method == 'generated') {
+                throw "Not implemented"
+            }
             //TODO: per chromosome or whole chromosome
-
             const globalSasaValues: Array<number> = [];
-            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-                const partInfo = chromatineSlices[chromosomeIndex];
-                const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
-                console.log(chromosomePositions);
-                globalSasaValues.push(...sasa(chromosomePositions, {
-                    method: 'constant',
-                    constant: 0.1, // TODO: user setting
-                    probe_size: 0, // TODO: user setting
-                }, 100));
+
+            if (!configuration.sasa.individual) {
+                globalSasaValues.push(...sasa(data3D.values, {
+                    method: configuration.sasa.method,
+                    probe_size: configuration.sasa.probeSize,
+                }, configuration.sasa.accuracy))
+
+            } else {
+                for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                    const partInfo = chromatineSlices[chromosomeIndex];
+                    const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
+                    globalSasaValues.push(...sasa(chromosomePositions, {
+                        method: configuration.sasa.method,
+                        probe_size: configuration.sasa.probeSize,
+                    }, configuration.sasa.accuracy));
+                }
+
+                //TODO: fix underlying bug where the something sometimes don't contain last bin of the chromosome
+                if (globalSasaValues.length < data3D.values.length) {
+                    globalSasaValues.push(globalSasaValues.reduce((a, b) => a + b, 0) / globalSasaValues.length);
+                }
+
             }
 
-            //TODO: fix underlying bug where the data3d.values sometimes don't contain last bin of the chromosome
-            if (globalSasaValues.length < data3D.values.length) {
-                globalSasaValues.push(globalSasaValues.reduce((a, b) => a + b, 0) / globalSasaValues.length);
-            }
 
             const colorScale = chroma.scale(['white', 'green']);
 
@@ -452,21 +462,29 @@ export function ChromatinViewport(props: {
 
         if (configuration.colorMappingMode == '3d-density') {
             //TODO: per chromosome or whole chromosome
-
             const densities: Array<number> = [];
-            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-                const partInfo = chromatineSlices[chromosomeIndex];
-                const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
-                densities.push(...density(
-                    chromosomePositions,
-                    0.1 // TODO: user setting
-                ));
-            }
 
+            if (!configuration.density.individual) {
+                densities.push(...density(data3D.values, configuration.density.probeSize))
+            } else {
+
+                for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                    const partInfo = chromatineSlices[chromosomeIndex];
+                    const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
+                    densities.push(...density(
+                        chromosomePositions,
+                        configuration.density.probeSize // TODO: user setting
+                    ));
+                }
+            }
             //TODO: fix underlying bug where the data3d.values sometimes don't contain last bin of the chromosome
             if (densities.length < data3D.values.length) {
+                console.warn("Fixing bullshit")
+                console.log(densities)
+                console.log(data3D.values)
                 densities.push(densities.reduce((a, b) => a + b, 0) / densities.length);
             }
+
             const colorScale = chroma.scale(['white', 'red']);
 
             setInnerColors(() => mapScaleToChromatin(densities, colorScale));
@@ -476,7 +494,7 @@ export function ChromatinViewport(props: {
 
 
 
-    }, [viewport, globalSelections.selections, configuration.representation, configuration.colorMappingMode, configuration.mapValues, configuration.data, data.data, configuration.chromosomes, configuration.explodedViewScale]);
+    }, [viewport, globalSelections.selections, configuration.representation, configuration.colorMappingMode, configuration.mapValues, configuration.data, configuration.sasa, data.data, configuration.chromosomes, configuration.explodedViewScale, configuration.density]);
 
     // Calculate/Cache border colors (selections)
     useEffect(() => {
@@ -536,7 +554,7 @@ export function ChromatinViewport(props: {
             }
 
             allBorderColors[chromosomeIndex] = chromatinPart.cacheColorArray(finalColors);
-            allBinIds[chromosomeIndex] = binIdsThisChromosome; 
+            allBinIds[chromosomeIndex] = binIdsThisChromosome;
         }
 
         setBorderColors(allBorderColors);
@@ -562,7 +580,7 @@ export function ChromatinViewport(props: {
     useEffect(() => {
         layoutGenerator.useMaxDistCPU = configuration.labeling.useMaxDistCPU;
     }, [configuration.labeling.useMaxDistCPU, layoutGenerator]);
-    
+
     // Color bins
     useEffect(() => {
         if (!viewport.canvas || !configuration.data) {
@@ -915,7 +933,7 @@ export function ChromatinViewport(props: {
             <LabelingDebugViewport graphicsLibrary={props.graphicsLibrary} viewport={viewport} labelingGenerator={layoutGenerator} shownTexture={configuration.labeling.shownDebugTexture}></LabelingDebugViewport>
         )}
         {configuration.labeling.showLabelingOverlay && (
-            <LabelingOverlay labels={labels} configuration={{showAnchors: configuration.labeling.showLabelAnchors,}}></LabelingOverlay>
+            <LabelingOverlay labels={labels} configuration={{ showAnchors: configuration.labeling.showLabelAnchors, }}></LabelingOverlay>
         )}
     </div>
     );

@@ -46,7 +46,6 @@ type RadiusConfiguration = ConstantRadiusConfiguration | GeneratedRadiusConfigur
 
 type ConstantRadiusConfiguration = {
     method: 'constant',
-    constant: number,
     probe_size: number,
 }
 
@@ -65,7 +64,7 @@ export function sasa(bin_positions: Array<Positions3D>, bin_radii_configuration:
     let bin_radii: Array<number> = []
     if (bin_radii_configuration.method == 'constant') {
         bin_radii = Array(bin_positions.length);
-        bin_radii.fill(bin_radii_configuration.constant + bin_radii_configuration.probe_size);
+        bin_radii.fill(bin_radii_configuration.probe_size);
     }
 
     if (bin_radii_configuration.method == 'generated') {

@@ -250,6 +250,20 @@ export function ChromatinViewportConfigurationPanel(props: {
         }
     };
 
+    const setSasaConfiguration = (sasaConfiguration: { method: "constant" | "generated", probeSize: number, accuracy: number, individual: boolean }) => {
+        updateConfiguration({
+            ...configuration,
+            sasa: sasaConfiguration
+        })
+    }
+
+    const setDensityConfiguration = (densityConfiguration: { probeSize: number, individual: boolean }) => {
+        updateConfiguration({
+            ...configuration,
+            density: densityConfiguration
+        })
+    }
+
     const setAggragationFunction = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
         if (option) {
             updateConfiguration({
@@ -582,23 +596,52 @@ export function ChromatinViewportConfigurationPanel(props: {
                     text: 'Constant radii',
                 }
                 ]}
-                // onChange={setColorMappingData}
+                onChange={(e, o) => o && setSasaConfiguration({ ...configuration.sasa, method: o.id as 'generated' | 'constant' })}
                 style={{ marginTop: '8px', padding: '4px' }}
                 shouldRestoreFocus={false}
             />
+            <Slider
+                label="Probe Size"
+                min={0}
+                max={1}
+                step={0.01}
+                value={configuration.sasa.probeSize}
+                showValue={true}
+                onChange={(probeSize) => setSasaConfiguration({ ...configuration.sasa, probeSize })}
+            />
+            <Slider
+                label="Accuracy"
+                min={0}
+                max={1000}
+                step={1}
+                value={configuration.sasa.accuracy}
+                showValue={true}
+                onChange={(accuracy) => setSasaConfiguration({ ...configuration.sasa, accuracy })}
+            />
+            <Checkbox
+                label="Compute for each chromosome individually"
+                checked={configuration.sasa.individual}
+                onChange={(e, individual) => setSasaConfiguration({ ...configuration.sasa, individual: individual ?? false })} />
+
         </>
         }
 
-        {configuration.colorMappingMode == '3d-density' && configuration.data &&
+        {configuration.colorMappingMode == '3d-density' && configuration.data && <>
             <Slider
                 label="Probe size"
                 min={0} //minimum distance between any two bins (all will be white but two)
-                max={10} //maximum distance between any two bins (all will be red)
-                step={0.1}
-            // value={toNumber(configuration.data.threed_density_radius)}
-            // showValue={false}
-            // onChange={(value) => setRadius(value)}
+                max={1} //maximum distance between any two bins (all will be red)
+                step={0.01}
+                value={configuration.density.probeSize}
+                showValue={true}
+                onChange={(probeSize) => setDensityConfiguration({ ...configuration.density, probeSize })}
             />
+            <Checkbox
+                label="Compute for each chromosome individually"
+                checked={configuration.density.individual}
+                onChange={(e, individual) => setDensityConfiguration({ ...configuration.density, individual: individual ?? false })} />
+        </>
+
         }
 
         {configuration.colorMappingMode == '1d-density' && <>
@@ -713,7 +756,7 @@ export function ChromatinViewportConfigurationPanel(props: {
 
         <Separator></Separator>
         <Checkbox label="Show anchors" checked={configuration.labeling.showLabelAnchors} onChange={handleShowLabelAnchorsChange} />
-        <Checkbox label="Show debug overlay" styles={{root: { marginTop: '10px'}}} checked={configuration.labeling.showDebugViewport} onChange={handleShowDebugViewportChange} />
+        <Checkbox label="Show debug overlay" styles={{ root: { marginTop: '10px' } }} checked={configuration.labeling.showDebugViewport} onChange={handleShowDebugViewportChange} />
         <ComboBox label="Texture" options={labelingDebugTextureOptions} onChange={setShownDebugTexture} />
     </div>
 }
