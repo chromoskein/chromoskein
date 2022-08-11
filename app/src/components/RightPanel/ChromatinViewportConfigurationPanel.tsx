@@ -170,7 +170,7 @@ export function ChromatinViewportConfigurationPanel(props: {
 
     const [isBackgroundColorCalloutVisible, setIsBackgroundColorCalloutVisible] = useState<boolean>(false);
 
-    const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer);
+    const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer, 0);
 
     //#region Viewport Settings
     const setBackgroundColor = (event: React.SyntheticEvent<HTMLElement>, color: IColor): void => {
@@ -183,17 +183,17 @@ export function ChromatinViewportConfigurationPanel(props: {
 
     };
 
-    const setColorMappingMode = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
-        if (!configuration || !option) return;
-        updateConfiguration({
-            ...configuration,
-            colorMappingMode: option.key as ChromatinViewportColorMappingMode,
-            mapValues: {
-                ...configuration.mapValues,
-                id: -1,
-            },
-        })
-    }
+    // const setColorMappingMode = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
+    //     if (!configuration || !option) return;
+    //     updateConfiguration({
+    //         ...configuration,
+    //         colorMappingMode: option.key as ChromatinViewportColorMappingMode,
+    //         mapValues: {
+    //             ...configuration.mapValues,
+    //             id: -1,
+    //         },
+    //     })
+    // }
     //#endregion
 
     //#region Data Parts
@@ -213,41 +213,41 @@ export function ChromatinViewportConfigurationPanel(props: {
     const setData3D = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
         if (!configuration || !option) return;
 
-        const selectedDataId: DataID = isoDataID.wrap(option.key as number);
-        const selectedData = data.data.filter(d => d.id == selectedDataId)[0] as BinPositionsData;
+        // const selectedDataId: DataID = isoDataID.wrap(option.key as number);
+        // const selectedData = data.data.filter(d => d.id == selectedDataId)[0] as BinPositionsData;
 
-        updateConfiguration({
-            ...configuration,
-            data: {
-                ...configuration.data,
+        // updateConfiguration({
+        //     ...configuration,
+        //     data: {
+        //         ...configuration.data,
 
-                id: selectedDataId,
+        //         id: selectedDataId,
 
-                representation: ChromatinRepresentation.ContinuousTube,
-                radius: 0.0,
+        //         representation: ChromatinRepresentation.ContinuousTube,
+        //         radius: 0.0,
 
-                selections: [],
-            },
-            chromosomes: new Array(selectedData.chromosomes.length).fill(true),
-            mapValues: {
-                id: -1,
-                aggregationFunction: 'mean'
-            }
-        });
+        //         selections: [],
+        //     },
+        //     chromosomes: new Array(selectedData.chromosomes.length).fill(true),
+        //     mapValues: {
+        //         id: -1,
+        //         aggregationFunction: 'mean'
+        //     }
+        // });
     };
 
     const setColorMappingData = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
-        if (option) {
-            const selectedDataId: number = option.key as number;
+        // if (option) {
+        //     const selectedDataId: number = option.key as number;
 
-            updateConfiguration({
-                ...configuration,
-                mapValues: {
-                    ...configuration.mapValues,
-                    id: selectedDataId,
-                },
-            });
-        }
+        //     updateConfiguration({
+        //         ...configuration,
+        //         mapValues: {
+        //             ...configuration.mapValues,
+        //             id: selectedDataId,
+        //         },
+        //     });
+        // }
     };
 
     const setSasaConfiguration = (sasaConfiguration: { method: "constant" | "generated", probeSize: number, accuracy: number, individual: boolean }) => {
@@ -265,15 +265,15 @@ export function ChromatinViewportConfigurationPanel(props: {
     }
 
     const setAggragationFunction = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
-        if (option) {
-            updateConfiguration({
-                ...configuration,
-                mapValues: {
-                    ...configuration.mapValues,
-                    aggregationFunction: String(option.key) as ChromatinViewportAggregationFunction,
-                },
-            });
-        }
+        // if (option) {
+        //     updateConfiguration({
+        //         ...configuration,
+        //         mapValues: {
+        //             ...configuration.mapValues,
+        //             aggregationFunction: String(option.key) as ChromatinViewportAggregationFunction,
+        //         },
+        //     });
+        // }
     };
 
     const setTooltipData = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
@@ -336,20 +336,13 @@ export function ChromatinViewportConfigurationPanel(props: {
     const setRadius = (radius: number) => {
         if (!configuration.data) return;
 
-        updateConfiguration({
-            ...configuration,
-            data: {
-                ...configuration.data,
-                radius
-            }
-        });
-    }
-
-    const setExplodedViewScale = (scale: number) => {
-        updateConfiguration({
-            ...configuration,
-            explodedViewScale: scale,
-        });
+        // updateConfiguration({
+        //     ...configuration,
+        //     data: {
+        //         ...configuration.data,
+        //         radius
+        //     }
+        // });
     }
     //#endregion
 
@@ -480,7 +473,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         <Separator></Separator>
         <Text nowrap block variant='large'>3D Data</Text>
 
-        <ComboBox
+        {/* <ComboBox
             label=""
             allowFreeform={false}
             autoComplete={'on'}
@@ -490,7 +483,7 @@ export function ChromatinViewportConfigurationPanel(props: {
             selectedKey={configuration.data ? isoDataID.unwrap(configuration.data.id) : null}
             style={{ marginTop: '8px', padding: '4px' }}
             shouldRestoreFocus={false}
-        />
+        /> */}
 
         <Dropdown
             label="Representation"
@@ -501,38 +494,8 @@ export function ChromatinViewportConfigurationPanel(props: {
             options={representationDropdownOptions}
         />
 
-        {configuration.data != null && configuration.chromosomes.length != 0 && (
-            <Stack styles={{ root: { padding: 4 } }}>
-                {configuration.chromosomes.map((v, i) => {
-                    return <div
-                        style={{ width: "max-content" }}
-                        draggable={false}
-                        key={i}
-                        onMouseDown={(e) => handleChromosomeMouseEvent(e, i)}
-                        onMouseEnter={(e) => handleChromosomeMouseEvent(e, i)}>
-                        <Checkbox
-                            label={(data.data.filter(d => d.id == configuration.data?.id)[0] as BinPositionsData).chromosomes[i].name}
-                            checked={v}
-                        />
-                    </div>
-
-                })}
-            </Stack>
-        )
-        }
-
-        <Slider
-            label="Exploded view scale"
-            min={0.0}
-            max={2.0}
-            step={0.01}
-            value={configuration.explodedViewScale}
-            showValue={false}
-            onChange={(value) => setExplodedViewScale(value)}
-        />
-
         {/* 3D DATA REPRESENTATION */}
-        <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
+        {/* <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
         <Text nowrap block variant='large' style={{ marginBottom: '5px' }}>3D Data Visualization</Text>
         <Stack tokens={{ childrenGap: '8px' }}>
@@ -547,22 +510,22 @@ export function ChromatinViewportConfigurationPanel(props: {
             />
             )}
             <CutawaysPart configurationReducer={configurationReducer}></CutawaysPart>
-        </Stack>
+        </Stack> */}
 
         {/*  */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
         <Text nowrap block variant='large'>Color by</Text>
 
-        <ComboBox
+        {/* <ComboBox
             style={{ marginTop: '8px', padding: '4px' }}
             options={colorMappingModes1D}
             onChange={setColorMappingMode}
             selectedKey={configuration.colorMappingMode}
-        />
+        /> */}
 
 
-        {configuration.colorMappingMode == 'centromers' && <>
+        {/* {configuration.colorMappingMode == 'centromers' && <>
             {centromerDataOptions.length <= 0 && ("No more data available.")}
             {
                 centromerDataOptions.length > 0 && (<ComboBox
@@ -578,7 +541,7 @@ export function ChromatinViewportConfigurationPanel(props: {
                     }
                 />)
             }</>
-        }
+        } */}
 
         {configuration.colorMappingMode == 'sasa' && <>
             <ComboBox
@@ -644,7 +607,7 @@ export function ChromatinViewportConfigurationPanel(props: {
 
         }
 
-        {configuration.colorMappingMode == '1d-density' && <>
+        {/* {configuration.colorMappingMode == '1d-density' && <>
             {densityDataOptions.length <= 0 && ("No more data available.")}
             {
                 densityDataOptions.length > 0 && (<ComboBox
@@ -660,9 +623,9 @@ export function ChromatinViewportConfigurationPanel(props: {
                     }
                 />)
             }</>
-        }
+        } */}
 
-        {configuration.colorMappingMode == '1d-numerical' && <>
+        {/* {configuration.colorMappingMode == '1d-numerical' && <>
             {numericDataOptions.length <= 0 && ("No more data available.")}
             {
                 numericDataOptions.length > 0 && (<><ComboBox
@@ -689,8 +652,8 @@ export function ChromatinViewportConfigurationPanel(props: {
                     />
                 </>)
             }</>
+        } */}
 
-        }
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
 
@@ -747,6 +710,7 @@ export function ChromatinViewportConfigurationPanel(props: {
             configurationReducer={configurationReducer}
             dataReducer={props.dataReducer}
             selectionsReducer={props.selectionsReducer}
+            selectedDataIndex={configuration.selectedDatum}
         ></SelectionsPart>
 
         <Separator></Separator>

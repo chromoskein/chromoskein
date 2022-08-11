@@ -25,7 +25,7 @@ export function TADMapViewportConfiguration(props: {
 
     const [viewportName, setViewportName] = useViewportName(props.node, props.configurationsReducer);
 
-    const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer);
+    const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer, 0);
 
     const dataList = data.data.filter(d => d.type == 'sparse-distance-matrix' || d.type == '3d-positions').map(d => {
         return {
@@ -125,6 +125,7 @@ export function TADMapViewportConfiguration(props: {
             configurationReducer={configurationReducer}
             dataReducer={props.dataReducer}
             selectionsReducer={props.selectionsReducer}
+            selectedDataIndex={0}
         ></SelectionsPart>
     </div>
 }

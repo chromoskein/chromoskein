@@ -41,9 +41,51 @@ export type ChromatinViewportTool = ChromatinPointSelection | ChromatinSphereSel
 export interface IChromatinDataConfiguration extends IDataConfiguration {
     id: DataID,
 
-    selections: Array<ViewportSelectionOptions>,
+    chromosomes: Array<boolean>,
+
     representation: ChromatinRepresentation,
+    
     radius: number | null,
+    radiusRange: {
+        min: number,
+        max: number,
+    },
+
+    selections: Array<ViewportSelectionOptions>,
+
+    mapValues: {
+        id: number;
+        aggregationFunction: ChromatinViewportAggregationFunction;
+    },
+
+    showTooltip: boolean;
+    tooltip: {
+        tooltipDataIDs: Array<DataID>,
+        tooltipTextAggregation: TooltipTextAggregation,
+        tooltipNumericAggregation: TooltipNumericAggregation,
+    }
+
+    colorMappingMode: ChromatinViewportColorMappingMode;
+
+    labeling: {
+        showDebugViewport: boolean;
+        showLabelingOverlay: boolean;
+        showLabelAnchors: boolean;
+        useMaxDistCPU: boolean;
+        shownDebugTexture: LabelingDebugTexture,
+    }
+
+    sasa: {
+        method: 'constant' | 'generated';
+        probeSize: number;
+        accuracy: number;
+        individual: boolean
+    }
+
+    density: {
+        probeSize: number;
+        individual: boolean;
+    }
 }
 
 export type ChromatinViewportAggregationFunction = "min" | "max" | "median" | "mean" | 'sum';
@@ -64,15 +106,12 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
 
     camera: OrbitCameraConfiguration | SmoothCameraConfiguration,
 
-    data: IChromatinDataConfiguration | null,
     chromosomes: Array<boolean>,
 
     representation: ChromatinRepresentation,
 
-    mapValues: {
-        id: number;
-        aggregationFunction: ChromatinViewportAggregationFunction;
-    },
+    selectedDatum: number;
+    data: Array<IChromatinDataConfiguration>;
 
     tooltip: {
         tooltipDataIDs: Array<DataID>,
@@ -84,6 +123,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
         radius: number;
     },
 
+    radius: number;
     radiusRange: {
         min: number,
         max: number,
@@ -104,8 +144,6 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     }
 
     colorMappingMode: ChromatinViewportColorMappingMode;
-
-    tool: ChromatinViewportTool | NoViewportTool;
 
     explodedViewScale: number;
     labeling: {
@@ -139,10 +177,12 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         tabName: "Unnamed 3D Viewport",
         tag: "3D",
 
-        data: null,
+        selectedDatum: 0,
+        data: [],
         chromosomes: [],
 
         representation: ChromatinRepresentation.ContinuousTube,
+        radius: 0.0,
 
         selectedSelectionID: null,
 

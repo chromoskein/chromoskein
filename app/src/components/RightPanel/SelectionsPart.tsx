@@ -14,6 +14,7 @@ export interface PropsSelectionsPart<T extends ViewportConfiguration> {
     configurationReducer: ConfigurationReducer<T>,
     dataReducer: [DataState, Dispatch<DataAction>],
     selectionsReducer: [SelectionState, Dispatch<SelectionAction>],
+    selectedDataIndex: number,
 }
 
 export function SelectionsPart<T extends ConfigurationsWithSelections>(props: PropsSelectionsPart<T>): JSX.Element {
@@ -21,7 +22,16 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     const [globalSelections, globalSelectionsDispatch] = props.selectionsReducer;
     const [configuration, updateConfiguration] = props.configurationReducer;
 
-    const selectedDataPartID: DataID | SelectionID | null = configuration.data ? configuration.data.id : null;
+    let selectedDataPartID: DataID | SelectionID | null = null;
+    if (configuration.data) {
+        if (Array.isArray(configuration.data) && configuration.data[props.selectedDataIndex]) {
+            selectedDataPartID = configuration.data[props.selectedDataIndex].id;
+        }
+        
+        if (!Array.isArray(configuration.data)) {
+            selectedDataPartID = configuration.data.id;
+        }
+    }
 
     const selections = props.selections;
     const [renaming, setRenaming] = useState<{ id: SelectionID, newName: string } | null>(null);
@@ -67,21 +77,37 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
 
     }
 
-    const setSelectionVisiblity = (selectionID: SelectionID, visible: boolean) => {
-        if (!configuration.data) return;
+    const setSelectionVisiblity = (selectionID: SelectionID, visible: boolean, dataIndex = 0) => {
+        if (!configuration.data || (Array.isArray(configuration.data) && configuration.data.length === 0)) return;
 
-        const associatedSelectionIndex = configuration.data.selections.findIndex(s => s.selectionID == selectionID);
-        const newData = {
-            ...configuration.data,
-            selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
-        };
+        if (Array.isArray(configuration.data)) {
+            const associatedSelectionIndex = configuration.data[dataIndex].selections.findIndex(s => s.selectionID == selectionID);
+            const newData = {
+                ...configuration.data,
+                selections: configuration.data[dataIndex].selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
+            };
+    
+            newData.selections[associatedSelectionIndex].visible = visible;
+    
+            updateConfiguration({
+                ...configuration,
+                data: newData,
+            });
+        } else {
+            const associatedSelectionIndex = configuration.data.selections.findIndex(s => s.selectionID == selectionID);
+            const newData = {
+                ...configuration.data,
+                selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
+            };
+    
+            newData.selections[associatedSelectionIndex].visible = visible;
+    
+            updateConfiguration({
+                ...configuration,
+                data: newData,
+            });
+        }
 
-        newData.selections[associatedSelectionIndex].visible = visible;
-
-        updateConfiguration({
-            ...configuration,
-            data: newData,
-        });
     }
 
     const removeSelection = (selectionID: SelectionID) => {

@@ -70,21 +70,24 @@ export function useSelections<T extends ConfigurationsWithSelections>(
     dataPartIndex: dataIndex | null,
     configurationReducer: ConfigurationReducer<T>,
     dataReducer: [DataState, Dispatch<DataAction>],
-    selectionsReducer: [SelectionState, Dispatch<SelectionAction>]): Array<[Selection, ViewportSelectionOptions]> {
+    selectionsReducer: [SelectionState, Dispatch<SelectionAction>],
+    selectedDataIndex: number): Array<[Selection, ViewportSelectionOptions]> {
     const [configuration, updateConfiguration] = configurationReducer;
     const [globalSelections, dispatchGlobalSelections] = selectionsReducer;
 
     const [result, setResult] = useState<Array<[Selection, ViewportSelectionOptions]>>([]);
 
     useEffect(() => {
-        if (!configuration.data) {
+        if (!configuration.data || (Array.isArray(configuration.data) && configuration.data.length === 0)) {
             setResult(() => []);
             return;
         }
 
-        const dataPartID = configuration.data.id;
+        const dataPartID = Array.isArray(configuration.data) ? configuration.data[selectedDataIndex] : configuration.data.id;
+        const dataSelections = Array.isArray(configuration.data) ? configuration.data[selectedDataIndex].selections : configuration.data.selections
+
         const selections = dataPartID != null ? globalSelections.selections.filter(selection => selection.dataID === dataPartID) : [];
-        const selectionsAssociatedData: Array<ViewportSelectionOptions> = (dataPartID != null && dataPartIndex != null) ? configuration.data.selections.map(s => { return { ...s } }) : [];
+        const selectionsAssociatedData: Array<ViewportSelectionOptions> = (dataPartID != null && dataPartIndex != null) ? dataSelections.map(s => { return { ...s } }) : [];
 
         if (dataPartIndex == null || dataPartID == null) return;
 
@@ -94,7 +97,7 @@ export function useSelections<T extends ConfigurationsWithSelections>(
         const toRemoveAssociatedDataIds = selectionsAssociatedDataIds.filter(s => !selectionsIDs.includes(s));
         const toAddAssociatedDataIds = selectionsIDs.filter(s => !selectionsAssociatedDataIds.includes(s));
 
-        const newSelectionsAssociatedData = configuration.data.selections.filter(s => !toRemoveAssociatedDataIds.includes(s.selectionID)).map(s => { return { ...s } });
+        const newSelectionsAssociatedData = dataSelections.filter(s => !toRemoveAssociatedDataIds.includes(s.selectionID)).map(s => { return { ...s } });
 
         for (const addID of toAddAssociatedDataIds) {
             newSelectionsAssociatedData.push({
