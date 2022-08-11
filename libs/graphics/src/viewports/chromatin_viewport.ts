@@ -4,10 +4,8 @@ import { Scene } from "../scene";
 import { GraphicsLibrary } from "..";
 import { Viewport3D } from ".";
 import { vec2, vec3, vec4, quat } from "gl-matrix";
-import { BoundingBox, BoundingBoxEmpty, BoundingBoxExtendByPoint, Hit, Ray } from "../shared";
-import { quantile } from 'simple-statistics'
+import { Hit, Ray } from "../shared";
 import { Spline } from "../primitives/spline";
-import { Plane, SectionCuts } from "../sectionCuts"
 
 const CHROMATIN_OBJECT_NAME = 'CHROMATIN';
 
@@ -21,21 +19,23 @@ export type ChromatinRepresentationType = ContinuousTube | Spheres | Spline;
 
 export class ChromatinPart {
   private _chromatinViewport: ChromatinViewport;
+
   private _name: string;
   private _structure: ChromatinRepresentationType;
+
   private _highLevelID: number;
   private _dataId: number;
-  private _chromosomeIndex: number;
+
   private _binsPositions: Array<vec3>;
   private _binsColor: Array<vec4>;
 
-  constructor(chromatinViewport: ChromatinViewport, name: string, structure: ChromatinRepresentationType, highLevelID: number, dataId: number, chromosomeIndex: number, binsPositions: Array<vec3>) {
+  constructor(chromatinViewport: ChromatinViewport, name: string, structure: ChromatinRepresentationType, highLevelID: number, dataId: number, binsPositions: Array<vec3>) {
     this._name = name;
     this._chromatinViewport = chromatinViewport;
     this._structure = structure;
     this._highLevelID = highLevelID;
     this._dataId = dataId;
-    this._chromosomeIndex = chromosomeIndex;
+
     this._binsPositions = binsPositions;
     this._binsColor = new Array<vec4>(this._binsPositions.length);
   }
@@ -46,7 +46,6 @@ export class ChromatinPart {
 
       // Calculate Intersection
       const intersection = vec3.add(vec3.create(), ray.origin, vec3.scale(vec3.create(), ray.direction, hit.distance));
-
 
       // Calculate normal
       const i = this._structure.localOffsetOf(LowLevelStructure.RoundedCone, hit.lowLevelIndex);
@@ -70,18 +69,14 @@ export class ChromatinPart {
       const lengthOnIntersection = vec3.length(vec3.sub(vec3.create(), from, vec3.sub(vec3.create(), intersection, vec3.scale(vec3.create(), normal, radius))));
       const ratio = lengthOnIntersection / capsuleLength;
 
-      if (i == 0) {
-        return 0;
-      }
-
       if (i >= this._binsPositions.length) {
         return this._binsPositions.length - 1;
       }
 
       if (ratio < 0.5) {
-        return i - 1;
-      } else {
         return i;
+      } else {
+        return i + 1;
       }
     } else if (this._structure instanceof Spheres) {
       return this._structure.localOffsetOf(LowLevelStructure.Sphere, hit.lowLevelIndex);
@@ -94,11 +89,11 @@ export class ChromatinPart {
 
   public resetColor(color: GPUColorDict): void {
     if (this._structure instanceof ContinuousTube) {
-      this._structure.resetColorBorder(vec4.fromValues(color.r, color.g, color.b, color.a));
+      this._structure.resetColors(vec4.fromValues(color.r, color.g, color.b, color.a));
     } else if (this._structure instanceof Spheres) {
       this._structure.resetColors(vec4.fromValues(color.r, color.g, color.b, color.a));
     } else if (this._structure instanceof Spline) {
-      this._structure.resetColorBorder(vec4.fromValues(color.r, color.g, color.b, color.a));
+      this._structure.resetColors(vec4.fromValues(color.r, color.g, color.b, color.a));
     }
   }
 
@@ -196,10 +191,6 @@ export class ChromatinPart {
   public get highLevelID(): number {
     return this._highLevelID;
   }
-
-  public get chromosomeIndex(): number {
-    return this._chromosomeIndex;
-  }
 }
 
 export type ChromatinIntersection = {
@@ -216,24 +207,9 @@ export type ChromatinIntersection = {
 
 export class ChromatinViewport extends Viewport3D {
   public _chromatin: Array<ChromatinPart> = [];
+
   private maxId = 0;
   private binPositions: vec3[] = [];
-  private debugRadius = 5.0;
-  // private sectionCuts: { intersections: vec3[], planes: Plane[] } = {
-  //   intersections: [],
-  //   planes: []
-  // }
-  private sectionCuts: SectionCuts = new SectionCuts();
-  // private box: BoundingBox = BoundingBoxEmpty();
-  // private yRange = 0;
-
-  //#region
-  protected debugDisplay = {
-    showBins: true,
-    showPlanes: true,
-    showIntersections: true
-  }
-  //#endregion
 
   constructor(
     graphicsLibrary: GraphicsLibrary,
@@ -241,7 +217,6 @@ export class ChromatinViewport extends Viewport3D {
     scene: Scene | null = null,
     camera: OrbitCamera | SmoothCamera | null = null) {
     super(graphicsLibrary, canvas, scene, camera);
-    // this.calculateSectionCuts();
   }
 
   public clearChromatin(): void {
@@ -252,6 +227,7 @@ export class ChromatinViewport extends Viewport3D {
     for (let i = 0; i < this._chromatin.length; i++) {
       this._scene.removeStructureByID(this._chromatin[i].highLevelID);
     }
+
     this._chromatin = [];
   }
 
@@ -271,12 +247,11 @@ export class ChromatinViewport extends Viewport3D {
    * Adds a part of chromatin to the viewport
    * 
    * @param bins - sequence of points that represent bins of a chromatin part
-   * @param center - whether the supplied data should be centered around point [0, 0, 0]
    * @param dataId - unique id of the supplied data
    * 
    * @returns created structure
    */
-  public addPart(chromosomeName: string, bins: Array<{ x: number, y: number, z: number }>, center = false, dataId: number, chromosomeIndex: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
+  public addPart(chromosomeName: string, bins: Array<{ x: number, y: number, z: number }>, dataId: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
     const pointsVec3 = bins.map(p => vec3.fromValues(p.x, p.y, p.z));
 
     this.binPositions = pointsVec3.map(p => vec3.clone(p));
@@ -316,13 +291,10 @@ export class ChromatinViewport extends Viewport3D {
       structure,
       highLevelID,
       dataId,
-      chromosomeIndex,
       this.binPositions,
     ));
 
     this.maxId++;
-
-    // this.calculateSectionCuts();
 
     return this._chromatin[this._chromatin.length - 1];
   }
@@ -343,36 +315,24 @@ export class ChromatinViewport extends Viewport3D {
     return this._chromatin;
   }
 
-  public getChromatinPartByChromosomeIndex(chromosomeIndex: number): ChromatinPart | null {
-    const chromatinPartIndex = this._chromatin.findIndex(v => v.chromosomeIndex == chromosomeIndex);
-
-    return this._chromatin[chromatinPartIndex];
-  }
-
   public closestIntersectionBin(screenSpacePosition: { x: number, y: number }): ChromatinIntersection | null {
-    // console.time('ChromatinIntersection::closestIntersectionBin');
     const closestIntersection = this.closestIntersection(vec2.fromValues(screenSpacePosition.x, screenSpacePosition.y));
 
     if (closestIntersection == null) {
-      // console.timeEnd('ChromatinIntersection::closestIntersectionBin');
       return null;
     }
 
     const chromatinPart = this._chromatin.find(chromatinPart => chromatinPart.highLevelID == closestIntersection.highLevelIndex);
 
     if (chromatinPart == undefined) {
-      // console.timeEnd('ChromatinIntersection::closestIntersectionBin');
       return null;
     }
 
     const binIndex = chromatinPart.lowLevelIndexToBinIndex(closestIntersection);
 
     if (binIndex == null) {
-      // console.timeEnd('ChromatinIntersection::closestIntersectionBin');
       return null;
     }
-
-    // console.timeEnd('ChromatinIntersection::closestIntersectionBin');
 
     return {
       chromatinPart,
