@@ -3,9 +3,9 @@ import * as GraphicsModule from "../../modules/graphics";
 import { sasa } from "../../modules/sasa";
 import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, getDefaultViewportSelectionOptions, ChromatinViewportToolType } from "../../modules/storage/models/viewports";
 import { useDeepCompareEffect, useMouseHovered, usePrevious } from "react-use";
-import { ChromatinIntersection, ContinuousTube, Sphere, Spheres, CullPlane } from "../../modules/graphics";
+import { ChromatinIntersection, ContinuousTube, Sphere, Spheres, CullPlane, ChromatinRepresentation } from "../../modules/graphics";
 import { vec3, vec4 } from "gl-matrix";
-import { BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "../../modules/storage/models/data";
+import { BEDAnnotations, BEDAnnotation, BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration } from "../hooks";
 import { useKey } from "rooks";
@@ -77,8 +77,7 @@ export function ChromatinViewport(props: {
     useKey(["Shift"], () => setShiftPressed(false), { eventTypes: ["keyup"] });
 
     // 
-    const [innerColors, setInnerColors] = useState<Array<Array<vec4>>>([]);
-    const [borderColors, setBorderColors] = useState<Array<Array<vec4>>>([]);
+    const [colors, setColors] = useState<Array<Array<vec4>>>([]);
     const [binIds, setBinIds] = useState<number[][]>([]); //~ should be equivalent to Array<Array<number>>
 
     // Viewport Setup
@@ -110,22 +109,22 @@ export function ChromatinViewport(props: {
     }, [layoutGenerator, viewport, viewport.width, viewport.height]);
 
     // Camera Update
-    useDeepCompareEffect(() => {
-        viewport.cameraConfiguration = configuration.camera;
-    }, [configuration.camera]);
+    // useDeepCompareEffect(() => {
+    //     viewport.cameraConfiguration = configuration.camera;
+    // }, [configuration.camera]);
 
-    useDeepCompareEffect(() => {
-        if (!viewport.camera || !viewport.canvas) return;
+    // useDeepCompareEffect(() => {
+    //     if (!viewport.camera || !viewport.canvas) return;
 
-        const timer = setTimeout(() => {
-            updateConfiguration({
-                ...configuration,
-                camera: viewport.cameraConfiguration
-            });
-        }, 500)
+    //     const timer = setTimeout(() => {
+    //         updateConfiguration({
+    //             ...configuration,
+    //             camera: viewport.cameraConfiguration
+    //         });
+    //     }, 500)
 
-        return () => clearTimeout(timer);
-    }, [viewport.cameraConfiguration]);
+    //     return () => clearTimeout(timer);
+    // }, [viewport.cameraConfiguration]);
 
     // Disable camera if control is pressed
     useEffect(() => {
@@ -150,46 +149,23 @@ export function ChromatinViewport(props: {
         viewport.clearChromatin();
 
         for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
-            const cofigurationDatumUntyped = data.data.find((d: Data) => d.id == configurationDatum.id);
+            const primaryData = data.data.find((d: Data) => d.id == configurationDatum.id);
+            if (primaryData?.type == '3d-positions') {
+                const datum = primaryData as BinPositionsData;
+                const positions = datum.values;
 
-            if (!cofigurationDatumUntyped || cofigurationDatumUntyped.type != '3d-positions') continue;
+                const chromatinPart = viewport.addPart(datum.name, positions as Positions3D, configurationDatumIndex, configurationDatum.representation, false);
+                chromatinPart.structure.radius = configurationDatum.radius;
+            } else if (primaryData?.type == 'bed-annotation' && configurationDatum.secondaryID) {
+                const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values;
 
-            const datum = cofigurationDatumUntyped as BinPositionsData;
+                if (data3D) {
+                    const positions = (primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => data3D[annotation.from]);
 
-            //#region Recalculate radius range
-            const recalculate = !configurationDatum.radius;
-            let radius = 0.0;
-            if (recalculate || !previousConfiguration || (previousConfiguration && ((previousConfiguration.data && previousConfiguration.data != configuration.data) || !previousConfiguration.data))) {
-                const values = datum.values;
-                const distances = [];
-                for (let i = 0; i < values.length - 1; i++) {
-                    distances.push(
-                        vec3.distance(vec3.fromValues(values[i].x, values[i].y, values[i].z), vec3.fromValues(values[i + 1].x, values[i + 1].y, values[i + 1].z))
-                    );
+                    const chromatinPart = viewport.addPart(primaryData.name, positions as Positions3D, configurationDatumIndex, configurationDatum.representation, false);
+                    chromatinPart.structure.radius = configurationDatum.radius;
                 }
-
-                const quantiles = quantile(distances, [0.05, 0.95]);
-
-                radius = quantiles[0] / 2.0;
-
-                const newData = [...configuration.data];
-                newData[configurationDatumIndex] = {
-                    ...configuration.data[configurationDatumIndex],
-                    radius: quantiles[0] / 4.0,
-                    radiusRange: { min: 0.0, max: quantiles[0] / 2.0 }
-                },
-
-                    updateConfiguration({
-                        ...configuration,
-                        data: newData,
-                    });
             }
-            //#endregion
-        
-            const positions = datum.values;
-
-            const chromatinPart = viewport.addPart(datum.name, positions as Positions3D, isoDataID.unwrap(datum.id), configuration.representation, false);
-            chromatinPart.structure.radius = radius;
         }
 
         viewport.rebuild();
@@ -236,253 +212,267 @@ export function ChromatinViewport(props: {
         })
     }, [viewport, closestIntersection]);
 
-    // Calculate/Cache Inner Colors (centromeres, 1D data mapping)
-    // useEffect(() => {
-    //     if (!viewport || !configuration.data) {
-    //         return;
-    //     }
+    // Calculate/Cache Colors (1D Data Mapping + Selections)
+    useEffect(() => {
+        if (!viewport || !configuration.data) {
+            return;
+        }
 
+        const newColors = new Array(configuration.data.length);
+        for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
+            const data3D = viewport.getChromatinPartByDataId(configurationDatumIndex);
+            let dataMarkers = null;
 
-    //     const datum = configuration.data;
-    //     const data3D = data.data.find(d => d.id == datum.id) as BinPositionsData;
-    //     const chromatineSlices = data3D.chromosomes;
+            if (!data3D) {
+                continue;
+            }
 
-    //     if (configuration.colorMappingMode == "none") {
-    //         setInnerColors(() => []);
-    //     }
+            const binsAmount = data3D.getBinsPositions().length;
 
-    //     const mapScaleToChromatin = (values: Array<number>, scale: chroma.Scale): Array<Array<vec4>> => {
-    //         const ratio = Math.max(...values);
-    //         const valuesNormalized = values.map(v => v / ratio);
+            if (configurationDatum.colorMappingMode == "single-color") {
+                newColors[configurationDatumIndex] = data3D.cacheColorArray(new Array(binsAmount).fill(vec4.fromValues(
+                    configurationDatum.color.r / 255.0,
+                    configurationDatum.color.g / 255.0,
+                    configurationDatum.color.b / 255.0,
+                    1.0
+                )));
+            }
+        }
 
-    //         const allColors: Array<Array<vec4>> = new Array(data3D.chromosomes.length);
+        /*
+        const mapScaleToChromatin = (values: Array<number>, scale: chroma.Scale): Array<Array<vec4>> => {
+            const ratio = Math.max(...values);
+            const valuesNormalized = values.map(v => v / ratio);
 
-    //         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //             const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-    //             if (!chromatinPart) {
-    //                 continue;
-    //             }
+            const allColors: Array<Array<vec4>> = new Array(data3D.chromosomes.length);
 
-    //             const chromosomeBinOffset = chromatineSlices[chromosomeIndex].from;
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+                if (!chromatinPart) {
+                    continue;
+                }
 
-    //             const colors: Array<vec4> = valuesNormalized.slice(chromosomeBinOffset, chromosomeBinOffset + chromatinPart.getBinsPositions().length).map(v => {
-    //                 return scale(v).gl();
-    //             });
+                const chromosomeBinOffset = chromatineSlices[chromosomeIndex].from;
 
-    //             allColors[chromosomeIndex] = chromatinPart.cacheColorArray(colors);
-    //         }
+                const colors: Array<vec4> = valuesNormalized.slice(chromosomeBinOffset, chromosomeBinOffset + chromatinPart.getBinsPositions().length).map(v => {
+                    return scale(v).gl();
+                });
 
-    //         return allColors;
-    //     }
-    //     if (configuration.colorMappingMode == '1d-density') {
+                allColors[chromosomeIndex] = chromatinPart.cacheColorArray(colors);
+            }
 
-    //         const data1d: Array<{ chromosome: string, from: number, to: number }> | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
-    //         if (!data1d) {
-    //             return;
-    //         }
+            return allColors;
+        }
 
-    //         const scale = chroma.scale(['white', 'blue']);
-    //         const countPerBin: Array<number> = Array(data3D.values.length);
-    //         _.fill(countPerBin, 0)
+        if (configuration.colorMappingMode == '1d-density') {
 
-    //         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //             const partInfo = chromatineSlices[chromosomeIndex];
-    //             const chromosomeData1d = data1d.filter(d => d.chromosome == partInfo.name);
-    //             const res = data3D.basePairsResolution;
-    //             for (let binIndex = 0; binIndex < partInfo.to - partInfo.from; binIndex++) {
-    //                 for (const datum of chromosomeData1d) {
-    //                     if (datum.from <= (binIndex + 1) * res && datum.to >= binIndex * res) {
-    //                         countPerBin[binIndex + partInfo.from] += 1;
-    //                     }
-    //                 }
-    //             }
-    //         }
+            const data1d: Array<{ chromosome: string, from: number, to: number }> | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
+            if (!data1d) {
+                return;
+            }
 
-    //         const logCountPerBin = countPerBin.map(v => Math.log(v) + 1);
+            const scale = chroma.scale(['white', 'blue']);
+            const countPerBin: Array<number> = Array(data3D.values.length);
+            _.fill(countPerBin, 0)
 
-    //         setInnerColors(() => mapScaleToChromatin(logCountPerBin, scale));
-    //     }
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const partInfo = chromatineSlices[chromosomeIndex];
+                const chromosomeData1d = data1d.filter(d => d.chromosome == partInfo.name);
+                const res = data3D.basePairsResolution;
+                for (let binIndex = 0; binIndex < partInfo.to - partInfo.from; binIndex++) {
+                    for (const datum of chromosomeData1d) {
+                        if (datum.from <= (binIndex + 1) * res && datum.to >= binIndex * res) {
+                            countPerBin[binIndex + partInfo.from] += 1;
+                        }
+                    }
+                }
+            }
 
-    //     if (configuration.colorMappingMode == '1d-numerical') {
-    //         const data1d: Sparse1DNumericData | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DNumericData | null;
-    //         if (!data1d) {
-    //             return;
-    //         }
+            const logCountPerBin = countPerBin.map(v => Math.log(v) + 1);
 
-    //         const scale = chroma.scale(['white', 'blue']);
-    //         const valuesPerBin: Array<Array<number>> = Array.from(Array(data3D.values.length), () => [])
+            setInnerColors(() => mapScaleToChromatin(logCountPerBin, scale));
+        }
 
-    //         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //             const partInfo = chromatineSlices[chromosomeIndex];
-    //             const chromosomeData1d = data1d.filter(d => d.chromosome == partInfo.name);
-    //             const res = data3D.basePairsResolution;
-    //             for (let binIndex = 0; binIndex < partInfo.to - partInfo.from; binIndex++) {
-    //                 for (const datum of chromosomeData1d) {
-    //                     if (datum.from <= (binIndex + 1) * res && datum.to >= binIndex * res) {
-    //                         valuesPerBin[binIndex + partInfo.from].push(datum.value);
-    //                     }
-    //                 }
-    //             }
-    //         }
+        if (configuration.colorMappingMode == '1d-numerical') {
+            const data1d: Sparse1DNumericData | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Sparse1DNumericData | null;
+            if (!data1d) {
+                return;
+            }
 
+            const scale = chroma.scale(['white', 'blue']);
+            const valuesPerBin: Array<Array<number>> = Array.from(Array(data3D.values.length), () => [])
 
-
-    //         const aggregationFunction: (n: Array<number>) => number | undefined = {
-    //             "min": _.min,
-    //             "max": _.max,
-    //             "mean": _.mean,
-    //             "median": median,
-    //             "sum": _.sum
-    //         }[configuration.mapValues.aggregationFunction]
-    //         const aggregatedValuesPerBin = valuesPerBin.map((vs) => {
-    //             const result = aggregationFunction(vs)
-    //             if (result == null || isNaN(result)) {
-    //                 return 0;
-    //             }
-    //             return result;
-    //         })
-
-
-    //         setInnerColors(() => mapScaleToChromatin(aggregatedValuesPerBin, scale));
-    //     }
-
-    //     if (configuration.colorMappingMode == "centromers") {
-    //         const mapData1D: Positions3D | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Positions3D | null;
-    //         if (!mapData1D) {
-    //             return;
-    //         }
-    //         const centromereBins = new Array(mapData1D.length);
-
-    //         // Normalize centromeres to current bounding box
-    //         const normalizeCenter = data3D.normalizeCenter;
-    //         const normalizeScale = data3D.normalizeScale;
-    //         const centromeres: Array<vec3> = [];
-    //         for (const c of mapData1D) {
-    //             let centromere = vec3.fromValues(c.x, c.y, c.z);
-
-    //             centromere = vec3.sub(vec3.create(), centromere, normalizeCenter);
-    //             centromere = vec3.scale(vec3.create(), centromere, normalizeScale);
-
-    //             centromeres.push(centromere);
-    //         }
-
-    //         // Map centromere 3D position to 1D bin index
-    //         for (let centromereIndex = 0; centromereIndex < centromeres.length; centromereIndex++) {
-    //             let minDistance = 1.0;
-    //             let minIndex = -1;
-
-    //             for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
-    //                 const value = vec3.fromValues(data3D.values[valueIndex].x, data3D.values[valueIndex].y, data3D.values[valueIndex].z);
-
-    //                 const diff = vec3.sub(vec3.create(), centromeres[centromereIndex], value);
-    //                 const distance = vec3.dot(diff, diff);
-
-    //                 if (distance < minDistance) {
-    //                     minDistance = distance;
-    //                     minIndex = valueIndex;
-    //                 }
-    //             }
-
-    //             centromereBins[centromereIndex] = minIndex;
-    //         }
-
-    //         // Map bin to distance
-    //         const distances: Array<number> = [];
-    //         for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
-    //             const distance = Math.min(...centromereBins.map((v) => Math.abs(v - valueIndex)));
-    //             distances.push(distance);
-    //         }
-
-    //         // Color inside with mapping
-    //         // const colorScale = chroma.scale('YlGnBu');
-    //         const colorScale = chroma.scale(['white', 'blue']);
-
-    //         setInnerColors(() => mapScaleToChromatin(distances, colorScale));
-    //     }
-
-    //     if (configuration.colorMappingMode == "linear-order") {
-    //         const order: Array<number> = [];
-    //         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //             const partInfo = chromatineSlices[chromosomeIndex];
-    //             for (let o = 0; o < partInfo.to - partInfo.from + 1; o++) {
-    //                 order.push(o);
-    //             }
-    //         }
-    //         const colorScale = chroma.scale('YlGnBu'); //pick better color scale
-    //         setInnerColors(() => mapScaleToChromatin(order, colorScale));
-    //     }
-
-    //     if (configuration.colorMappingMode == 'sasa') {
-    //         if (configuration.sasa.method == 'generated') {
-    //             throw "Not implemented"
-    //         }
-    //         //TODO: per chromosome or whole chromosome
-    //         const globalSasaValues: Array<number> = [];
-
-    //         if (!configuration.sasa.individual) {
-    //             globalSasaValues.push(...sasa(data3D.values, {
-    //                 method: configuration.sasa.method,
-    //                 probe_size: configuration.sasa.probeSize,
-    //             }, configuration.sasa.accuracy))
-
-    //         } else {
-    //             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //                 const partInfo = chromatineSlices[chromosomeIndex];
-    //                 const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
-    //                 globalSasaValues.push(...sasa(chromosomePositions, {
-    //                     method: configuration.sasa.method,
-    //                     probe_size: configuration.sasa.probeSize,
-    //                 }, configuration.sasa.accuracy));
-    //             }
-
-    //             //TODO: fix underlying bug where the something sometimes don't contain last bin of the chromosome
-    //             if (globalSasaValues.length < data3D.values.length) {
-    //                 globalSasaValues.push(globalSasaValues.reduce((a, b) => a + b, 0) / globalSasaValues.length);
-    //             }
-
-    //         }
-
-
-    //         const colorScale = chroma.scale(['white', 'green']);
-
-    //         setInnerColors(() => mapScaleToChromatin(globalSasaValues, colorScale));
-    //     }
-
-    //     if (configuration.colorMappingMode == '3d-density') {
-    //         //TODO: per chromosome or whole chromosome
-    //         const densities: Array<number> = [];
-
-    //         if (!configuration.density.individual) {
-    //             densities.push(...density(data3D.values, configuration.density.probeSize))
-    //         } else {
-
-    //             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //                 const partInfo = chromatineSlices[chromosomeIndex];
-    //                 const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
-    //                 densities.push(...density(
-    //                     chromosomePositions,
-    //                     configuration.density.probeSize // TODO: user setting
-    //                 ));
-    //             }
-    //         }
-    //         //TODO: fix underlying bug where the data3d.values sometimes don't contain last bin of the chromosome
-    //         if (densities.length < data3D.values.length) {
-    //             console.warn("Fixing bullshit")
-    //             console.log(densities)
-    //             console.log(data3D.values)
-    //             densities.push(densities.reduce((a, b) => a + b, 0) / densities.length);
-    //         }
-
-    //         const colorScale = chroma.scale(['white', 'red']);
-
-    //         setInnerColors(() => mapScaleToChromatin(densities, colorScale));
-
-
-    //     }
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const partInfo = chromatineSlices[chromosomeIndex];
+                const chromosomeData1d = data1d.filter(d => d.chromosome == partInfo.name);
+                const res = data3D.basePairsResolution;
+                for (let binIndex = 0; binIndex < partInfo.to - partInfo.from; binIndex++) {
+                    for (const datum of chromosomeData1d) {
+                        if (datum.from <= (binIndex + 1) * res && datum.to >= binIndex * res) {
+                            valuesPerBin[binIndex + partInfo.from].push(datum.value);
+                        }
+                    }
+                }
+            }
 
 
 
-    // }, [viewport, globalSelections.selections, configuration.representation, configuration.colorMappingMode, configuration.mapValues, configuration.data, configuration.sasa, data.data, configuration.chromosomes, configuration.density]);
+            const aggregationFunction: (n: Array<number>) => number | undefined = {
+                "min": _.min,
+                "max": _.max,
+                "mean": _.mean,
+                "median": median,
+                "sum": _.sum
+            }[configuration.mapValues.aggregationFunction]
+            const aggregatedValuesPerBin = valuesPerBin.map((vs) => {
+                const result = aggregationFunction(vs)
+                if (result == null || isNaN(result)) {
+                    return 0;
+                }
+                return result;
+            })
+
+
+            setInnerColors(() => mapScaleToChromatin(aggregatedValuesPerBin, scale));
+        }
+
+        if (configuration.colorMappingMode == "centromers") {
+            const mapData1D: Positions3D | null = data.data.find(d => d.id == isoDataID.wrap(configuration.mapValues.id))?.values as Positions3D | null;
+            if (!mapData1D) {
+                return;
+            }
+            const centromereBins = new Array(mapData1D.length);
+
+            // Normalize centromeres to current bounding box
+            const normalizeCenter = data3D.normalizeCenter;
+            const normalizeScale = data3D.normalizeScale;
+            const centromeres: Array<vec3> = [];
+            for (const c of mapData1D) {
+                let centromere = vec3.fromValues(c.x, c.y, c.z);
+
+                centromere = vec3.sub(vec3.create(), centromere, normalizeCenter);
+                centromere = vec3.scale(vec3.create(), centromere, normalizeScale);
+
+                centromeres.push(centromere);
+            }
+
+            // Map centromere 3D position to 1D bin index
+            for (let centromereIndex = 0; centromereIndex < centromeres.length; centromereIndex++) {
+                let minDistance = 1.0;
+                let minIndex = -1;
+
+                for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
+                    const value = vec3.fromValues(data3D.values[valueIndex].x, data3D.values[valueIndex].y, data3D.values[valueIndex].z);
+
+                    const diff = vec3.sub(vec3.create(), centromeres[centromereIndex], value);
+                    const distance = vec3.dot(diff, diff);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        minIndex = valueIndex;
+                    }
+                }
+
+                centromereBins[centromereIndex] = minIndex;
+            }
+
+            // Map bin to distance
+            const distances: Array<number> = [];
+            for (let valueIndex = 0; valueIndex < data3D.values.length; valueIndex++) {
+                const distance = Math.min(...centromereBins.map((v) => Math.abs(v - valueIndex)));
+                distances.push(distance);
+            }
+
+            // Color inside with mapping
+            // const colorScale = chroma.scale('YlGnBu');
+            const colorScale = chroma.scale(['white', 'blue']);
+
+            setInnerColors(() => mapScaleToChromatin(distances, colorScale));
+        }
+
+        if (configuration.colorMappingMode == "linear-order") {
+            const order: Array<number> = [];
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const partInfo = chromatineSlices[chromosomeIndex];
+                for (let o = 0; o < partInfo.to - partInfo.from + 1; o++) {
+                    order.push(o);
+                }
+            }
+            const colorScale = chroma.scale('YlGnBu'); //pick better color scale
+            setInnerColors(() => mapScaleToChromatin(order, colorScale));
+        }
+
+        if (configuration.colorMappingMode == 'sasa') {
+            if (configuration.sasa.method == 'generated') {
+                throw "Not implemented"
+            }
+            //TODO: per chromosome or whole chromosome
+            const globalSasaValues: Array<number> = [];
+
+            if (!configuration.sasa.individual) {
+                globalSasaValues.push(...sasa(data3D.values, {
+                    method: configuration.sasa.method,
+                    probe_size: configuration.sasa.probeSize,
+                }, configuration.sasa.accuracy))
+
+            } else {
+                for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                    const partInfo = chromatineSlices[chromosomeIndex];
+                    const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
+                    globalSasaValues.push(...sasa(chromosomePositions, {
+                        method: configuration.sasa.method,
+                        probe_size: configuration.sasa.probeSize,
+                    }, configuration.sasa.accuracy));
+                }
+
+                //TODO: fix underlying bug where the something sometimes don't contain last bin of the chromosome
+                if (globalSasaValues.length < data3D.values.length) {
+                    globalSasaValues.push(globalSasaValues.reduce((a, b) => a + b, 0) / globalSasaValues.length);
+                }
+
+            }
+
+
+            const colorScale = chroma.scale(['white', 'green']);
+
+            setInnerColors(() => mapScaleToChromatin(globalSasaValues, colorScale));
+        }
+
+        if (configuration.colorMappingMode == '3d-density') {
+            //TODO: per chromosome or whole chromosome
+            const densities: Array<number> = [];
+
+            if (!configuration.density.individual) {
+                densities.push(...density(data3D.values, configuration.density.probeSize))
+            } else {
+
+                for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                    const partInfo = chromatineSlices[chromosomeIndex];
+                    const chromosomePositions = data3D.values.slice(partInfo.from, partInfo.to + 1);
+                    densities.push(...density(
+                        chromosomePositions,
+                        configuration.density.probeSize // TODO: user setting
+                    ));
+                }
+            }
+            //TODO: fix underlying bug where the data3d.values sometimes don't contain last bin of the chromosome
+            if (densities.length < data3D.values.length) {
+                console.warn("Fixing bullshit")
+                console.log(densities)
+                console.log(data3D.values)
+                densities.push(densities.reduce((a, b) => a + b, 0) / densities.length);
+            }
+
+            const colorScale = chroma.scale(['white', 'red']);
+
+            setInnerColors(() => mapScaleToChromatin(densities, colorScale));
+
+
+        }
+        */
+
+        setColors(newColors);
+    }, [viewport, globalSelections.selections, configuration.data, configuration.sasa, data.data, configuration.chromosomes, configuration.density]);
 
     // Calculate/Cache border colors (selections)
     // useEffect(() => {
@@ -570,177 +560,136 @@ export function ChromatinViewport(props: {
     }, [configuration.labeling.useMaxDistCPU, layoutGenerator]);
 
     // Color bins
-    // useEffect(() => {
-    //     if (!viewport.canvas || !configuration.data) {
-    //         return;
-    //     }
+    useEffect(() => {
+        if (!viewport.canvas || !configuration.data) {
+            return;
+        }
 
-    //     const datum = configuration.data;
-    //     const binPositions = data.data.filter(d => d.id == datum.id)[0] as BinPositionsData;
-    //     const chromosomeSlices = binPositions.chromosomes;
+        for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
+            const data3D = viewport.getChromatinPartByDataId(configurationDatumIndex);
 
-    //     for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //         const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+            if (data3D && colors.length > configurationDatumIndex && colors[configurationDatumIndex]) {
+                data3D.structure.setColors(colors[configurationDatumIndex]);
+            }
+        }
 
-    //         if (!chromatinPart) {
-    //             continue;
-    //         }
 
-    //         if (chromatinPart.structure instanceof ContinuousTube) {
-    //             if (chromosomeIndex < innerColors.length && innerColors[chromosomeIndex] && innerColors[chromosomeIndex].length != 0) {
-    //                 chromatinPart.structure.setColorsCombined(innerColors[chromosomeIndex]);
-    //             } else {
-    //                 chromatinPart.structure.resetColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-    //             }
+        // Color by interesction
+        // console.time('colorBins::intersection');
+        if (!configuration.tool) {
+            // console.timeEnd('colorBins');
+            return;
+        }
 
-    //             if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
-    //                 chromatinPart.structure.setBorderColorsCombined(borderColors[chromosomeIndex]);
-    //                 //~ DK: here's the interface point for writing IDs to GPU buffer
-    //                 chromatinPart.structure.setSelectionIds(binIds[chromosomeIndex]);
-    //             } else {
-    //                 chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-    //             }
-    //         } else if (chromatinPart.structure instanceof Spheres) {
-    //             if (chromosomeIndex < innerColors.length && innerColors[chromosomeIndex] && innerColors[chromosomeIndex].length != 0) {
-    //                 chromatinPart.structure.setColors(innerColors[chromosomeIndex]);
-    //             } else {
-    //                 chromatinPart.structure.resetColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-    //             }
+        /*
+        const tool = configuration.tool;
+        if (tool.type != ChromatinViewportToolType.SphereSelection || closestIntersection == null) {
+            viewport.removeStructureByName(SphereSelectionName);
+        }
 
-    //             if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
-    //                 chromatinPart.structure.setBorderColors(borderColors[chromosomeIndex]);
-    //             } else {
-    //                 chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-    //             }
-    //         } else if (chromatinPart.structure instanceof Spline) {
-    //             if (chromosomeIndex < innerColors.length && innerColors[chromosomeIndex] && innerColors[chromosomeIndex].length != 0) {
-    //                 chromatinPart.structure.setColors(innerColors[chromosomeIndex]);
-    //             } else {
-    //                 chromatinPart.structure.resetColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-    //             }
+        const selection = globalSelections.selections.find(s => s.id == configuration.selectedSelectionID);
+        if (!selection) {
+            return;
+        }
 
-    //             if (chromosomeIndex < borderColors.length && borderColors[chromosomeIndex].length != 0) {
-    //                 chromatinPart.structure.setBorderColors(borderColors[chromosomeIndex]);
-    //             } else {
-    //                 chromatinPart.structure.resetBorderColors(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-    //             }
-    //         }
-    //     }
+        if (closestIntersection != null && tool.type == ChromatinViewportToolType.PointSelection) {
+            closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
+        } else if (closestIntersection != null && tool.type == ChromatinViewportToolType.SphereSelection && configuration.selectedSelectionID) {
+            // Only find position in space where the ray intersects
+            const intersectionExactPosition = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
 
-    //     // Color by interesction
-    //     // console.time('colorBins::intersection');
-    //     if (!configuration.tool) {
-    //         // console.timeEnd('colorBins');
-    //         return;
-    //     }
+            //~ Snapping into bins (ALT)
+            //~ get ID of the intersected bin and the position of the intersected bin (not the tube but the point)
+            const binIdx = closestIntersection.binIndex;
+            const binPositions = closestIntersection.chromatinPart.getBinsPositions();
+            const binPos = binPositions[binIdx];
 
-    //     const tool = configuration.tool;
-    //     if (tool.type != ChromatinViewportToolType.SphereSelection || closestIntersection == null) {
-    //         viewport.removeStructureByName(SphereSelectionName);
-    //     }
+            const sphereCenter = isShiftPressed ? binPos : intersectionExactPosition; //~ if ALT is pressed, snapping onto bin positions
 
-    //     const selection = globalSelections.selections.find(s => s.id == configuration.selectedSelectionID);
-    //     if (!selection) {
-    //         return;
-    //     }
+            // Update (create if not already created) the configuration of selection sphere
+            const sphere = (viewport.getStructureByName(SphereSelectionName) ?? viewport.scene.addSphere(
+                SphereSelectionName,
+                sphereCenter,
+                null,
+                null,
+                false,
+                true
+            )[1]) as Sphere;
+            sphere.opaque = false;
+            const sphereRadius = tool.radius; // TODO: variable
 
-    //     if (closestIntersection != null && tool.type == ChromatinViewportToolType.PointSelection) {
-    //         closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
-    //     } else if (closestIntersection != null && tool.type == ChromatinViewportToolType.SphereSelection && configuration.selectedSelectionID) {
-    //         // Only find position in space where the ray intersects
-    //         const intersectionExactPosition = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
+            if (sphere instanceof Sphere) {
+                sphere.setCenter(sphereCenter);
+                sphere.setColor(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, 0.5));
+                sphere.setRadius(sphereRadius);
+            }
 
-    //         //~ Snapping into bins (ALT)
-    //         //~ get ID of the intersected bin and the position of the intersected bin (not the tube but the point)
-    //         const binIdx = closestIntersection.binIndex;
-    //         const binPositions = closestIntersection.chromatinPart.getBinsPositions();
-    //         const binPos = binPositions[binIdx];
+            // Highlight all the bins inside the sphere
+            const selectionColor = vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a);
+            for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+                if (!chromatinPart || !configuration.chromosomes) continue;
 
-    //         const sphereCenter = isShiftPressed ? binPos : intersectionExactPosition; //~ if ALT is pressed, snapping onto bin positions
+                const binsPositions = chromatinPart.getBinsPositions();
+                for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
+                    const binPosition = binsPositions[binIndex];
 
-    //         // Update (create if not already created) the configuration of selection sphere
-    //         const sphere = (viewport.getStructureByName(SphereSelectionName) ?? viewport.scene.addSphere(
-    //             SphereSelectionName,
-    //             sphereCenter,
-    //             null,
-    //             null,
-    //             false,
-    //             true
-    //         )[1]) as Sphere;
-    //         sphere.opaque = false;
-    //         const sphereRadius = tool.radius; // TODO: variable
+                    if (vec3.distance(binPosition, sphereCenter) < sphereRadius) {
+                        chromatinPart.setBinColorVec4(binIndex, selectionColor);
+                    }
+                }
+            }
+        } else if (tool.type == ChromatinViewportToolType.JoinSelection && configuration.selectedSelectionID != null) {
+            const selection = globalSelections.selections.find(s => s.id == configuration.selectedSelectionID);
+            if (!selection) {
+                return;
+            }
 
-    //         if (sphere instanceof Sphere) {
-    //             sphere.setCenter(sphereCenter);
-    //             sphere.setColor(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, 0.5));
-    //             sphere.setRadius(sphereRadius);
-    //         }
+            if (closestIntersection) {
+                closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
+            }
 
-    //         // Highlight all the bins inside the sphere
-    //         const selectionColor = vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a);
-    //         for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //             const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-    //             if (!chromatinPart || !configuration.chromosomes) continue;
+            if (tool.from != null) {
+                const fromChromosomeSliceIndex = chromosomeSlices.findIndex(c => c.from <= tool.from! && tool.from! < c.to);
+                const fromChromosomePart = viewport.getChromatinPartByChromosomeIndex(fromChromosomeSliceIndex);
 
-    //             const binsPositions = chromatinPart.getBinsPositions();
-    //             for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
-    //                 const binPosition = binsPositions[binIndex];
+                fromChromosomePart?.setBinColor(tool.from, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
+            }
 
-    //                 if (vec3.distance(binPosition, sphereCenter) < sphereRadius) {
-    //                     chromatinPart.setBinColorVec4(binIndex, selectionColor);
-    //                 }
-    //             }
-    //         }
-    //     } else if (tool.type == ChromatinViewportToolType.JoinSelection && configuration.selectedSelectionID != null) {
-    //         const selection = globalSelections.selections.find(s => s.id == configuration.selectedSelectionID);
-    //         if (!selection) {
-    //             return;
-    //         }
+            if (closestIntersection && tool.from != null) {
+                const closestIntersectionChromosomeOffset = chromosomeSlices[closestIntersection.chromatinPart.chromosomeIndex].from;
 
-    //         if (closestIntersection) {
-    //             closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
-    //         }
+                const startBinIndex = Math.min(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
+                const endBinIndex = Math.max(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
 
-    //         if (tool.from != null) {
-    //             const fromChromosomeSliceIndex = chromosomeSlices.findIndex(c => c.from <= tool.from! && tool.from! < c.to);
-    //             const fromChromosomePart = viewport.getChromatinPartByChromosomeIndex(fromChromosomeSliceIndex);
+                for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
+                    const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
+                    if (!chromatinPart) return;
 
-    //             fromChromosomePart?.setBinColor(tool.from, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
-    //         }
+                    const binsPositions = chromatinPart.getBinsPositions();
+                    const binOffset = chromosomeSlices[chromosomeIndex].from;
+                    for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
+                        if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) < endBinIndex) {
+                            chromatinPart.setBinColor(binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
+                        }
+                    }
+                }
+            }
+        } else if (tool.type == ChromatinViewportToolType.Ruler) {
+            // color bin where the ruler is from
+            if (tool.from != null) {
+                const from = tool.from;
+                const fromChromosomeSliceIndex = chromosomeSlices.findIndex(c => c.name == from.chrom);
 
-    //         if (closestIntersection && tool.from != null) {
-    //             const closestIntersectionChromosomeOffset = chromosomeSlices[closestIntersection.chromatinPart.chromosomeIndex].from;
+                const fromChromosomePart = viewport.getChromatinPartByChromosomeIndex(fromChromosomeSliceIndex);
 
-    //             const startBinIndex = Math.min(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
-    //             const endBinIndex = Math.max(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
-
-    //             for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //                 const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-    //                 if (!chromatinPart) return;
-
-    //                 const binsPositions = chromatinPart.getBinsPositions();
-    //                 const binOffset = chromosomeSlices[chromosomeIndex].from;
-    //                 for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
-    //                     if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) < endBinIndex) {
-    //                         chromatinPart.setBinColor(binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     } else if (tool.type == ChromatinViewportToolType.Ruler) {
-    //         // color bin where the ruler is from
-    //         if (tool.from != null) {
-    //             const from = tool.from;
-    //             const fromChromosomeSliceIndex = chromosomeSlices.findIndex(c => c.name == from.chrom);
-
-    //             const fromChromosomePart = viewport.getChromatinPartByChromosomeIndex(fromChromosomeSliceIndex);
-
-    //             fromChromosomePart?.setBinColor(tool.from.bin, { r: 1.0, g: 0, b: 0, a: 1.0 });
-    //         }
-    //     }
-    //     // console.timeEnd('colorBins::intersection');
-    //     // console.timeEnd('colorBins');
-    // }, [viewport, closestIntersection, innerColors, borderColors, configuration.data, configuration.tool, configuration.selectedSelectionID, configuration.chromosomes, data.data, globalSelections.selections, isShiftPressed]);
+                fromChromosomePart?.setBinColor(tool.from.bin, { r: 1.0, g: 0, b: 0, a: 1.0 });
+            }
+        }
+        // console.timeEnd('colorBins::intersection');
+        // console.timeEnd('colorBins');
+        */
+    }, [viewport, closestIntersection, colors, configuration.data, configuration.tool, configuration.selectedSelectionID, configuration.chromosomes, data.data, globalSelections.selections, isShiftPressed]);
 
     useEffect(() => {
         if (viewport && configuration.backgroundColor) {

@@ -129,12 +129,6 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
 
   var outputColor = color;
 
-  let angle = dot(normal, normalize(camera.position.xyz - intersection1.xyz));
-
-  if (angle < 0.50) {
-    outputColor = borderColor;
-  }
-
   ${writeDepth ? `` : `
   let intersection2: vec3<f32> = camera.position.xyz + t.y * ray.direction.xyz;
   var intersection2ViewSpace = camera.projectionView * vec4<f32>(intersection2, 1.0);

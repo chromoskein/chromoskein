@@ -132,6 +132,8 @@ export class ChromatinPart {
       }
     }
 
+    this._binsColor = finalColorsArray;
+
     return finalColorsArray;
   }
 
@@ -309,6 +311,14 @@ export class ChromatinViewport extends Viewport3D {
 
     this._scene.removeStructureByID(highLevelID, update);
     this._chromatin.splice(chromatinPartIndex, 1);
+  }
+
+  public getChromatinPartByDataId(dataId: number): ChromatinPart | null {
+    if (!this._scene) {
+      return null;
+    }
+
+    return this._chromatin.find(c => c.dataId == dataId) || null;
   }
 
   public getChromatinParts(): Array<ChromatinPart> {
