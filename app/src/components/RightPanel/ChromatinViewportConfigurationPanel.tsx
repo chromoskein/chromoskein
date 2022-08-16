@@ -6,7 +6,7 @@ import './RightPanel.scss';
 import { ChromatinRepresentation, SmoothCamera, SmoothCameraConfiguration } from "../../modules/graphics";
 import { Text } from '@fluentui/react/lib/Text';
 
-import { ChromatinViewportAggregationFunction, ChromatinViewportColorMappingMode, ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, LabelingDebugTexture, TooltipNumericAggregation, TooltipTextAggregation, ViewportConfigurationType } from '../../modules/storage/models/viewports';
+import { ChromatinViewportAggregationFunction, ChromatinViewportColorMappingMode, ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, IChromatinDataConfiguration, LabelingDebugTexture, TooltipNumericAggregation, TooltipTextAggregation, ViewportConfigurationType } from '../../modules/storage/models/viewports';
 import { BinPositionsData, DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration, useSelections, useViewportName } from "../hooks";
@@ -209,7 +209,7 @@ export function ChromatinViewportConfigurationPanel(props: {
 
     const [isBackgroundColorCalloutVisible, setIsBackgroundColorCalloutVisible] = useState<boolean>(false);
 
-    const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer, 0);
+    const selections = useSelections([configuration, updateConfiguration], props.dataReducer, props.selectionsReducer, configuration.selectedDatum);
 
     //#region Viewport Settings
     const setBackgroundColor = (event: React.SyntheticEvent<HTMLElement>, color: IColor): void => {
@@ -243,12 +243,12 @@ export function ChromatinViewportConfigurationPanel(props: {
     const removeData3D = (index: number) => {
         if (!configuration) return;
 
-        const newData = [...configuration.data];
+        const newData: IChromatinDataConfiguration[] = [...configuration.data];
         newData.splice(index, 1);
 
         updateConfiguration({
             ...configuration,
-            selectedDatum: configuration.selectedDatum == index ? null : configuration.selectedDatum,
+            selectedSelectionID: null,
             data: newData,
         });
     };
@@ -256,7 +256,7 @@ export function ChromatinViewportConfigurationPanel(props: {
     const addData = () => {
         if (!configuration || !selectedPrimaryData) return;
 
-        const data = [...configuration.data];
+        const newData = [...configuration.data];
 
         //#region Calculate radius range
         const positions = (selectedPrimaryData.type == '3d-positions' ? selectedPrimaryData as BinPositionsData : selectedSecondaryData as BinPositionsData).values;
@@ -273,7 +273,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         const radiusRange = { min: 0.0, max: quantiles[0] / 2.0 };
         //#region Calculate radius range
 
-        data.push({
+        newData.push({
             id: selectedPrimaryData.id,
             secondaryID: selectedSecondaryDataID,
 
@@ -286,6 +286,7 @@ export function ChromatinViewportConfigurationPanel(props: {
             radius,
             radiusRange,
 
+            selectedSelectionID: null,
             selections: [],
 
             mapValues: {
@@ -324,19 +325,19 @@ export function ChromatinViewportConfigurationPanel(props: {
 
         updateConfiguration({
             ...configuration,
-            data,
+            data: newData,
         });
     };
 
     const setDataColor = (ev: React.SyntheticEvent<HTMLElement, Event>, color: IColor): void => {
         if (configuration.selectedDatum == null) return;
 
-        const data = [...configuration.data];
-        data[configuration.selectedDatum] = { ...data[configuration.selectedDatum], color };
+        const newData = [...configuration.data];
+        newData[configuration.selectedDatum] = { ...newData[configuration.selectedDatum], color };
 
         updateConfiguration({
             ...configuration,
-            data
+            data: newData
         });
     };
 
@@ -607,7 +608,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         (<div className={"treeViewListItem " + (configuration.selectedDatum == index ? 'selected' : '')} key={index} onClick={() => setSelectedDatum(index)}>
             <span style={{ display: 'block', width: '4px' }}></span>
             <Text className="text" nowrap>{datum.id}</Text>
-            <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={() => removeData3D(index)}></Delete16Regular>
+            <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeData3D(index); } }></Delete16Regular>
         </div>)
         )}
 
@@ -862,7 +863,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         {/* SELECTIONS */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
-        {configuration.selectedDatum && (
+        {configuration.selectedDatum != null && (
             <SelectionsPart
                 selections={selections}
                 configurationReducer={configurationReducer}

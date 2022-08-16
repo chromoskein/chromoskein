@@ -69,14 +69,18 @@ export class ChromatinPart {
       const lengthOnIntersection = vec3.length(vec3.sub(vec3.create(), from, vec3.sub(vec3.create(), intersection, vec3.scale(vec3.create(), normal, radius))));
       const ratio = lengthOnIntersection / capsuleLength;
 
+      if (i == 0) {
+        return 0;
+      }
+
       if (i >= this._binsPositions.length) {
         return this._binsPositions.length - 1;
       }
 
       if (ratio < 0.5) {
-        return i;
+        return i - 1;
       } else {
-        return i + 1;
+        return i;
       }
     } else if (this._structure instanceof Spheres) {
       return this._structure.localOffsetOf(LowLevelStructure.Sphere, hit.lowLevelIndex);
@@ -132,7 +136,7 @@ export class ChromatinPart {
       }
     }
 
-    this._binsColor = finalColorsArray;
+    this._binsColor = finalColorsArray.map(c => vec4.clone(c));
 
     return finalColorsArray;
   }
@@ -141,13 +145,7 @@ export class ChromatinPart {
     const c = vec4.fromValues(color.r, color.g, color.b, color.a);
     this._binsColor[binIndex] = c;
 
-    if (this._structure instanceof ContinuousTube) {
-      this.setBinColorVec4(binIndex, c);
-    } else if (this._structure instanceof Spheres) {
-      this.setBinColorVec4(binIndex, c);
-    } else if (this._structure instanceof Spline) {
-      this.setBinColorVec4(binIndex, c);
-    }
+    this.setBinColorVec4(binIndex, c);
   }
 
   public setBinColorVec4(binIndex: number, color: vec4): void {
@@ -264,7 +262,7 @@ export class ChromatinViewport extends Viewport3D {
       case ChromatinRepresentation.ContinuousTube: {
         // Double the amount of points
         const newPoints = [];
-        newPoints.push(vec3.add(vec3.create(), pointsVec3[0], vec3.sub(vec3.create(), pointsVec3[0], pointsVec3[1])));
+        newPoints.push(vec3.add(vec3.create(), pointsVec3[0], vec3.scale(vec3.create(), vec3.sub(vec3.create(), pointsVec3[0], pointsVec3[1]), 0.5)));
         // newPoints.push(vec3.scale(vec3.create(), vec3.add(vec3.create(), pointsVec3[0], pointsVec3[1]), 0.5));
 
         for (let i = 0; i < pointsVec3.length; i++) {

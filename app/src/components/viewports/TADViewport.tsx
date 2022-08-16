@@ -63,7 +63,7 @@ export function TADViewport(props: {
     useKey(["AltLeft"], () => setAltPressed(false), { eventTypes: ["keyup"] });
 
     // TADs/Selections
-    const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer, 0);
+    const selections = useSelections([configuration, updateConfiguration], props.dataReducer, props.selectionsReducer, 0);
     const [hoveredBins, setHoveredBins] = useState<BinPosition | null>(null);
     const [hoveredBinRanges, setHoveredBinRanges] = useState<[[number, number], [number, number]] | null>(null);
 

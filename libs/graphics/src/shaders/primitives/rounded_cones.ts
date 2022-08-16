@@ -303,39 +303,6 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
     selectionId = vertexOutput.selectionId2;
   }
 
-  let shortRadius: f32 = (1.0 - vertexOutput.borderRatio) * vertexOutput.radius;
-  
-  let sphereLeftOutside = isSphereIntersected(ray.origin, ray.direction, capsuleOutside.from, vertexOutput.radius);
-  let sphereRightOutside = isSphereIntersected(ray.origin, ray.direction, capsuleOutside.to, vertexOutput.radius);
-  let sphereLeftInside = isSphereIntersected(ray.origin, ray.direction, capsuleOutside.from, shortRadius);
-  let sphereRightInside = isSphereIntersected(ray.origin, ray.direction, capsuleOutside.to, shortRadius);
-    
-  let leftCap = vertexOutput.leftCap;
-  let rightCap = vertexOutput.rightCap;
-
-  var outlineColor: vec4<f32>;
-  if (ratio < 0.5) {
-    outlineColor = vertexOutput.borderColor;
-  } else {
-    outlineColor = vertexOutput.borderColor2;
-  }
-  if ((sphereLeftOutside && !sphereLeftInside) || (sphereRightOutside && !sphereRightInside)) {
-      if (
-           rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.to, shortRadius)) < 0.0
-        && rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.from + leftCap, shortRadius)) < 0.0
-        && rayCapsuleIntersection(ray, Capsule(capsuleOutside.to, capsuleOutside.to + rightCap, shortRadius)) < 0.0
-      ) {               
-        color = outlineColor;
-      }
-  } else {
-      if (!isInfiniteCylinderIntersected(ray.origin, ray.direction, capsuleOutside.from, normalize(capsuleOutside.from - capsuleOutside.to), shortRadius)
-        && rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.from + leftCap, shortRadius)) < 0.0 
-        && rayCapsuleIntersection(ray, Capsule(capsuleOutside.to, capsuleOutside.to + rightCap, shortRadius)) < 0.0
-      ) {
-        color = outlineColor;
-      }
-  }
-
   //~ DK: getting UVs of the fragment:
   var fragmentScreenSpace = vec2<f32>(0, 0);
   fragmentScreenSpace.x = fragmentNormalizedSpace.x / 2.0 + 0.5;
@@ -353,20 +320,3 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
   );  
 }
 `};
-
-
-/////// Debug Outlines
-      // color = vec4<f32>(
-      //   0.33 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.to, shortRadius)) < 0.0),
-      //   0.33 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.from + leftCap, shortRadius)) < 0.0),
-      //   0.33 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.to, capsuleOutside.to + rightCap, shortRadius)) < 0.0),
-      //   1.0
-      // );
-      // color = vec4<f32>(
-      //   0.5 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.from + leftCap, shortRadius)) < 0.0)
-      //   + 0.5 * f32(isInfiniteCylinderIntersected(ray.origin, ray.direction, capsuleOutside.from, normalize(capsuleOutside.from - rightCap), shortRadius)),
-      //   0.5 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.to, capsuleOutside.to + rightCap, shortRadius)) < 0.0)
-      //   + 0.5 * f32(isInfiniteCylinderIntersected(ray.origin, ray.direction, capsuleOutside.to, normalize(capsuleOutside.to - rightCap), shortRadius)),
-      //   f32(isInfiniteCylinderIntersected(ray.origin, ray.direction, capsuleOutside.from, normalize(capsuleOutside.from - capsuleOutside.to), shortRadius)),
-      //   1.0
-      // );

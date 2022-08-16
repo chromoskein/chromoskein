@@ -331,7 +331,7 @@ export class ContinuousTube implements HighLevelStructure {
     }
 
     public setColor(color: vec4, i: number): void {
-        this._colors[i] = color;
+        this._colors[i] = vec4.clone(color);
 
         if (!this.buffer) {
             return;
@@ -343,7 +343,7 @@ export class ContinuousTube implements HighLevelStructure {
     }
 
     public setColors(colors: Array<vec4>): void {
-        this._colors = colors;
+        this._colors = colors.map(c => vec4.clone(c));
 
         if (!this.buffer) {
             return;
@@ -366,7 +366,7 @@ export class ContinuousTube implements HighLevelStructure {
     }
 
     public setColor2(color: vec4, i: number): void {
-        this._colors2[i] = color;
+        this._colors2[i] = vec4.clone(color);
 
         if (!this.buffer) {
             return;
@@ -378,7 +378,7 @@ export class ContinuousTube implements HighLevelStructure {
     }
 
     public setColors2(colors2: Array<vec4>): void {
-        this._colors2 = colors2;
+        this._colors2 = colors2.map(c => vec4.clone(c));
 
         if (!this.buffer) {
             return;

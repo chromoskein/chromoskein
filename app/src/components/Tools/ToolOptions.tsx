@@ -16,7 +16,12 @@ export function ToolOptions(props: {
     const [configuration, updateConfiguration] = configurationReducer;
     const tool = configuration.tool;
     const isMac = new UAParser().getOS().name == 'Mac OS';
-    const hasSelectedSelection = configuration.selectedSelectionID != null;
+    
+    let hasSelectedSelection = configuration.selectedSelectionID != null;
+
+    if (configuration.type == ViewportConfigurationType.Chromatin && configuration.selectedDatum && configuration.data[configuration.selectedDatum]) {
+        hasSelectedSelection = configuration.data[configuration.selectedDatum].selectedSelectionID != null;
+    }
 
 
     const enforceSelectedSelection = (element: JSX.Element): JSX.Element => {

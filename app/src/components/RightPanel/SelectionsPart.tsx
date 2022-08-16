@@ -1,4 +1,4 @@
-import { DistanceMapDataConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
+import { DistanceMapDataConfiguration, ChromatinViewportConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
 import { DataAction, DataID, DataState } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionID, Selection, SelectionState } from "../../modules/storage/models/selections";
 import { ConfigurationReducer, ConfigurationsWithSelections } from "../hooks";
@@ -49,16 +49,32 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
             const dataSize = data.data.find(d => d.id == selectedDataPartID)?.values?.length;
 
             if (dataSize) {
+                console.log('adding selection');
                 globalSelectionsDispatch({ type: SelectionActionKind.ADD, dataID: selectedDataPartID as DataID, dataSize });
             }
         }
     }
 
     const selectSelection = (selectionID: SelectionID) => {
-        updateConfiguration({
-            ...configuration,
-            selectedSelectionID: selectionID,
-        });
+        if (configuration.type === ViewportConfigurationType.Chromatin && configuration.selectedDatum != null) {
+            const newData = [...configuration.data];
+            newData[configuration.selectedDatum] = {
+                ...newData[configuration.selectedDatum],
+                selectedSelectionID: selectionID,
+            };
+
+            updateConfiguration({
+                ...configuration,
+                data: newData                
+            });
+
+            console.log(configuration);
+        } else {
+            updateConfiguration({
+                ...configuration,
+                selectedSelectionID: selectionID,
+            });
+        }
     }
 
     const handleRenameStart = (selection: Selection) => setRenaming({ id: selection.id, newName: selection.name })
@@ -74,7 +90,6 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
             name: renaming!.newName.length == 0 ? "unnamed" : renaming!.newName
         })
         setRenaming(null);
-
     }
 
     const setSelectionVisiblity = (selectionID: SelectionID, visible: boolean, dataIndex = 0) => {
@@ -144,7 +159,16 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                 a: color.a != undefined ? (color.a / 255) : 1
             },
         });
+    }
 
+    const isSelected = (id: SelectionID) => {
+        if (configuration.type === ViewportConfigurationType.Chromatin && configuration.selectedDatum && configuration.data[configuration.selectedDatum]) {
+            return configuration.data[configuration.selectedDatum].selectedSelectionID == id;
+        } else {
+            return configuration.selectedSelectionID == id;
+        }
+
+        return false;
     }
 
     return <>
@@ -161,7 +185,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                                     <div ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
-                                        className={selection.id == configuration.selectedSelectionID ? "treeViewListItem selected" : "treeViewListItem"}
+                                        className={isSelected(selection.id) ? "treeViewListItem selected" : "treeViewListItem"}
                                         onClick={() => selectSelection(selection.id)}>
                                         <DefaultButton id="selectionColorButton"
                                             style={{

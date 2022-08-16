@@ -2,6 +2,7 @@ import { IColor } from "@fluentui/react";
 import { vec3 } from "gl-matrix";
 import { ChromatinRepresentation, OrbitCameraConfiguration, SmoothCameraConfiguration } from "../../../graphics";
 import { DataID } from "../data";
+import { SelectionID } from "../selections";
 import { IDataConfiguration, IViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions, blackBackground, NoViewportTool } from "./shared";
 
 export enum ChromatinViewportToolType {
@@ -55,6 +56,7 @@ export interface IChromatinDataConfiguration extends IDataConfiguration {
         max: number,
     },
 
+    selectedSelectionID: SelectionID | null,
     selections: Array<ViewportSelectionOptions>,
 
     mapValues: {
@@ -113,9 +115,7 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
     chromosomes: Array<boolean>,
 
     selectedDatum: number | null;
-    data: Array<IChromatinDataConfiguration>;
-
-    selectedSelectionID: null,
+    data: Array<IChromatinDataConfiguration>;    
 
     tooltip: {
         tooltipDataIDs: Array<DataID>,
