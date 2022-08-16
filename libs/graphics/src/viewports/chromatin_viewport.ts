@@ -149,7 +149,7 @@ export class ChromatinPart {
   }
 
   public setBinColorVec4(binIndex: number, color: vec4): void {
-    this._binsColor[binIndex] = color;
+    this._binsColor[binIndex] = vec4.clone(color);
 
     if (this._structure instanceof ContinuousTube) {
       if (binIndex == 0) {

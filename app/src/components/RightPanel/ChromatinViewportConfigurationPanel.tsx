@@ -38,6 +38,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         }
     > = [
             { key: 'single-color', id: 'none', text: 'Single color' },
+            { key: 'selections', id: 'none', text: 'Selections' },
             {
                 key: 'centromers',
                 id: 'centromers',
@@ -281,7 +282,7 @@ export function ChromatinViewportConfigurationPanel(props: {
 
             representation: ChromatinRepresentation.Spheres,
 
-            color: getColorFromRGBA({ r: 255, g: 255, b: 255, a: 100}),
+            color: getColorFromRGBA({ r: 255, g: 255, b: 255, a: 100 }),
 
             radius,
             radiusRange,
@@ -608,7 +609,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         (<div className={"treeViewListItem " + (configuration.selectedDatum == index ? 'selected' : '')} key={index} onClick={() => setSelectedDatum(index)}>
             <span style={{ display: 'block', width: '4px' }}></span>
             <Text className="text" nowrap>{datum.id}</Text>
-            <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeData3D(index); } }></Delete16Regular>
+            <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeData3D(index); }}></Delete16Regular>
         </div>)
         )}
 
@@ -663,7 +664,7 @@ export function ChromatinViewportConfigurationPanel(props: {
             <DefaultButton id="singleColorButton" styles={{
                 root: { width: 'calc(100% - 8px)', margin: '0px 4px 0px 4px' }
             }} key="singleColorButton" onClick={() => setIsSingleColorCalloutVisible(true)}>
-                <span style={{ color: '#' + configuration.data[configuration.selectedDatum].color.hex}}>{configuration.data[configuration.selectedDatum].color.hex}</span>
+                <span style={{ color: '#' + configuration.data[configuration.selectedDatum].color.hex }}>{configuration.data[configuration.selectedDatum].color.hex}</span>
             </DefaultButton>
             {isSingleColorCalloutVisible && (
                 <Callout
@@ -682,6 +683,20 @@ export function ChromatinViewportConfigurationPanel(props: {
                         }}
                     />
                 </Callout>
+            )}
+        </>}
+
+        {configuration.selectedDatum != null && configuration.data.length > configuration.selectedDatum && configuration.data[configuration.selectedDatum].colorMappingMode == 'selections' && <>
+            <div style={{ display: 'block', width: '100%', marginTop: '8px' }}></div>
+
+            {configuration.selectedDatum != null && (
+                <SelectionsPart
+                    selections={selections}
+                    configurationReducer={configurationReducer}
+                    dataReducer={props.dataReducer}
+                    selectionsReducer={props.selectionsReducer}
+                    selectedDataIndex={configuration.selectedDatum}
+                ></SelectionsPart>
             )}
         </>}
 
@@ -859,19 +874,6 @@ export function ChromatinViewportConfigurationPanel(props: {
                 />
             }
         </>}
-
-        {/* SELECTIONS */}
-        <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
-        <Separator></Separator>
-        {configuration.selectedDatum != null && (
-            <SelectionsPart
-                selections={selections}
-                configurationReducer={configurationReducer}
-                dataReducer={props.dataReducer}
-                selectionsReducer={props.selectionsReducer}
-                selectedDataIndex={configuration.selectedDatum}
-            ></SelectionsPart>
-        )}
 
         {/* <Separator></Separator>
         <Text nowrap block variant='large'>Labeling</Text>

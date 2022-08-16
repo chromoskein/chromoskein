@@ -95,7 +95,7 @@ export interface IChromatinDataConfiguration extends IDataConfiguration {
 }
 
 export type ChromatinViewportAggregationFunction = "min" | "max" | "median" | "mean" | 'sum';
-export type ChromatinViewportColorMappingMode = 'single-color' | 'centromers' | '1d-numerical' | '1d-density' | 'linear-order' | 'sasa' | '3d-density';
+export type ChromatinViewportColorMappingMode = 'single-color' | 'selections' | 'centromers' | '1d-numerical' | '1d-density' | 'linear-order' | 'sasa' | '3d-density';
 export type TooltipTextAggregation = 'none' | 'count';
 export type TooltipNumericAggregation = 'none' | 'min' | 'max' | 'median' | 'mean' | 'sum';
 export type LabelingDebugTexture = 'id' | 'contours' | 'dt';

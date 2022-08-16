@@ -19,7 +19,7 @@ export function ToolOptions(props: {
     
     let hasSelectedSelection = configuration.selectedSelectionID != null;
 
-    if (configuration.type == ViewportConfigurationType.Chromatin && configuration.selectedDatum && configuration.data[configuration.selectedDatum]) {
+    if (configuration.type == ViewportConfigurationType.Chromatin && configuration.selectedDatum != null && configuration.data[configuration.selectedDatum]) {
         hasSelectedSelection = configuration.data[configuration.selectedDatum].selectedSelectionID != null;
     }
 

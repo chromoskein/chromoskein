@@ -56,10 +56,10 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     }
 
     const selectSelection = (selectionID: SelectionID) => {
-        if (configuration.type === ViewportConfigurationType.Chromatin && configuration.selectedDatum != null) {
+        if (configuration.type === ViewportConfigurationType.Chromatin && props.selectedDataIndex != null) {
             const newData = [...configuration.data];
-            newData[configuration.selectedDatum] = {
-                ...newData[configuration.selectedDatum],
+            newData[props.selectedDataIndex] = {
+                ...newData[props.selectedDataIndex],
                 selectedSelectionID: selectionID,
             };
 
@@ -147,8 +147,6 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     }
 
     function changeSelectionColor(selectionID: SelectionID, color: IColor) {
-        console.log(color);
-
         globalSelectionsDispatch({
             type: SelectionActionKind.UPDATE,
             id: selectionID,
@@ -162,13 +160,11 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     }
 
     const isSelected = (id: SelectionID) => {
-        if (configuration.type === ViewportConfigurationType.Chromatin && configuration.selectedDatum && configuration.data[configuration.selectedDatum]) {
-            return configuration.data[configuration.selectedDatum].selectedSelectionID == id;
+        if (configuration.type === ViewportConfigurationType.Chromatin) {
+            return configuration.data[props.selectedDataIndex].selectedSelectionID == id;
         } else {
             return configuration.selectedSelectionID == id;
         }
-
-        return false;
     }
 
     return <>
