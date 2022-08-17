@@ -154,7 +154,6 @@ export function ChromatinViewport(props: {
     useEffect(() => {
         if (!viewport.canvas) return;
 
-        console.log('ChromatinViewport::Rebuild');
         viewport.clearChromatin();
 
         for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
@@ -504,7 +503,7 @@ export function ChromatinViewport(props: {
         }
         */
 
-        setColors(newColors);
+        setColors(() => newColors);
     }, [viewport, globalSelections.selections, configuration.data, configuration.sasa, data.data, configuration.chromosomes, configuration.density]);
 
     //~ Propagate selections to labelLayoutGenerator

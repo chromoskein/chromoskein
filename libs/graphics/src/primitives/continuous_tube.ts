@@ -402,7 +402,8 @@ export class ContinuousTube implements HighLevelStructure {
         }
 
         if (colors.length != 2 * (this._points.length - 1)) {
-            throw new Error(`Number of colors must be '2 * (points - 1)'. Number of colors provided is ${colors.length}, expected ${(this._points.length - 1) * 2}`);
+            return;
+            // throw new Error(`Number of colors must be '2 * (points - 1)'. Number of colors provided is ${colors.length}, expected ${(this._points.length - 1) * 2}`);
         }
 
         const u8view = this.buffer.u8view;
