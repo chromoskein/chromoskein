@@ -106,7 +106,7 @@ export class ChromatinPart {
     let finalColorsArray: Array<vec4> = [];
 
     if (this._structure instanceof ContinuousTube) {
-      finalColorsArray = new Array(2 * this._binsPositions.length + 2);
+      finalColorsArray = new Array(2 * (this._binsPositions.length + 1));
 
       for (let i = 0; i < this._binsPositions.length; i++) {
         if (i == 0) {
@@ -117,8 +117,7 @@ export class ChromatinPart {
           finalColorsArray[2 * i + 1] = colors[i];
           finalColorsArray[2 * i + 2] = colors[i];
           finalColorsArray[2 * i + 3] = colors[i];
-        }
-        else {
+        } else {
           finalColorsArray[2 * i + 1] = colors[i];
           finalColorsArray[2 * i + 2] = colors[i];
         }
@@ -260,7 +259,6 @@ export class ChromatinViewport extends Viewport3D {
     let structure;
     switch (representation) {
       case ChromatinRepresentation.ContinuousTube: {
-        // Double the amount of points
         const newPoints = [];
         newPoints.push(vec3.add(vec3.create(), pointsVec3[0], vec3.scale(vec3.create(), vec3.sub(vec3.create(), pointsVec3[0], pointsVec3[1]), 0.5)));
         // newPoints.push(vec3.scale(vec3.create(), vec3.add(vec3.create(), pointsVec3[0], pointsVec3[1]), 0.5));

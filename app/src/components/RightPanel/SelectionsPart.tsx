@@ -49,7 +49,6 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
             const dataSize = data.data.find(d => d.id == selectedDataPartID)?.values?.length;
 
             if (dataSize) {
-                console.log('adding selection');
                 globalSelectionsDispatch({ type: SelectionActionKind.ADD, dataID: selectedDataPartID as DataID, dataSize });
             }
         }
@@ -67,8 +66,6 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                 ...configuration,
                 data: newData                
             });
-
-            console.log(configuration);
         } else {
             updateConfiguration({
                 ...configuration,
@@ -93,16 +90,20 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     }
 
     const setSelectionVisiblity = (selectionID: SelectionID, visible: boolean, dataIndex = 0) => {
-        if (!configuration.data || (Array.isArray(configuration.data) && configuration.data.length === 0)) return;
+        if (!configuration.data || ((Array.isArray(configuration.data) && configuration.data.length == 0))) {
+            return;
+        }
 
         if (Array.isArray(configuration.data)) {
-            const associatedSelectionIndex = configuration.data[dataIndex].selections.findIndex(s => s.selectionID == selectionID);
-            const newData = {
-                ...configuration.data,
+            const associatedSelectionIndex = configuration.data[props.selectedDataIndex].selections.findIndex(s => s.selectionID == selectionID);
+
+            const newData = [...configuration.data];
+            newData[props.selectedDataIndex] = {
+                ...newData[props.selectedDataIndex],
                 selections: configuration.data[dataIndex].selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
             };
     
-            newData.selections[associatedSelectionIndex].visible = visible;
+            newData[props.selectedDataIndex].selections[associatedSelectionIndex].visible = visible;
     
             updateConfiguration({
                 ...configuration,

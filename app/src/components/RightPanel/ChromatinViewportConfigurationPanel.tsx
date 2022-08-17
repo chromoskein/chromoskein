@@ -602,13 +602,13 @@ export function ChromatinViewportConfigurationPanel(props: {
             options={data3DOptions}
             onChange={onChangeSecondaryData}
         />)}
-        <PrimaryButton text='Add Data' style={{ marginTop: '8px' }} disabled={!enableAddDataButton} onClick={addData} />
+        <DefaultButton text='Add Data' style={{ marginTop: '8px' }} disabled={!enableAddDataButton} onClick={addData} />
 
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         {configuration.data.map((datum, index) =>
         (<div className={"treeViewListItem " + (configuration.selectedDatum == index ? 'selected' : '')} key={index} onClick={() => setSelectedDatum(index)}>
             <span style={{ display: 'block', width: '4px' }}></span>
-            <Text className="text" nowrap>{datum.id}</Text>
+            <Text className="text" nowrap>{data.data.find(d => d.id == datum.id)?.name || 'No Name (BUG)'}</Text>
             <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeData3D(index); }}></Delete16Regular>
         </div>)
         )}

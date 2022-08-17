@@ -99,7 +99,7 @@ export function ChromatinViewport(props: {
             const render = async (frametime: number) => {
                 await newViewport.render(frametime);
                 //~ label rendered scene. 
-                setLabels(await layoutGenerator.getLabelPositions());
+                // setLabels(await layoutGenerator.getLabelPositions());
 
                 requestAnimationFrame(render);
             }
@@ -117,22 +117,22 @@ export function ChromatinViewport(props: {
     }, [layoutGenerator, viewport, viewport.width, viewport.height]);
 
     // Camera Update
-    useDeepCompareEffect(() => {
-        viewport.cameraConfiguration = configuration.camera;
-    }, [configuration.camera]);
+    // useDeepCompareEffect(() => {
+    //     viewport.cameraConfiguration = configuration.camera;
+    // }, [configuration.camera]);
 
-    useDeepCompareEffect(() => {
-        if (!viewport.camera || !viewport.canvas) return;
+    // useDeepCompareEffect(() => {
+    //     if (!viewport.camera || !viewport.canvas) return;
 
-        const timer = setTimeout(() => {
-            updateConfiguration({
-                ...configuration,
-                camera: viewport.cameraConfiguration
-            });
-        }, 500)
+    //     const timer = setTimeout(() => {
+    //         updateConfiguration({
+    //             ...configuration,
+    //             camera: viewport.cameraConfiguration
+    //         });
+    //     }, 500)
 
-        return () => clearTimeout(timer);
-    }, [viewport.cameraConfiguration]);
+    //     return () => clearTimeout(timer);
+    // }, [viewport.cameraConfiguration]);
 
     // Disable camera if control is pressed
     useEffect(() => {
@@ -154,6 +154,7 @@ export function ChromatinViewport(props: {
     useEffect(() => {
         if (!viewport.canvas) return;
 
+        console.log('ChromatinViewport::Rebuild');
         viewport.clearChromatin();
 
         for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
@@ -245,7 +246,31 @@ export function ChromatinViewport(props: {
                     1.0
                 )));
             } else if (configurationDatum.colorMappingMode == "selections") {
-                newColors[configurationDatumIndex] = data3D.cacheColorArray(new Array(binsAmount).fill(vec4.fromValues(1.0, 1.0, 1.0, 1.0)));
+                const selections = globalSelections.selections.filter(s => s.dataID == configurationDatum.id);
+
+                const colors: Array<vec4> = [vec4.fromValues(1.0, 1.0, 1.0, 1.0)];
+                const finalColorIndices = new Uint16Array(binsAmount);
+                for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
+                    const selection = selections[selectionIndex];
+                    const associatedData = configurationDatum.selections.find(s => s.selectionID == selection.id) ?? getDefaultViewportSelectionOptions(selection.id);
+
+                    if (!associatedData.visible) {
+                        continue;
+                    }
+
+                    colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
+                    const colorIndex = colors.length - 1;
+
+                    for (let i = 0; i < binsAmount; i++) {
+                        finalColorIndices[i] = selection.bins[i] * colorIndex + (1 - selection.bins[i]) * finalColorIndices[i];
+                    }
+                }
+
+                const finalColors: Array<vec4> = new Array(binsAmount);
+                for (let i = 0; i < binsAmount; i++) {
+                    finalColors[i] = colors[finalColorIndices[i]];
+                }
+                newColors[configurationDatumIndex] = data3D.cacheColorArray(finalColors);
             }
         }
 
@@ -476,79 +501,11 @@ export function ChromatinViewport(props: {
             const colorScale = chroma.scale(['white', 'red']);
 
             setInnerColors(() => mapScaleToChromatin(densities, colorScale));
-
-
         }
         */
 
         setColors(newColors);
     }, [viewport, globalSelections.selections, configuration.data, configuration.sasa, data.data, configuration.chromosomes, configuration.density]);
-
-    // Calculate/Cache border colors (selections)
-    // useEffect(() => {
-    //     if (!viewport || !configuration.data) return;
-
-    //     const datum = configuration.data;
-    //     const binPositions = data.data.filter(d => d.id == datum.id)[0] as BinPositionsData;
-    //     const chromosomeSlices = binPositions.chromosomes;
-
-    //     const selections = globalSelections.selections.filter(s => s.dataID == datum.id);
-    //     if (selections.length <= 0) {
-    //         return;
-    //     }
-
-    //     // Reset colors
-    //     // Color by mapping & selection
-    //     // console.time('colorBins::selections');
-    //     const allBorderColors: Array<Array<vec4>> = new Array(binPositions.chromosomes.length).fill([]);
-    //     const allBinIds: number[][] = new Array(binPositions.chromosomes.length).fill([]); //~ TODO: actually fill below...
-    //     for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-    //         const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-    //         if (!chromatinPart) {
-    //             continue;
-    //         }
-
-    //         const colors: Array<vec4> = [vec4.fromValues(1.0, 1.0, 1.0, 1.0)];
-    //         const binsLength = chromatinPart.getBinsPositions().length;
-    //         const finalColorIndices = new Uint16Array(binsLength);
-    //         const binIdsThisChromosome = new Array(binsLength).fill(-1);
-    //         for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
-    //             const selection = selections[selectionIndex];
-    //             const associatedData = datum.selections.find(s => s.selectionID == selection.id) ?? getDefaultViewportSelectionOptions(selection.id);
-
-    //             if (!associatedData.visible) {
-    //                 continue;
-    //             }
-
-    //             colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
-    //             const colorIndex = colors.length - 1;
-
-    //             for (let i = 0; i < binsLength; i++) {
-    //                 const j = chromosomeSlices[chromosomeIndex].from + i;
-    //                 finalColorIndices[i] = selection.bins[j] * colorIndex + (1 - selection.bins[j]) * finalColorIndices[i];
-
-    //                 //~ selection IDs
-    //                 //~ TODO: check this later for cases where selections overlap...
-    //                 const binInSelection = selection.bins[i];
-    //                 if (binInSelection == 1) {
-    //                     binIdsThisChromosome[i] = selection.bins[i] * isoSelectionID.unwrap(selection.id); //~ (0 or 1) * selection.id
-    //                 } //~ otherwise, just leave what's there before
-    //             }
-    //         }
-
-    //         const finalColors: Array<vec4> = new Array(binsLength);
-    //         for (let i = 0; i < binsLength; i++) {
-    //             finalColors[i] = colors[finalColorIndices[i]];
-    //         }
-
-    //         allBorderColors[chromosomeIndex] = chromatinPart.cacheColorArray(finalColors);
-    //         allBinIds[chromosomeIndex] = binIdsThisChromosome;
-    //     }
-
-    //     setBorderColors(allBorderColors);
-    //     setBinIds(allBinIds);
-    //     // console.timeEnd('colorBins::selections');
-    // }, [viewport, globalSelections.selections, configuration.representation, configuration.data, data.data, configuration.chromosomes]);
 
     //~ Propagate selections to labelLayoutGenerator
     useEffect(() => {
@@ -579,10 +536,10 @@ export function ChromatinViewport(props: {
             const data3D = viewport.getChromatinPartByDataId(configurationDatumIndex);
 
             if (data3D && colors.length > configurationDatumIndex && colors[configurationDatumIndex]) {
-                data3D.structure.setColors(colors[configurationDatumIndex]);
-                
                 if (data3D.structure instanceof ContinuousTube) {
-                    data3D.structure.setColors2(colors[configurationDatumIndex]);
+                    data3D.structure.setColorsCombined(colors[configurationDatumIndex]);
+                } else {
+                    data3D.structure.setColors(colors[configurationDatumIndex]);
                 }
             }
         }
@@ -602,7 +559,7 @@ export function ChromatinViewport(props: {
         const selectedDatum = configuration.selectedDatum;
         if (selectedDatum == null || closestIntersection == null) {
             return;
-        }    
+        }
 
         const selection = globalSelections.selections.find(s => s.id == configuration.data[selectedDatum].selectedSelectionID);
         if (!selection) {
@@ -802,24 +759,19 @@ export function ChromatinViewport(props: {
         if (tool.type == ChromatinViewportToolType.PointSelection) {
             newBins[closestIntersection.binIndex] = isSecondaryModPressed ? 0 : 1;
         } else if (tool.type == ChromatinViewportToolType.SphereSelection) {
-            // const sphereCenter = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
-            // const sphereRadius = tool.radius;
-            // const value = isSecondaryModPressed ? 0 : 1;
+            const sphereCenter = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
+            const sphereRadius = tool.radius;
+            const value = isSecondaryModPressed ? 0 : 1;
 
-            // for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-            //     const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-            //     if (!chromatinPart || !configuration.chromosomes[chromosomeIndex]) continue;
+            const binsPositions = selectedChromatinPart.getBinsPositions();
 
-            //     const binsPositions = chromatinPart.getBinsPositions();
-            //     const offset = binPositions.chromosomes[chromosomeIndex].from;
-            //     for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
-            //         const binPosition = binsPositions[binIndex];
+            for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
+                const binPosition = binsPositions[binIndex];
 
-            //         if (vec3.distance(binPosition, sphereCenter) < sphereRadius) {
-            //             newBins[offset + binIndex] = value;
-            //         }
-            //     }
-            // }
+                if (vec3.distance(binPosition, sphereCenter) < sphereRadius) {
+                    newBins[binIndex] = value;
+                }
+            }
         } else if (tool.type == ChromatinViewportToolType.JoinSelection) {
             // if (tool.from == null) {
             //     updateConfiguration({
