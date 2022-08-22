@@ -457,6 +457,7 @@ function App(): JSX.Element {
         hidden={newXYZDataDialogHidden}
         closeFunction={() => { setNewXYZDataDialogHidden(true) }}
         dataReducer={[data, dispatchData]}
+        selectionsReducer={[selections, dispatchSelections]}
       ></NewXYZDataDialog>
       <ImportWorkspaceDialog
         hidden={workspaceFileImportDialogHidden}

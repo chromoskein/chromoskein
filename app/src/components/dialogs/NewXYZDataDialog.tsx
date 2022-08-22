@@ -3,15 +3,18 @@ import { vec3 } from 'gl-matrix';
 import React, { Dispatch, useEffect, useRef, useState } from 'react';
 import { CSVDelimiter, FileState, FileType, ParseResult, parseResultToXYZ, parseToRows, ParseConfiguration, ParseResultCSV, ParseResultPDB } from '../../modules/parsing';
 import { DataState, DataAction, DataActionKind, BinPositionsData, isoDataID } from '../../modules/storage/models/data';
+import { SelectionAction, SelectionActionKind, SelectionState } from '../../modules/storage/models/selections';
 import { UploadTextFilesButton } from '../buttons/UploadTextFilesButton';
 
 
 export function NewXYZDataDialog(props: {
   hidden: boolean,
   closeFunction: () => void,
-  dataReducer: [DataState, Dispatch<DataAction>]
+  dataReducer: [DataState, Dispatch<DataAction>],
+  selectionsReducer: [SelectionState, Dispatch<SelectionAction>],
 }): JSX.Element {
   const [data, dispatchData] = props.dataReducer;
+  const [selections, dispatchSelections] = props.selectionsReducer;
 
   // Reference to the true input file obscured by a fake one (for styling purposes)
   const inputFileElement = useRef<HTMLInputElement | null>(null);
@@ -72,7 +75,7 @@ export function NewXYZDataDialog(props: {
       } else {
         const parsedResult: ParseResultPDB = parsedResultUntyped as ParseResultPDB;
 
-        const data: BinPositionsData = {
+        const data3D: BinPositionsData = {
           id: isoDataID.wrap(-1), // will be replaced in reducer
           name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
           type: '3d-positions',
@@ -86,8 +89,27 @@ export function NewXYZDataDialog(props: {
 
         dispatchData({
           type: DataActionKind.ADD_DATA,
-          data: data
+          data: data3D
         });
+
+        const data3DID = data.dataMaxId + 1;
+
+        if (parsedResult.ranges.length > 0) {
+
+          console.log(parsedResult.ranges);
+          for (const [rangeIndex, range] of parsedResult.ranges.entries()) {
+            dispatchSelections({
+              type: SelectionActionKind.ADD,
+
+              name: 'Chromosome ' + rangeIndex,
+              dataID: isoDataID.wrap(data3DID),
+              dataSize: data3D.values.length,
+              bins: new Uint16Array(parsedResult.atoms.length).fill(1, range.from, range.to),
+            });
+          }
+
+        }
+
       }
     }
 
