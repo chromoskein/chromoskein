@@ -41,7 +41,7 @@ function createLinearGraphRepresentation(graphRepresentation: AbstractGraph, dat
         }
     }
 
-    if (data.length == 0) {
+    if (data.positions.length == 0) {
         return graphRepresentation;
     }
     console.log("Making linear representation")
@@ -51,7 +51,7 @@ function createLinearGraphRepresentation(graphRepresentation: AbstractGraph, dat
         color: "#F00",
         size: 10
     });
-    for (let { current, next, currentIndex } of pairwise(data)) {
+    for (const { current, next, currentIndex } of pairwise(data.positions)) {
         graphRepresentation.addNode(currentIndex + 1, {
             x: randomCoordinate(),
             y: randomCoordinate(),
@@ -97,27 +97,27 @@ function createForceGraphRepresentation(data?: Positions3D) {
 
     const graphRepresentation = new UndirectedGraph()
 
-    if (!data || data.length == 0) {
+    if (!data || data.positions.length == 0) {
         return graphRepresentation;
     }
 
 
-    for (let bin_index = 0; bin_index < data.length; bin_index++) {
+    for (let bin_index = 0; bin_index < data.positions.length; bin_index++) {
         graphRepresentation.addNode(bin_index, {
             x: randomCoordinate(),
             y: randomCoordinate()
         })
     }
 
-    for (let bin_index = 0; bin_index < data.length; bin_index++) {
-        for (let other_index = bin_index + 1; other_index < data.length; other_index++) {
+    for (let bin_index = 0; bin_index < data.positions.length; bin_index++) {
+        for (let other_index = bin_index + 1; other_index < data.positions.length; other_index++) {
             graphRepresentation.addUndirectedEdge(
                 bin_index,
                 other_index,
                 {
                     source: bin_index.toString(),
                     target: other_index.toString(),
-                    distance: distance(data[bin_index], data[other_index])
+                    distance: distance(data.positions[bin_index], data.positions[other_index])
                 }
             )
         }
@@ -171,7 +171,7 @@ export function ForceGraphViewport(props: {
     const viewport = useRef(null);
 
     const [data, setData] = props.dataReducer;
-    const [binPositions, setBinPositions] = useState<Positions3D>([])
+    const [binPositions, setBinPositions] = useState<Positions3D>({ positions: [] })
     const sigmaWrapper = useRef<HTMLDivElement>(null);
 
     const [mounted, setMounted] = useState(true)

@@ -68,7 +68,6 @@ export class Spheres implements HighLevelStructure {
                     center: this._centers[i],
                     radius: this._radius,
                     color: this._colors[i],
-                    borderColor: this._borderColors[i],
                     partOfBVH: this._partOfBVH,
                 });
 
@@ -168,6 +167,10 @@ export class Spheres implements HighLevelStructure {
     }
 
     public setColor(i: number, color: vec4): void {
+        if (i >= this._centers.length) {
+            return;
+        }
+
         this._colors[i] = vec4.clone(color);
 
         if (!this.buffer) return;
@@ -178,6 +181,10 @@ export class Spheres implements HighLevelStructure {
     }
 
     public setColors(colors: Array<vec4>): void {
+        if (colors.length != this._centers.length) {
+            return;
+        }
+
         this._colors = colors.map(v => vec4.clone(v));
 
         if (!this.buffer) return;

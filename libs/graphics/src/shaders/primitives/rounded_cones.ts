@@ -215,7 +215,7 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
   // Intersection
   var t: f32 = rayCapsuleIntersection(ray, capsuleOutside);
 
-  if (t < 0.0) {
+  if (t < 0.0 || vertexOutput.radius <= 0.0001) {
     discard;
   }
 
@@ -314,9 +314,9 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
     // dot(normal.xyz, normalize(camera.position.xyz - intersection.xyz)) * color,
     color,
     ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-    ${writeDepth ? 'vec4<f32>(selectionId, fragmentScreenSpace.x, fragmentScreenSpace.y, 1.0),' : '' }
+    ${writeDepth ? 'vec4<f32>(selectionId, fragmentScreenSpace.x, fragmentScreenSpace.y, 1.0),' : ''}
  
-    // ${writeDepth ? 'vec4<f32>(3.0, 0.0, 0.0, 1.0),' : '' }
+    // ${writeDepth ? 'vec4<f32>(3.0, 0.0, 0.0, 1.0),' : ''}
   );  
 }
 `};

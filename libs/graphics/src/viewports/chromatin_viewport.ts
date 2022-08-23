@@ -69,18 +69,14 @@ export class ChromatinPart {
       const lengthOnIntersection = vec3.length(vec3.sub(vec3.create(), from, vec3.sub(vec3.create(), intersection, vec3.scale(vec3.create(), normal, radius))));
       const ratio = lengthOnIntersection / capsuleLength;
 
-      if (i == 0) {
-        return 0;
-      }
-
       if (i >= this._binsPositions.length) {
         return this._binsPositions.length - 1;
       }
 
       if (ratio < 0.5) {
-        return i - 1;
-      } else {
         return i;
+      } else {
+        return i + 1;
       }
     } else if (this._structure instanceof Spheres) {
       return this._structure.localOffsetOf(LowLevelStructure.Sphere, hit.lowLevelIndex);
@@ -106,28 +102,20 @@ export class ChromatinPart {
     let finalColorsArray: Array<vec4> = [];
 
     if (this._structure instanceof ContinuousTube) {
-      finalColorsArray = new Array(2 * (this._binsPositions.length + 1));
+      finalColorsArray = new Array(2 * (binsLength - 1));
 
-      for (let i = 0; i < this._binsPositions.length; i++) {
-        if (i == 0) {
-          finalColorsArray[0] = colors[0];
-          finalColorsArray[1] = colors[0];
-          finalColorsArray[2] = colors[0];
-        } else if (i == binsLength - 1) {
-          finalColorsArray[2 * i + 1] = colors[i];
-          finalColorsArray[2 * i + 2] = colors[i];
-          finalColorsArray[2 * i + 3] = colors[i];
-        } else {
-          finalColorsArray[2 * i + 1] = colors[i];
-          finalColorsArray[2 * i + 2] = colors[i];
-        }
+      for (let i = 0; i < binsLength - 1; i++) {
+        finalColorsArray[2 * i + 0] = colors[i];
+        finalColorsArray[2 * i + 1] = colors[i + 1];
       }
+
+      finalColorsArray[finalColorsArray.length - 1] = colors[colors.length - 1];
     } else if (this._structure instanceof Spheres) {
       finalColorsArray = colors.map(v => vec4.clone(v));
     } else if (this._structure instanceof Spline) {
-      finalColorsArray = new Array(4 * this._binsPositions.length);
+      finalColorsArray = new Array(4 * binsLength);
 
-      for (let i = 0; i < this._binsPositions.length; i++) {
+      for (let i = 0; i < binsLength; i++) {
         finalColorsArray[4 * i + 0] = colors[i];
         finalColorsArray[4 * i + 1] = colors[i];
         finalColorsArray[4 * i + 2] = colors[i];
@@ -135,7 +123,7 @@ export class ChromatinPart {
       }
     }
 
-    this._binsColor = finalColorsArray.map(c => vec4.clone(c));
+    this._binsColor = colors.map(c => vec4.clone(c));
 
     return finalColorsArray;
   }
@@ -150,25 +138,25 @@ export class ChromatinPart {
   public setBinColorVec4(binIndex: number, color: vec4): void {
     this._binsColor[binIndex] = vec4.clone(color);
 
-    if (this._structure instanceof ContinuousTube) {
-      if (binIndex == 0) {
-        this._structure.setColor(color, 0);
-        this._structure.setColor2(color, 0);
-        this._structure.setColor(color, 1);
-      } else if (binIndex >= this._binsPositions.length - 1) {
-        this._structure.setColor2(color, binIndex);
+    // if (this._structure instanceof ContinuousTube) {
+    //   if (binIndex == 0) {
+    //     this._structure.setColor(color, 0);
+    //     this._structure.setColor2(color, 0);
+    //     this._structure.setColor(color, 1);
+    //   } else if (binIndex >= this._binsPositions.length - 1) {
+    //     this._structure.setColor2(color, binIndex);
 
-        this._structure.setColor(color, binIndex + 1);
-        this._structure.setColor2(color, binIndex + 1);
-      } else {
-        this._structure.setColor2(color, binIndex);
-        this._structure.setColor(color, binIndex + 1);
-      }
-    } else if (this._structure instanceof Spheres) {
-      this._structure.setColor(binIndex, color);
-    } else if (this._structure instanceof Spline) {
-      this._structure.setColor(binIndex, color);
-    }
+    //     this._structure.setColor(color, binIndex + 1);
+    //     this._structure.setColor2(color, binIndex + 1);
+    //   } else {
+    //     this._structure.setColor2(color, binIndex);
+    //     this._structure.setColor(color, binIndex + 1);
+    //   }
+    // } else if (this._structure instanceof Spheres) {
+    //   this._structure.setColor(binIndex, color);
+    // } else if (this._structure instanceof Spline) {
+    //   this._structure.setColor(binIndex, color);
+    // }
   }
 
   public getBinsPositions(): Array<vec3> {
@@ -250,7 +238,7 @@ export class ChromatinViewport extends Viewport3D {
    * 
    * @returns created structure
    */
-  public addPart(chromosomeName: string, bins: Array<{ x: number, y: number, z: number }>, dataId: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
+  public addPart(chromosomeName: string, bins: Array<{ x: number, y: number, z: number }>, connectivityBitset: Array<0 | 1> | null, dataId: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
     const pointsVec3 = bins.map(p => vec3.fromValues(p.x, p.y, p.z));
 
     this.binPositions = pointsVec3.map(p => vec3.clone(p));
@@ -259,18 +247,7 @@ export class ChromatinViewport extends Viewport3D {
     let structure;
     switch (representation) {
       case ChromatinRepresentation.ContinuousTube: {
-        const newPoints = [];
-        newPoints.push(vec3.add(vec3.create(), pointsVec3[0], vec3.scale(vec3.create(), vec3.sub(vec3.create(), pointsVec3[0], pointsVec3[1]), 0.5)));
-        // newPoints.push(vec3.scale(vec3.create(), vec3.add(vec3.create(), pointsVec3[0], pointsVec3[1]), 0.5));
-
-        for (let i = 0; i < pointsVec3.length; i++) {
-          newPoints.push(vec3.clone(pointsVec3[i]));
-        }
-
-        // newPoints.push(pointsVec3[pointsVec3.length - 1]);
-        newPoints.push(vec3.add(vec3.create(), pointsVec3[pointsVec3.length - 1], vec3.sub(vec3.create(), pointsVec3[pointsVec3.length - 1], pointsVec3[pointsVec3.length - 2])));
-
-        [highLevelID, structure] = this._scene.addContinuousTube(CHROMATIN_OBJECT_NAME + this.maxId, newPoints, 1.0, null, true, update);
+        [highLevelID, structure] = this._scene.addContinuousTube(CHROMATIN_OBJECT_NAME + this.maxId, pointsVec3, connectivityBitset, 1.0, null, true, update);
         break;
       }
       case ChromatinRepresentation.Spheres: {

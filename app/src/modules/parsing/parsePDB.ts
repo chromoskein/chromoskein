@@ -38,6 +38,8 @@ export class Residue {
 
 export type ChromatinModel = {
   atoms: Array<{x: number, y: number, z: number}>;
+
+  connectivityBitset: Array<0 | 1>;
   ranges: Array<{ name: string, from: number, to: number }>;
 
   normalizeCenter: vec3;
@@ -136,6 +138,8 @@ export function parsePdb(pdb: string): Array<ChromatinModel> {
     }
   }
 
+  console.log(ranges);
+
   // Normalize to [-1.0, 1.0] and center
   // Build bounding box
   const bb = BoundingBoxEmpty();
@@ -167,6 +171,7 @@ export function parsePdb(pdb: string): Array<ChromatinModel> {
     // Raw data from pdb
     atoms,
     // Connectivity
+    connectivityBitset,
     ranges,
     // Normalize
     normalizeCenter: bb.center,

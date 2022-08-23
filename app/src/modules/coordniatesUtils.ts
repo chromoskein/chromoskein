@@ -94,11 +94,11 @@ export type GFFSimplificationSettings = {
 export function simplifySparseBinData(data: Sparse1DNumericData, simplificator: (bin: number[]) => number): Sparse1DNumericData {
     //group values by bin
     const dataByChromosome = groupBy(data, d => d.chromosome);
-    const choromsomes = data.map(d => d.chromosome);
+    const chromosomes = data.map(d => d.chromosome);
     const simplifiedCoodrs: Sparse1DNumericData = []
 
 
-    for (let chromosome of choromsomes) {
+    for (const chromosome of chromosomes) {
         const coords = new Map<number, number[]>();
 
         for (const d of dataByChromosome[chromosome]) {
@@ -171,10 +171,10 @@ export function simplifySparseBinDataToDense(data: Sparse1DNumericData, size: nu
 export function centromeresPositionsToBins(centromeres: Positions3D, binsPositions: Positions3D): Array<number> {
     const result = [];
 
-    for (const c of centromeres) {
+    for (const c of centromeres.positions) {
         let minimumIndex = 0;
         let minimumDistance = 100000.0;
-        for (const [index, p] of binsPositions.entries()) {
+        for (const [index, p] of binsPositions.positions.entries()) {
             const diff = { x: p.x - c.x, y: p.y - c.y, z: p.z - c.z };
 
             const distance = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;

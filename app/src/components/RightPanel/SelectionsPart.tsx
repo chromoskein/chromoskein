@@ -1,5 +1,5 @@
 import { DistanceMapDataConfiguration, ChromatinViewportConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
-import { DataAction, DataID, DataState } from "../../modules/storage/models/data";
+import { DataAction, DataID, DataState, Positions3D } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionID, Selection, SelectionState } from "../../modules/storage/models/selections";
 import { ConfigurationReducer, ConfigurationsWithSelections } from "../hooks";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
@@ -46,7 +46,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
 
     const addSelection = () => {
         if (selectedDataPartID) {
-            const dataSize = data.data.find(d => d.id == selectedDataPartID)?.values?.length;
+            const dataSize = (data.data.find(d => d.id == selectedDataPartID)?.values as Positions3D | undefined)?.positions.length;
 
             if (dataSize) {
                 globalSelectionsDispatch({ type: SelectionActionKind.ADD, dataID: selectedDataPartID as DataID, dataSize });

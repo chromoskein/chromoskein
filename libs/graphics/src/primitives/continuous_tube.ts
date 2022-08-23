@@ -11,6 +11,7 @@ export enum GradientPrecision {
 
 export class ContinuousTube implements HighLevelStructure {
     private _points: Array<vec3>;
+    private _connectivityBitset: Array<0 | 1>;
     private _radius: number;
 
     private graphicsLibrary: GraphicsLibrary;
@@ -22,13 +23,8 @@ export class ContinuousTube implements HighLevelStructure {
     //#region Style
     private _colors: Array<vec4>;
     private _colors2: Array<vec4>;
-    private _borderColors: Array<vec4>;
-    private _borderColors2: Array<vec4>;
-    private _borderRadius: number;
-    private _gradients: Array<Array<GPUColorDict> | null>;
-    private _colorTextures: Array<GPUTexture | null>;
-    // private _colorBindGroups: Array<GPUBindGroup>;
     //#endregion
+
     private _ids: Array<number>;
 
     private _partOfBVH: boolean;
@@ -50,13 +46,14 @@ export class ContinuousTube implements HighLevelStructure {
         points: Array<vec3>,
         radius = 1.0,
         colors: Array<vec4> | null = null,
-        borderColors: Array<vec4> | null = null) {
+        connectivityBitset: Array<0 | 1> | null) {
         this.graphicsLibrary = graphicsLibrary;
         this.id = id;
         this._partOfBVH = partOfBVH;
         this._dirtyBVH = true;
 
         this._points = points;
+        this._connectivityBitset = connectivityBitset || new Array(this._points.length).fill(1);
 
         if (colors == null) {
             this._colors = new Array(this._points.length - 1);
@@ -67,34 +64,7 @@ export class ContinuousTube implements HighLevelStructure {
 
         this._colors2 = this._colors.map(e => vec4.clone(e));
 
-        if (borderColors == null) {
-            this._borderColors = new Array(this._points.length - 1);
-            this._borderColors.fill(vec4.fromValues(1.0, 1.0, 1.0, 1.0));
-        } else {
-            this._borderColors = borderColors;
-        }
-
-        this._borderColors2 = this._borderColors.map(e => vec4.clone(e));
-
-        this._gradients = new Array(this._points.length - 1);
-        this._colorTextures = new Array(this._points.length - 1);
-        // this._colorBindGroups = new Array(this._points.length - 1);
-        // this._colorBindGroups.fill(graphicsLibrary.device.createBindGroup({
-        //     layout: graphicsLibrary.bindGroupLayouts.primitivesTexture,
-        //     entries: [
-        //         {
-        //             binding: 0,
-        //             resource: this.graphicsLibrary.nearestSampler,
-        //         },
-        //         {
-        //             binding: 1,
-        //             resource: this.graphicsLibrary.dummy1DTextureView,
-        //         }
-        //     ]
-        // }), 0, this._points.length - 1);
-
         this._radius = radius;
-        this._borderRadius = 0.33;
 
         //~ Selection IDs for rendering into G-Buffer attachment
         this._ids = new Array(this._points.length); //~ why the other ones are points.length - 1?????
@@ -102,7 +72,6 @@ export class ContinuousTube implements HighLevelStructure {
     }
 
     public deallocate(): void {
-        this._colorTextures.map(t => t?.destroy());
     }
 
     public getID(): number {
@@ -187,19 +156,14 @@ export class ContinuousTube implements HighLevelStructure {
             //planes.push(null);
 
             for (let i = 0; i < this._points.length - 1; i++) {
-                // const hasTexture = this._gradients[i] != null;
-
                 writeRoundedConeToArrayBuffer(buffer, offset + i, {
                     from: this._points[i],
                     to: this._points[i + 1],
-                    radius: this._radius,
+                    radius: this._connectivityBitset[i] == 0 ? 0.0 : this._radius,
                     leftPlane: planes[i * 2],
                     rightPlane: planes[i * 2 + 1],
                     color: this._colors[i],
-                    color2: this._colors[i],
-                    borderColor: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
-                    borderColor2: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
-                    borderRatio: this._borderRadius,
+                    color2: this._colors2[i],
                     selectionId: 1,
                     selectionId2: 1,
                 });
@@ -287,7 +251,7 @@ export class ContinuousTube implements HighLevelStructure {
         }
 
         for (let i = 0; i < this._points.length - 1; i++) {
-            writeRoundedConeToArrayBuffer(this.buffer, this._roundedConesPosition + i, { radius: this._radius });
+            writeRoundedConeToArrayBuffer(this.buffer, this._roundedConesPosition + i, { radius: this._connectivityBitset[i] == 0 ? 0.0 : this._radius, });
         }
 
         this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length) * LL_STRUCTURE_SIZE_BYTES });
@@ -349,10 +313,7 @@ export class ContinuousTube implements HighLevelStructure {
             return;
         }
 
-        const u8view = this.buffer.u8view;
         for (let i = 0; i < this._colors.length - 1; i++) {
-            // const offset = (this._roundedConesPosition + i) * LL_STRUCTURE_SIZE_BYTES;
-            // u8view.set([colors[i][0] * 255, colors[i][1] * 255, colors[i][2] * 255, colors[i][3] * 255], offset + 64);
             this.setColor(colors[i], i);
         }
 
@@ -384,16 +345,11 @@ export class ContinuousTube implements HighLevelStructure {
             return;
         }
 
-        const u8view = this.buffer.u8view;
         for (let i = 0; i < this._colors.length - 1; i++) {
-            // const color = this._colors2[i];
-            // const offset = (this._roundedConesPosition + i) * LL_STRUCTURE_SIZE_BYTES;
-
-            // u8view.set([color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255], offset + 68);
             this.setColor2(colors2[i], i);
         }
 
-        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._colors.length - 1) * LL_STRUCTURE_SIZE_BYTES });
+        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._colors.length) * LL_STRUCTURE_SIZE_BYTES });
     }
 
     public setColorsCombined(colors: Array<vec4>): void {
@@ -401,7 +357,8 @@ export class ContinuousTube implements HighLevelStructure {
             return;
         }
 
-        if (colors.length != 2 * (this._points.length - 1)) {
+        if (colors.length != 2 * (this._points.length - 1)) {            
+            console.log(`Number of colors must be '2 * (points - 1)'. Number of colors provided is ${colors.length}, expected ${(this._points.length - 1) * 2}`);
             return;
             // throw new Error(`Number of colors must be '2 * (points - 1)'. Number of colors provided is ${colors.length}, expected ${(this._points.length - 1) * 2}`);
         }

@@ -260,7 +260,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         const newData = [...configuration.data];
 
         //#region Calculate radius range
-        const positions = (selectedPrimaryData.type == '3d-positions' ? selectedPrimaryData as BinPositionsData : selectedSecondaryData as BinPositionsData).values;
+        const positions = (selectedPrimaryData.type == '3d-positions' ? selectedPrimaryData as BinPositionsData : selectedSecondaryData as BinPositionsData).values.positions;
         const distances = [];
         for (let i = 0; i < positions.length - 1; i++) {
             distances.push(

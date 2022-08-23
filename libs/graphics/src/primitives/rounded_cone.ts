@@ -46,7 +46,7 @@ export function writeRoundedConeToArrayBuffer(
         array.f32View.set([to[0], to[1], to[2]], offsetWords + 4);
     }
 
-    if (radius) {
+    if (radius != null) {
         array.f32View.set([radius], offsetWords + 3);
         array.f32View.set([radius], offsetWords + 7);
     }

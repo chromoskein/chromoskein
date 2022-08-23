@@ -160,17 +160,17 @@ export function ChromatinViewport(props: {
             const primaryData = data.data.find((d: Data) => d.id == configurationDatum.id);
             if (primaryData?.type == '3d-positions') {
                 const datum = primaryData as BinPositionsData;
-                const positions = datum.values;
+                const positions = datum.values.positions;
 
-                const chromatinPart = viewport.addPart(datum.name, positions as Positions3D, configurationDatumIndex, configurationDatum.representation, false);
+                const chromatinPart = viewport.addPart(datum.name, positions, datum.values.connectivity || null, configurationDatumIndex, configurationDatum.representation, false);
                 chromatinPart.structure.radius = configurationDatum.radius;
             } else if (primaryData?.type == 'bed-annotation' && configurationDatum.secondaryID) {
-                const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values;
+                const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values as Positions3D | undefined;
 
                 if (data3D) {
-                    const positions = (primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => data3D[annotation.from]);
+                    const positions = (primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => data3D.positions[annotation.from]);
 
-                    const chromatinPart = viewport.addPart(primaryData.name, positions as Positions3D, configurationDatumIndex, configurationDatum.representation, false);
+                    const chromatinPart = viewport.addPart(primaryData.name, positions, null, configurationDatumIndex, configurationDatum.representation, false);
                     chromatinPart.structure.radius = configurationDatum.radius;
                 }
             }

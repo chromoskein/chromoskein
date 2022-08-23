@@ -33,10 +33,7 @@ export function writeSphereToArrayBuffer(
 
     if (color) {
         array.f32View.set(color, offsetWords + 4);
-    }
-
-    if (borderColor) {
-        array.f32View.set(borderColor, offsetWords + 8);
+        array.f32View.set(color, offsetWords + 8);
     }
 
     array.i32View.set([partOfBVH ? 1 : 0], offsetWords + 29);

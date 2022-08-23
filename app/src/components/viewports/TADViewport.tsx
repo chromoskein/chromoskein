@@ -103,7 +103,7 @@ export function TADViewport(props: {
                     break;
                 }
                 case '3d-positions': {
-                    const values = d.values as Positions3D;
+                    const values = (d.values as Positions3D).positions;
                     maxBin = values.length;
 
                     const positions = [];
@@ -128,7 +128,7 @@ export function TADViewport(props: {
         //             return;
         //         }
 
-        //         const values = d.values as Positions3D;
+        //         const values = (d.values as Positions3D).positions;
 
         //         const positions = [];
         //         const binNumbersAnnotation: Array<number> = [];

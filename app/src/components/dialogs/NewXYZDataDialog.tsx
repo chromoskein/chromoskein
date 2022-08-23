@@ -54,18 +54,20 @@ export function NewXYZDataDialog(props: {
       if (parsedResultUntyped.type == 'CSV') {
         const parsedResult: ParseResultCSV = parsedResultUntyped as ParseResultCSV;
 
-        const values = parseResultToXYZ(parsedResult, selectedColumns);
+        const positions = parseResultToXYZ(parsedResult, selectedColumns);
 
         const data: BinPositionsData = {
           id: isoDataID.wrap(-1), // will be replaced in reducer
           name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
           type: '3d-positions',
-          values: values,
+          values: {
+            positions
+          },
           basePairsResolution: basePairsResolution,
           binOffset: 0,
           normalizeCenter: vec3.create(),
           normalizeScale: 1.0,
-          chromosomes: [{ name: "chr1", from: 0, to: (values.length - 1) }]
+          chromosomes: [{ name: "chr1", from: 0, to: (positions.length - 1) }]
         }
         dispatchData({
           type: DataActionKind.ADD_DATA,
@@ -79,7 +81,10 @@ export function NewXYZDataDialog(props: {
           id: isoDataID.wrap(-1), // will be replaced in reducer
           name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
           type: '3d-positions',
-          values: parsedResult.atoms,
+          values: {
+            positions: parsedResult.atoms,
+            connectivity: parsedResult.connectivityBitset,
+          },
           basePairsResolution: basePairsResolution,
           binOffset: 0,
           normalizeCenter: parsedResult.normalizeCenter,
@@ -95,16 +100,14 @@ export function NewXYZDataDialog(props: {
         const data3DID = data.dataMaxId + 1;
 
         if (parsedResult.ranges.length > 0) {
-
-          console.log(parsedResult.ranges);
           for (const [rangeIndex, range] of parsedResult.ranges.entries()) {
             dispatchSelections({
               type: SelectionActionKind.ADD,
 
               name: 'Chromosome ' + rangeIndex,
               dataID: isoDataID.wrap(data3DID),
-              dataSize: data3D.values.length,
-              bins: new Uint16Array(parsedResult.atoms.length).fill(1, range.from, range.to),
+              dataSize: data3D.values.positions.length,
+              bins: new Uint16Array(parsedResult.atoms.length).fill(1, range.from, range.to + 1),
             });
           }
 

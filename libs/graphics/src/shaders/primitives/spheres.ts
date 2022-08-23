@@ -73,8 +73,9 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 
   return VertexOutput(
     vec4<f32>(position, center.z, 1.0), 
-    vec4<f32>(sphere.position.xyz, sphere.radius),
-    bufferSphere.color,
+    vec4<f32>(sphere.position.xyz, 0.1),
+    // bufferSphere.color,
+    vec4<f32>(1.0),
     bufferSphere.borderColor,
   );
 }
