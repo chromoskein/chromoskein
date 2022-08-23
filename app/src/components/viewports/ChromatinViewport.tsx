@@ -506,6 +506,42 @@ export function ChromatinViewport(props: {
         setColors(() => newColors);
     }, [viewport, globalSelections.selections, configuration.data, configuration.sasa, data.data, configuration.chromosomes, configuration.density]);
 
+    // Calculate cullable bins
+    useEffect(() => {
+        if (!viewport || !configuration.data) {
+            return;
+        }
+
+        for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
+            const data3D = viewport.getChromatinPartByDataId(configurationDatumIndex);
+
+            if (!data3D) {
+                continue;
+            }
+
+            const binsAmount = data3D.getBinsPositions().length;
+            const cullableBins: Array<boolean> = new Array(binsAmount).fill(true);
+
+            const selections = globalSelections.selections.filter(s => s.dataID == configurationDatum.id);
+            for (let selectionIndex = 0; selectionIndex < selections.length; selectionIndex++) {
+                const selection = selections[selectionIndex];
+                const associatedData = configurationDatum.selections.find(s => s.selectionID == selection.id) ?? getDefaultViewportSelectionOptions(selection.id);
+
+                if (!associatedData.visible) {
+                    continue;
+                }
+
+                if (!associatedData.cullable) {
+                    for (let i = 0; i < binsAmount; i++) {
+                        cullableBins[i] = selection.bins[i] == 1 ? false : true;
+                    }
+                }
+            }
+
+            data3D.setCullableBins(cullableBins);
+        }
+    }, [viewport, globalSelections.selections, configuration.data, data.data]);
+
     //~ Propagate selections to labelLayoutGenerator
     useEffect(() => {
         layoutGenerator.selections = globalSelections.selections;

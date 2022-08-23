@@ -12,13 +12,15 @@ export function writeSphereToArrayBuffer(
         center = null,
         radius = null,
         color = null,
-        borderColor = null,        
+        borderColor = null,     
+        cull = null,   
     }: {
         partOfBVH?: boolean;
         center?: vec3 | null;
         radius?: number | null;
         color?: vec4 | null;
         borderColor?: vec4 | null;        
+        cull?: boolean | null;
     } = {}
 ): void {
     const offsetWords = offset * LL_STRUCTURE_SIZE;
@@ -34,6 +36,10 @@ export function writeSphereToArrayBuffer(
     if (color) {
         array.f32View.set(color, offsetWords + 4);
         array.f32View.set(color, offsetWords + 8);
+    }
+
+    if (cull != null) {
+        array.u32View.set([cull ? 1 : 0], offsetWords + 9);
     }
 
     array.i32View.set([partOfBVH ? 1 : 0], offsetWords + 29);
@@ -82,6 +88,16 @@ export class Sphere implements HighLevelStructure {
 
     public get opaque(): boolean {
         return this._opaque;
+    }
+    
+    private _cull = true;
+
+    public set cull(cull: boolean) {
+        this._cull = cull;
+    }
+
+    public get cull(): boolean {
+        return this._cull;
     }
 
     constructor(graphicsLibrary: GraphicsLibrary, id: number, partOfBVH = true, center: vec3, radius = 1.0, color: vec4 | null = null) {

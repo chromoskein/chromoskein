@@ -174,6 +174,16 @@ export class QuadraticBezierCurve implements HighLevelStructure {
         return this._opaque;
     }
 
+    private _cull = true;
+
+    public set cull(cull: boolean) {
+        this._cull = cull;
+    }
+
+    public get cull(): boolean {
+        return this._cull;
+    }
+
     constructor(graphicsLibrary: GraphicsLibrary, id: number, partOfBVH = true, p0: vec3, p1: vec3, p2: vec3, radius = 0.05) {
         this.graphicsLibrary = graphicsLibrary;
 

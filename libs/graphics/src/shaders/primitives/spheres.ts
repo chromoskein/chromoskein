@@ -10,7 +10,9 @@ struct BufferSphere {
     color: vec4<f32>,
     borderColor: vec4<f32>,
 
-    padding: array<f32, 19>,
+    cull: u32,
+
+    padding: array<f32, 17>,
 
     ty: i32,
 };
@@ -73,9 +75,8 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 
   return VertexOutput(
     vec4<f32>(position, center.z, 1.0), 
-    vec4<f32>(sphere.position.xyz, 0.1),
-    // bufferSphere.color,
-    vec4<f32>(1.0),
+    vec4<f32>(sphere.position.xyz, sphere.radius),
+    bufferSphere.color,
     bufferSphere.borderColor,
   );
 }
@@ -170,7 +171,7 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
     ${writeDepth ? 'depth.z,' : ''}
     outputColor,
     ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-    ${writeDepth ? 'vec4<f32>(1.0, 0.0, 0.0, 1.0),' : '' }
+    ${writeDepth ? 'vec4<f32>(0, 0.0, 0.0, 1.0),' : ''}
   );  
 }
 `};

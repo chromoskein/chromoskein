@@ -640,12 +640,11 @@ export function ChromatinViewportConfigurationPanel(props: {
         )}
 
         {/* 3D DATA REPRESENTATION */}
-        {/* <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
+        <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>
         <Separator></Separator>
-        <Text nowrap block variant='large' style={{ marginBottom: '5px' }}>3D Data Visualization</Text>
         <Stack tokens={{ childrenGap: '8px' }}>
             <CutawaysPart configurationReducer={configurationReducer}></CutawaysPart>
-        </Stack> */}
+        </Stack>
 
         {/*  */}
         <div style={{ display: 'block', width: '100%', marginTop: '16px' }}></div>

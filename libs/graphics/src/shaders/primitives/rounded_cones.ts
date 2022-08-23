@@ -54,13 +54,13 @@ struct BufferRoundedCone {
     // borderColor: u32;
     // borderColor2: u32;
     //
-    borderRatio: f32,
+    cull: u32,
     //
     selectionId: f32, //~ 4 B
     selectionId2: f32, //~ 4 B
 
     // padding: array<f32, 10>, //~ TODO: this padding now needs to change after adding selectionId fields
-    padding: array<f32, 8>, 
+    padding: array<f32, 8>,     
 
     ty: i32,
 };
@@ -89,10 +89,10 @@ struct VertexOutput {
   @location(7) borderColor: vec4<f32>,
   @location(8) borderColor2: vec4<f32>,
 
-  @location(9) borderRatio: f32,
+  @location(9) @interpolate(flat) cull: u32,
 
   @location(10) selectionId: f32,
-  @location(11) selectionId2: f32,
+  @location(11) selectionId2: f32,  
 };
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32>
@@ -173,9 +173,9 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
     unpack4x8unorm(roundedCone.colors[1]),
     unpack4x8unorm(roundedCone.colors[2]),
     unpack4x8unorm(roundedCone.colors[3]),
-    roundedCone.borderRatio,
+    roundedCone.cull,
     id,
-    id2,
+    id2,    
   );
 }
 
@@ -282,7 +282,7 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
     }
   }
 
-  if (cull) {
+  if (cull && vertexOutput.cull == 1) {
     discard;
   }
 

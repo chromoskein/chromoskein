@@ -36,6 +36,16 @@ export class Spline implements HighLevelStructure {
         return this._opaque;
     }
 
+    private _cull = true;
+
+    public set cull(cull: boolean) {
+        this._cull = cull;
+    }
+
+    public get cull(): boolean {
+        return this._cull;
+    }
+
     public partOfBVH(): boolean {
         return this._partOfBVH;
     }

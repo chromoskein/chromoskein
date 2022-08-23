@@ -19,7 +19,8 @@ export function writeRoundedConeToArrayBuffer(
         borderColor2 = null,
         borderRatio = 0.0,
         selectionId = -1.0,
-        selectionId2 = -1.0
+        selectionId2 = -1.0,
+        cull = true,
     }: {
         from?: vec3 | null;
         to?: vec3 | null;
@@ -33,6 +34,7 @@ export function writeRoundedConeToArrayBuffer(
         borderRatio?: number | null;
         selectionId?: number | null;
         selectionId2?: number | null;
+        cull?: boolean | null;
     } = {}
 ): void {
     const offsetBytes = offset * LL_STRUCTURE_SIZE_BYTES;
@@ -75,8 +77,8 @@ export function writeRoundedConeToArrayBuffer(
         array.u8view.set([borderColor2[0] * 255, borderColor2[1] * 255, borderColor2[2] * 255, borderColor2[3] * 255], offsetBytes + 76);
     }
 
-    if (borderRatio) {
-        array.f32View.set([borderRatio], offsetWords + 20);
+    if (cull != null) {
+        array.u32View.set([cull ? 1 : 0], offsetWords + 20);
     }
 
     if (selectionId) {
@@ -125,131 +127,4 @@ export function roundedConeToBoundingBox(array: ArrayViews, offset: number): Bou
     BoundingBoxCalculateCenter(result);
 
     return result;
-}
-
-export class RoundedCone implements HighLevelStructure {
-    private graphicsLibrary: GraphicsLibrary;
-    private buffer: LinearImmutableArray | null = null;
-    private id = -1;
-
-    private _bufferPosition = 0;
-
-    //#region Description
-    private _from: vec3;
-    private _to: vec3;
-    private _radius: number;
-    private _leftPlane: vec4 = vec4.fromValues(0.0, 0.0, 0.0, 0.0);
-    private _rightPlane: vec4 = vec4.fromValues(0.0, 0.0, 0.0, 0.0);
-    //#endregion
-
-    //#region Style
-    private _color: vec4 = vec4.fromValues(1.0, 1.0, 1.0, 1.0);
-    //#endregion
-
-    private _partOfBVH: boolean;
-    private _dirtyBVH: boolean;
-    private _opaque = true;
-
-    public set opaque(opaque: boolean) {
-        this._opaque = opaque;
-    }
-
-    public get opaque(): boolean {
-        return this._opaque;
-    }
-
-    constructor(graphicsLibrary: GraphicsLibrary, id: number, partOfBVH: boolean, from: vec3, to: vec3, radius = 1.0, leftPlane: vec4 = vec4.fromValues(0.0, 0.0, 0.0, 0.0), rightPlane: vec4 = vec4.fromValues(0.0, 0.0, 0.0, 0.0)) {
-        this.graphicsLibrary = graphicsLibrary;
-
-        this.id = id;
-        this._partOfBVH = partOfBVH;
-        this._dirtyBVH = true;
-
-        this._from = from;
-        this._to = to;
-        this._radius = radius;
-        this._leftPlane = leftPlane;
-        this._rightPlane = rightPlane;
-    }
-
-    public getID(): number {
-        return this.id;
-    }
-
-    public writeToArrayBuffer(buffer: LinearImmutableArray, offset: number, type: LowLevelStructure | null): number {
-        if (type != null && type != LowLevelStructure.RoundedCone) {
-            return 0;
-        }
-
-        this.buffer = buffer;
-        this._bufferPosition = offset;
-
-        writeRoundedConeToArrayBuffer(buffer, offset, {
-            from: this._from,
-            to: this._to,
-            radius: this._radius,
-            leftPlane: this._leftPlane,
-            rightPlane: this._rightPlane,
-            color: this._color,
-            color2: this._color,
-            borderColor: this._color
-        });
-
-        buffer.i32View.set([this.id], offset * LL_STRUCTURE_SIZE + 30);
-
-        this.buffer.setModifiedBytes({ start: offset * LL_STRUCTURE_SIZE_BYTES, end: (offset + 1) * LL_STRUCTURE_SIZE_BYTES });
-
-        return 1;
-    }
-
-    public removeFromArrayBuffer(): void {
-        if (!this.buffer) {
-            return;
-        }
-
-        this.buffer.i32View.set([LowLevelStructure.None], this._bufferPosition * LL_STRUCTURE_SIZE + 31);
-        this.buffer.setModifiedBytes({ start: this._bufferPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._bufferPosition + 1) * LL_STRUCTURE_SIZE_BYTES });
-    }
-
-    public countOf(type: LowLevelStructure | null): number {
-        if (type == null || type == LowLevelStructure.RoundedCone) {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    public offsetOf(type: LowLevelStructure | null): number | null {
-        if (type == null || type == LowLevelStructure.RoundedCone) {
-            return this._bufferPosition;
-        }
-
-        return null;
-    }
-
-    public localOffsetOf(type: LowLevelStructure, offset: number): number {
-        switch (type) {
-            case LowLevelStructure.Sphere: return offset - this._bufferPosition;
-        }
-
-        return -1;
-    }
-
-    //#region BVH
-    partOfBVH(): boolean {
-        return this._partOfBVH;
-    }
-
-    dirtyBVH(): boolean {
-        return this._dirtyBVH;
-    }
-
-    setCleanBVH(): void {
-        this._dirtyBVH = false;
-    }
-
-    setDirtyBVH(): void {
-        this._dirtyBVH = true;
-    }
-    //#endregion
 }

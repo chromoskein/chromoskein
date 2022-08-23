@@ -31,6 +31,22 @@ export class Spheres implements HighLevelStructure {
         return this._opaque;
     }
 
+    private _cull = true;
+
+    public set cull(cull: boolean) {
+        this._cull = cull;
+
+        if (!this.buffer) return;
+
+        for(let i = 0; i < this._centers.length; i++) writeSphereToArrayBuffer(this.buffer, this._spheresPosition + i, { cull });
+
+        this.buffer.setModifiedBytes({ start: this._spheresPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._spheresPosition + this._centers.length + 1) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
+    public get cull(): boolean {
+        return this._cull;
+    }
+
     constructor(graphicsLibrary: GraphicsLibrary, id: number, partOfBVH = true, points: Array<vec3>, colors: Array<vec4> | null = null) {
         this.graphicsLibrary = graphicsLibrary;
 

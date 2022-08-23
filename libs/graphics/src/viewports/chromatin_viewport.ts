@@ -108,8 +108,6 @@ export class ChromatinPart {
         finalColorsArray[2 * i + 0] = colors[i];
         finalColorsArray[2 * i + 1] = colors[i + 1];
       }
-
-      finalColorsArray[finalColorsArray.length - 1] = colors[colors.length - 1];
     } else if (this._structure instanceof Spheres) {
       finalColorsArray = colors.map(v => vec4.clone(v));
     } else if (this._structure instanceof Spline) {
@@ -138,25 +136,20 @@ export class ChromatinPart {
   public setBinColorVec4(binIndex: number, color: vec4): void {
     this._binsColor[binIndex] = vec4.clone(color);
 
-    // if (this._structure instanceof ContinuousTube) {
-    //   if (binIndex == 0) {
-    //     this._structure.setColor(color, 0);
-    //     this._structure.setColor2(color, 0);
-    //     this._structure.setColor(color, 1);
-    //   } else if (binIndex >= this._binsPositions.length - 1) {
-    //     this._structure.setColor2(color, binIndex);
+    if (this._structure instanceof ContinuousTube) {
+      this._structure.setColor2(color, binIndex);
+      this._structure.setColor(color, binIndex + 1);
+    } else if (this._structure instanceof Spheres) {
+      this._structure.setColor(binIndex, color);
+    } else if (this._structure instanceof Spline) {
+      this._structure.setColor(binIndex, color);
+    }
+  }
 
-    //     this._structure.setColor(color, binIndex + 1);
-    //     this._structure.setColor2(color, binIndex + 1);
-    //   } else {
-    //     this._structure.setColor2(color, binIndex);
-    //     this._structure.setColor(color, binIndex + 1);
-    //   }
-    // } else if (this._structure instanceof Spheres) {
-    //   this._structure.setColor(binIndex, color);
-    // } else if (this._structure instanceof Spline) {
-    //   this._structure.setColor(binIndex, color);
-    // }
+  public setCullableBins(cullable: Array<boolean>) {
+    if (this._structure instanceof ContinuousTube) {
+      this._structure.setCullablePoints(cullable);
+    }
   }
 
   public getBinsPositions(): Array<vec3> {

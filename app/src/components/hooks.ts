@@ -102,6 +102,7 @@ export function useSelections<T extends ConfigurationsWithSelections>(
             newSelectionsAssociatedData.push({
                 selectionID: addID,
                 visible: true,
+                cullable: true,
             });
         }
 

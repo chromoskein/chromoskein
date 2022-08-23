@@ -11,6 +11,7 @@ export enum GradientPrecision {
 
 export class ContinuousTube implements HighLevelStructure {
     private _points: Array<vec3>;
+    private _pointsCullable: Array<boolean>;
     private _connectivityBitset: Array<0 | 1>;
     private _radius: number;
 
@@ -29,6 +30,7 @@ export class ContinuousTube implements HighLevelStructure {
 
     private _partOfBVH: boolean;
     private _dirtyBVH: boolean;
+
     private _opaque = true;
 
     public set opaque(opaque: boolean) {
@@ -54,6 +56,7 @@ export class ContinuousTube implements HighLevelStructure {
 
         this._points = points;
         this._connectivityBitset = connectivityBitset || new Array(this._points.length).fill(1);
+        this._pointsCullable = new Array().fill(true);
 
         if (colors == null) {
             this._colors = new Array(this._points.length - 1);
@@ -166,6 +169,7 @@ export class ContinuousTube implements HighLevelStructure {
                     color2: this._colors2[i],
                     selectionId: 1,
                     selectionId2: 1,
+                    cull: this._pointsCullable[i],
                 });
 
                 buffer.i32View.set([this._partOfBVH ? 1 : 0], (offset + i) * LL_STRUCTURE_SIZE + 29);
@@ -258,13 +262,24 @@ export class ContinuousTube implements HighLevelStructure {
         this._dirtyBVH = true;
     }
 
+    public get length(): number {
+        return this._points.length - 1;
+    }
+
+    public setCullablePoints(cullable: Array<boolean>) {
+        this._pointsCullable = [...cullable];
+
+        if (!this.buffer) return;
+
+        for(let i = 0; i < this._points.length; i++) writeRoundedConeToArrayBuffer(this.buffer, this._roundedConesPosition + i, { cull: this._pointsCullable[i] });
+
+        this.buffer.setModifiedBytes({ start: this._roundedConesPosition * LL_STRUCTURE_SIZE_BYTES, end: (this._roundedConesPosition + this._points.length + 1) * LL_STRUCTURE_SIZE_BYTES });
+    }
+
     public getColor(i: number): vec4 | Array<vec4> {
         return this._colors[i];
     }
 
-    public get length(): number {
-        return this._points.length - 1;
-    }
 
     public resetColor(color: vec4): void {
         this._colors.fill(color);

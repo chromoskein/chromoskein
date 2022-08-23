@@ -89,6 +89,45 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
         setRenaming(null);
     }
 
+    const setSelectionCullVisiblity = (selectionID: SelectionID, cullable: boolean, dataIndex = 0) => {
+        if (!configuration.data || ((Array.isArray(configuration.data) && configuration.data.length == 0))) {
+            return;
+        }
+
+        if (Array.isArray(configuration.data)) {
+            const associatedSelectionIndex = configuration.data[props.selectedDataIndex].selections.findIndex(s => s.selectionID == selectionID);
+
+            const newData = [...configuration.data];
+            newData[props.selectedDataIndex] = {
+                ...newData[props.selectedDataIndex],
+                selections: [...configuration.data[dataIndex].selections]
+            };
+    
+            newData[props.selectedDataIndex].selections[associatedSelectionIndex] = {
+                ...newData[props.selectedDataIndex].selections[associatedSelectionIndex],
+                cullable,
+            };
+    
+            updateConfiguration({
+                ...configuration,
+                data: newData,
+            });
+        } else {
+            const associatedSelectionIndex = configuration.data.selections.findIndex(s => s.selectionID == selectionID);
+            const newData = {
+                ...configuration.data,
+                selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible, cullable: s.cullable } }),
+            };
+    
+            newData.selections[associatedSelectionIndex].cullable = cullable;
+    
+            updateConfiguration({
+                ...configuration,
+                data: newData,
+            });
+        }
+    }
+
     const setSelectionVisiblity = (selectionID: SelectionID, visible: boolean, dataIndex = 0) => {
         if (!configuration.data || ((Array.isArray(configuration.data) && configuration.data.length == 0))) {
             return;
@@ -100,7 +139,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
             const newData = [...configuration.data];
             newData[props.selectedDataIndex] = {
                 ...newData[props.selectedDataIndex],
-                selections: configuration.data[dataIndex].selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
+                selections: configuration.data[dataIndex].selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible, cullable: s.cullable } }),
             };
     
             newData[props.selectedDataIndex].selections[associatedSelectionIndex].visible = visible;
@@ -113,7 +152,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
             const associatedSelectionIndex = configuration.data.selections.findIndex(s => s.selectionID == selectionID);
             const newData = {
                 ...configuration.data,
-                selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
+                selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible, cullable: s.cullable } }),
             };
     
             newData.selections[associatedSelectionIndex].visible = visible;
@@ -123,7 +162,6 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                 data: newData,
             });
         }
-
     }
 
     const removeSelection = (selectionID: SelectionID) => {
@@ -227,8 +265,13 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                                             <Text className="text" nowrap>{selection.name}</Text>
                                             <Rename16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={() => handleRenameStart(selection)}></Rename16Regular>
                                         </>}
+
+                                        {(options.cullable) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionCullVisiblity(selection.id, false) }}></EyeShow16Regular>)}
+                                        {(!options.cullable) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionCullVisiblity(selection.id, true) }}></EyeOff16Regular>)}
+
                                         {(options.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, false) }}></EyeShow16Regular>)}
                                         {(!options.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, true) }}></EyeOff16Regular>)}
+
                                         <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeSelection(selection.id) }}></Delete16Regular>
                                     </div>
                                 )}
