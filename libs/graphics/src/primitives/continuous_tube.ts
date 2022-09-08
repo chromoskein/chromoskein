@@ -88,83 +88,11 @@ export class ContinuousTube implements HighLevelStructure {
         this.buffer = buffer;
 
         if (type == null || type == LowLevelStructure.RoundedCone) {
-
-            const planes: Array<vec4 | null> = [];
-            for (let i = 0; i < this._points.length - 1; i++) {
-                if (i != 0) {
-                    const x1 = this._points[i - 1];
-                    const x2 = this._points[i];
-
-                    //const v1 = vec3.normalize(vec3.create(), vec3.sub(vec3.create(), x1, x2));
-                    const v1 = vec3.sub(vec3.create(), x1, x2);
-                    planes.push(vec4.fromValues(
-                        v1[0],
-                        v1[1],
-                        v1[2],
-                        0.0
-                    ));
-
-                } else {
-                    planes.push(null);
-                }
-
-                if (i < this._points.length - 2) {
-                    const x3 = this._points[i + 1];
-                    const x4 = this._points[i + 2];
-
-                    //const v2 = vec3.normalize(vec3.create(), vec3.sub(vec3.create(), x4, x3));
-                    const v2 = vec3.sub(vec3.create(), x4, x3);
-                    planes.push(vec4.fromValues(
-                        v2[0],
-                        v2[1],
-                        v2[2],
-                        0.0
-                    ));
-                } else {
-                    planes.push(null);
-                }
-
-                // Actual Planes
-                // const v1 = vec3.normalize(vec3.create(), vec3.sub(vec3.create(), x1, x2));
-                // const v2 = vec3.normalize(vec3.create(), vec3.sub(vec3.create(), x3, x2));
-                // const v3 = vec3.normalize(vec3.create(), vec3.cross(vec3.create(), v1, v2));
-                // const v4 = vec3.normalize(vec3.create(), vec3.scale(vec3.create(), vec3.add(vec3.create(), v1, v2), 0.5));
-
-                // let planeNormal1;
-                // if (vec3.length(v3) <= 0.000001) {
-                //     planeNormal1 = v1;
-                // } else {
-                //     planeNormal1 = vec3.normalize(vec3.create(), vec3.cross(vec3.create(), v3, v4));
-                // }
-                // const d1 = -vec3.dot(planeNormal1, x2);
-                // planes.push(vec4.fromValues(
-                //     planeNormal1[0],
-                //     planeNormal1[1],
-                //     planeNormal1[2],
-                //     d1
-                // ));
-
-                // const planeNormal2 = vec3.scale(vec3.create(), planeNormal1, -1.0);
-                // const d2 = -vec3.dot(planeNormal2, x2);
-                // planes.push(vec4.fromValues(
-                //     planeNormal2[0],
-                //     planeNormal2[1],
-                //     planeNormal2[2],
-                //     d2
-                // ));
-
-                // planes.push(null);
-                // planes.push(null);
-            }
-            //planes.push(null);
-
             for (let i = 0; i < this._points.length - 1; i++) {
                 writeRoundedConeToArrayBuffer(buffer, offset + i, {
                     from: this._points[i],
                     to: this._points[i + 1],
                     radius: this._connectivityBitset[i] == 0 ? 0.0 : this._radius,
-                    leftPlane: planes[i * 2],
-                    rightPlane: planes[i * 2 + 1],
                     color: this._colors[i],
                     color2: this._colors2[i],
                     selectionId: 1,

@@ -137,8 +137,12 @@ export class ChromatinPart {
     this._binsColor[binIndex] = vec4.clone(color);
 
     if (this._structure instanceof ContinuousTube) {
-      this._structure.setColor2(color, binIndex);
-      this._structure.setColor(color, binIndex + 1);
+      if (binIndex == 0) {
+        this._structure.setColor(color, 0);
+      } else {
+        this._structure.setColor2(color, binIndex - 1);
+        this._structure.setColor(color, binIndex);   
+      }   
     } else if (this._structure instanceof Spheres) {
       this._structure.setColor(binIndex, color);
     } else if (this._structure instanceof Spline) {

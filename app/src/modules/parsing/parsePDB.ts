@@ -108,6 +108,10 @@ export function parsePdb(pdb: string): Array<ChromatinModel> {
 
   const ranges: Array<{ name: string, from: number, to: number }> = [];
 
+  if ( connectivityBitset.reduce((previous, current) => previous || current, 0) === 0 ) {
+    connectivityBitset.fill(1);
+  }
+
   connectivityBitset = connectivityBitset.slice(0, atoms.length);
   let expandingRange = false;
   for (let i = 0; i < connectivityBitset.length; i++) {

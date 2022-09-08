@@ -121,18 +121,18 @@ export function ChromatinViewport(props: {
     //     viewport.cameraConfiguration = configuration.camera;
     // }, [configuration.camera]);
 
-    // useDeepCompareEffect(() => {
-    //     if (!viewport.camera || !viewport.canvas) return;
+    useDeepCompareEffect(() => {
+        if (!viewport.camera || !viewport.canvas) return;
 
-    //     const timer = setTimeout(() => {
-    //         updateConfiguration({
-    //             ...configuration,
-    //             camera: viewport.cameraConfiguration
-    //         });
-    //     }, 500)
+        const timer = setTimeout(() => {
+            updateConfiguration({
+                ...configuration,
+                camera: viewport.cameraConfiguration
+            });
+        }, 500)
 
-    //     return () => clearTimeout(timer);
-    // }, [viewport.cameraConfiguration]);
+        return () => clearTimeout(timer);
+    }, [viewport.cameraConfiguration]);
 
     // Disable camera if control is pressed
     useEffect(() => {
@@ -533,7 +533,9 @@ export function ChromatinViewport(props: {
 
                 if (!associatedData.cullable) {
                     for (let i = 0; i < binsAmount; i++) {
-                        cullableBins[i] = selection.bins[i] == 1 ? false : true;
+                        if (selection.bins[i] == 1) {
+                            cullableBins[i] = false;
+                        }
                     }
                 }
             }
@@ -605,9 +607,10 @@ export function ChromatinViewport(props: {
             return;
         }
 
-        if (closestIntersection != null && tool.type == ChromatinViewportToolType.PointSelection) {
+        if (tool.type == ChromatinViewportToolType.PointSelection) {
+            console.log('bin is: ', closestIntersection.binIndex);
             closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
-        } else if (closestIntersection != null && tool.type == ChromatinViewportToolType.SphereSelection && configuration.data[selectedDatum].selectedSelectionID) {
+        } else if (tool.type == ChromatinViewportToolType.SphereSelection && configuration.data[selectedDatum].selectedSelectionID) {
             // Only find position in space where the ray intersects
             const intersectionExactPosition = vec3.add(vec3.create(), closestIntersection.ray.origin, vec3.scale(vec3.create(), closestIntersection.ray.direction, closestIntersection.distance));
 
@@ -649,42 +652,29 @@ export function ChromatinViewport(props: {
                     chromatinPart.setBinColorVec4(binIndex, selectionColor);
                 }
             }
-        } else if (tool.type == ChromatinViewportToolType.JoinSelection && configuration.selectedSelectionID != null) {
-            // const selection = globalSelections.selections.find(s => s.id == configuration.selectedSelectionID);
-            // if (!selection) {
-            //     return;
-            // }
+        } else if (tool.type == ChromatinViewportToolType.JoinSelection) {
+            const selectionColor = vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a);
+            const chromatinPart = closestIntersection.chromatinPart;
 
-            // if (closestIntersection) {
-            //     closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
-            // }
+            if (closestIntersection) {
+                chromatinPart.setBinColorVec4(closestIntersection.binIndex, selectionColor);
+            }
 
-            // if (tool.from != null) {
-            //     const fromChromosomeSliceIndex = chromosomeSlices.findIndex(c => c.from <= tool.from! && tool.from! < c.to);
-            //     const fromChromosomePart = viewport.getChromatinPartByChromosomeIndex(fromChromosomeSliceIndex);
+            if (tool.from != null) {
+                chromatinPart.setBinColorVec4(tool.from, selectionColor);
+            }
 
-            //     fromChromosomePart?.setBinColor(tool.from, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
-            // }
+            if (closestIntersection && tool.from != null) {
+                const startBinIndex = Math.min(closestIntersection.binIndex, tool.from);
+                const endBinIndex = Math.max(closestIntersection.binIndex, tool.from);
 
-            // if (closestIntersection && tool.from != null) {
-            //     const closestIntersectionChromosomeOffset = chromosomeSlices[closestIntersection.chromatinPart.chromosomeIndex].from;
-
-            //     const startBinIndex = Math.min(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
-            //     const endBinIndex = Math.max(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
-
-            //     for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-            //         const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-            //         if (!chromatinPart) return;
-
-            //         const binsPositions = chromatinPart.getBinsPositions();
-            //         const binOffset = chromosomeSlices[chromosomeIndex].from;
-            //         for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
-            //             if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) < endBinIndex) {
-            //                 chromatinPart.setBinColor(binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
-            //             }
-            //         }
-            //     }
-            // }
+                const binsPositions = chromatinPart.getBinsPositions();
+                for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
+                    if (startBinIndex <= binIndex && binIndex < endBinIndex) {
+                        chromatinPart.setBinColorVec4(binIndex, selectionColor);
+                    }
+                }
+            }
         } else if (tool.type == ChromatinViewportToolType.Ruler) {
             // // color bin where the ruler is from
             // if (tool.from != null) {
@@ -808,43 +798,39 @@ export function ChromatinViewport(props: {
                 }
             }
         } else if (tool.type == ChromatinViewportToolType.JoinSelection) {
-            // if (tool.from == null) {
-            //     updateConfiguration({
-            //         ...configuration,
-            //         tool: {
-            //             ...tool,
-            //             from: selectedChromosomeOffset + closestIntersection.binIndex
-            //         }
-            //     });
-            // } else {
-            //     const closestIntersectionChromosomeOffset = chromosomeSlices[closestIntersection.chromatinPart.chromosomeIndex].from;
+            if (tool.from == null) {
+                updateConfiguration({
+                    ...configuration,
+                    tool: {
+                        ...tool,
+                        from: closestIntersection.binIndex
+                    }
+                });
+            } else {
+                const startBinIndex = Math.min(closestIntersection.binIndex, tool.from);
+                const endBinIndex = Math.max(closestIntersection.binIndex, tool.from);
 
-            //     const startBinIndex = Math.min(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
-            //     const endBinIndex = Math.max(closestIntersectionChromosomeOffset + closestIntersection.binIndex, tool.from);
+                const chromatinPart = closestIntersection.chromatinPart;
+                const value = isSecondaryModPressed ? 0 : 1;
 
-            //     const value = isSecondaryModPressed ? 0 : 1;
-            //     for (let chromosomeIndex = 0; chromosomeIndex < configuration.chromosomes.length; chromosomeIndex++) {
-            //         const chromatinPart = viewport.getChromatinPartByChromosomeIndex(chromosomeIndex);
-            //         if (!chromatinPart) continue;
+                if (chromatinPart) {
+                    const binsPositions = chromatinPart.getBinsPositions();
+                    for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
+                        if (startBinIndex <= binIndex && binIndex <= endBinIndex) {
+                            newBins[binIndex] = value;
+                        }
+                    }
 
-            //         const binsPositions = chromatinPart.getBinsPositions();
-            //         const binOffset = chromosomeSlices[chromosomeIndex].from;
-            //         for (let binIndex = 0; binIndex < binsPositions.length; binIndex++) {
-            //             if (startBinIndex <= (binOffset + binIndex) && (binOffset + binIndex) <= endBinIndex) {
-            //                 newBins[binOffset + binIndex] = value;
-            //             }
-            //         }
-            //     }
-
-            //     updateConfiguration({
-            //         ...configuration,
-            //         tool: {
-            //             ...tool,
-            //             from: null,
-            //             to: null
-            //         }
-            //     });
-            // }
+                    updateConfiguration({
+                        ...configuration,
+                        tool: {
+                            ...tool,
+                            from: null,
+                            to: null
+                        }
+                    });
+                }
+            }
         } else if (tool.type == ChromatinViewportToolType.Ruler) {
             // const ruler = { ...tool };
 

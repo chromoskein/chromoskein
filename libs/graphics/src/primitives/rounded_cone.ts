@@ -53,28 +53,12 @@ export function writeRoundedConeToArrayBuffer(
         array.f32View.set([radius], offsetWords + 7);
     }
 
-    if (leftPlane) {
-        array.f32View.set([leftPlane[0], leftPlane[1], leftPlane[2], leftPlane[3]], offsetWords + 8);
-    }
-
-    if (rightPlane) {
-        array.f32View.set([rightPlane[0], rightPlane[1], rightPlane[2], rightPlane[3]], offsetWords + 12);
-    }
-
     if (color) {
         array.u8view.set([color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255], offsetBytes + 64);
     }
 
     if (color2) {
         array.u8view.set([color2[0] * 255, color2[1] * 255, color2[2] * 255, color2[3] * 255], offsetBytes + 68);
-    }
-
-    if (borderColor) {
-        array.u8view.set([borderColor[0] * 255, borderColor[1] * 255, borderColor[2] * 255, borderColor[3] * 255], offsetBytes + 72);
-    }
-
-    if (borderColor2) {
-        array.u8view.set([borderColor2[0] * 255, borderColor2[1] * 255, borderColor2[2] * 255, borderColor2[3] * 255], offsetBytes + 76);
     }
 
     if (cull != null) {

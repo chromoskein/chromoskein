@@ -113,7 +113,7 @@ export class Spline implements HighLevelStructure {
 
         this.cubicBezierPoints = new Array(this.catmullRomPoints.length);
         this.quadraticBeziers = new Array(quadraticBeziersLength);
-        this._radius = Math.min(0.005, radius);
+        this._radius = Math.min(0.05, radius);
 
         for (let i = 0; i < this.catmullRomPoints.length - 3; i++) {
             let p0 = this.catmullRomPoints[i + 0];
@@ -176,32 +176,32 @@ export class Spline implements HighLevelStructure {
     }
 
     public writeToArrayBuffer(buffer: LinearImmutableArray, offset: number, type: LowLevelStructure | null): number {
-        if (type != null && type != LowLevelStructure.QuadraticBezierCurve) {
-            return 0;
-        }
-
-        for (let i = 0; i < this.quadraticBeziers.length; i++) {
-            const curve = this.quadraticBeziers[i];
-            const offsetWords = (offset + i) * LL_STRUCTURE_SIZE;
-
-            buffer.f32View.set([curve.p0[0], curve.p0[1], curve.p0[2], this._radius], offsetWords + 0);
-            buffer.f32View.set([curve.p1[0], curve.p1[1], curve.p1[2], this._radius], offsetWords + 4);
-            buffer.f32View.set([curve.p2[0], curve.p2[1], curve.p2[2], this._radius], offsetWords + 8);
-
-            buffer.f32View.set(this._colors[i], offsetWords + 12);
-            buffer.f32View.set(this._borderColors[i], offsetWords + 16);
-
-            buffer.i32View.set([this._partOfBVH ? 1 : 0], (offset + i) * LL_STRUCTURE_SIZE + 29);
-            buffer.i32View.set([this.id], offsetWords + 30);
-            buffer.i32View.set([LowLevelStructure.QuadraticBezierCurve], offsetWords + 31);
-        }
-
         this.buffer = buffer;
         this._bufferPosition = offset;
 
-        this.buffer.setModifiedBytes({ start: offset * LL_STRUCTURE_SIZE_BYTES, end: (offset + this.quadraticBeziers.length) * LL_STRUCTURE_SIZE_BYTES });
+        if (type == null || type == LowLevelStructure.QuadraticBezierCurve) {
+            console.log('writing', buffer);
+            for (let i = 0; i < this.quadraticBeziers.length; i++) {
+                const curve = this.quadraticBeziers[i];
+                const offsetWords = (offset + i) * LL_STRUCTURE_SIZE;
+    
+                buffer.f32View.set([curve.p0[0], curve.p0[1], curve.p0[2], this._radius], offsetWords + 0);
+                buffer.f32View.set([curve.p1[0], curve.p1[1], curve.p1[2], this._radius], offsetWords + 4);
+                buffer.f32View.set([curve.p2[0], curve.p2[1], curve.p2[2], this._radius], offsetWords + 8);
+    
+                buffer.f32View.set(this._colors[i], offsetWords + 12);
+                buffer.f32View.set(this._borderColors[i], offsetWords + 16);
+    
+                buffer.i32View.set([this._partOfBVH ? 1 : 0], (offset + i) * LL_STRUCTURE_SIZE + 29);
+                buffer.i32View.set([this.id], offsetWords + 30);
+                buffer.i32View.set([LowLevelStructure.QuadraticBezierCurve], offsetWords + 31);
+            }       
+    
+            this.buffer.setModifiedBytes({ start: offset * LL_STRUCTURE_SIZE_BYTES, end: (offset + this.quadraticBeziers.length) * LL_STRUCTURE_SIZE_BYTES });
+            return this.quadraticBeziers.length;
+        }
 
-        return this.quadraticBeziers.length;
+        return 0;
     }
 
     public countOf(type: LowLevelStructure | null): number {
@@ -248,9 +248,9 @@ export class Spline implements HighLevelStructure {
     }
 
     public set radius(radius: number) {
+        this._radius = Math.min(0.05, radius);
+        
         if (!this.buffer) return;
-
-        this._radius = Math.min(0.01, radius);
 
         for (let i = 0; i < this.quadraticBeziers.length; i++) {
             const curve = this.quadraticBeziers[i];
