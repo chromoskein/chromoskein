@@ -268,10 +268,13 @@ export function ChromatinViewportConfigurationPanel(props: {
             );
         }
 
-        const quantiles = quantile(distances, [0.05, 0.95]);
+        const quantiles = quantile(distances, [0.05, 0.85]);
+        const iqr = quantiles[1] - quantiles[0];
+        const low = quantiles[0] - 1.5 * iqr;
+        const high = quantiles[1] + 1.5 * iqr;
 
-        const radius = quantiles[0] / 4.0;
-        const radiusRange = { min: 0.0, max: quantiles[0] / 2.0 };
+        const radius = low;
+        const radiusRange = { min: low, max: high };
         //#region Calculate radius range
 
         newData.push({

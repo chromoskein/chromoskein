@@ -598,7 +598,7 @@ export function TADViewport(props: {
                 color: 'white'
             }}>
                 {(selections && selectionsRanges) && selectionsRanges.map((selectionRange, selectionRangeIndex) => {
-                    if (selections[selectionRangeIndex]) {
+                    if (selections[selectionRangeIndex] && selections[selectionRangeIndex][1].visible) {
                         return <div key={selectionRangeIndex} style={{
                             width: '100%',
                             height: '8px',
