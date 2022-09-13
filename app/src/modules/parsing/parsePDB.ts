@@ -38,6 +38,8 @@ export class Residue {
 
 export type ChromatinModel = {
   atoms: Array<{x: number, y: number, z: number}>;
+
+  connectivityBitset: Array<0 | 1>;
   ranges: Array<{ name: string, from: number, to: number }>;
 
   normalizeCenter: vec3;
@@ -106,6 +108,10 @@ export function parsePdb(pdb: string): Array<ChromatinModel> {
 
   const ranges: Array<{ name: string, from: number, to: number }> = [];
 
+  if ( connectivityBitset.reduce((previous, current) => previous || current, 0) === 0 ) {
+    connectivityBitset.fill(1);
+  }
+
   connectivityBitset = connectivityBitset.slice(0, atoms.length);
   let expandingRange = false;
   for (let i = 0; i < connectivityBitset.length; i++) {
@@ -135,6 +141,8 @@ export function parsePdb(pdb: string): Array<ChromatinModel> {
       expandingRange = false;
     }
   }
+
+  console.log(ranges);
 
   // Normalize to [-1.0, 1.0] and center
   // Build bounding box
@@ -167,6 +175,7 @@ export function parsePdb(pdb: string): Array<ChromatinModel> {
     // Raw data from pdb
     atoms,
     // Connectivity
+    connectivityBitset,
     ranges,
     // Normalize
     normalizeCenter: bb.center,

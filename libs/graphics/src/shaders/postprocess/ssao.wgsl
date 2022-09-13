@@ -66,7 +66,7 @@ main(@builtin(global_invocation_id) GlobalInvocationID
   let TBN = mat3x3<f32>(tangent, bitangent, viewSpaceNormal);
 
   var occlusion = 0.0;
-  let numberOfSamples = 4;
+  let numberOfSamples = 32;
   for (var i = 0; i < numberOfSamples; i = i + 1) {
     // get sample position
     var samplePos = TBN * globals.noiseSamples[i].xyz; // from tangent to view-space

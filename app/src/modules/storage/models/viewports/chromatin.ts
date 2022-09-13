@@ -1,6 +1,8 @@
+import { IColor } from "@fluentui/react";
 import { vec3 } from "gl-matrix";
 import { ChromatinRepresentation, OrbitCameraConfiguration, SmoothCameraConfiguration } from "../../../graphics";
 import { DataID } from "../data";
+import { SelectionID } from "../selections";
 import { IDataConfiguration, IViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions, blackBackground, NoViewportTool } from "./shared";
 
 export enum ChromatinViewportToolType {
@@ -40,14 +42,60 @@ export type ChromatinViewportTool = ChromatinPointSelection | ChromatinSphereSel
 
 export interface IChromatinDataConfiguration extends IDataConfiguration {
     id: DataID,
+    secondaryID: DataID | null,
 
-    selections: Array<ViewportSelectionOptions>,
+    chromosomes: Array<boolean>,
+
+    color: IColor,
+
     representation: ChromatinRepresentation,
-    radius: number | null,
+    
+    radius: number,
+    radiusRange: {
+        min: number,
+        max: number,
+    },
+
+    selectedSelectionID: SelectionID | null,
+    selections: Array<ViewportSelectionOptions>,
+
+    mapValues: {
+        id: number;
+        aggregationFunction: ChromatinViewportAggregationFunction;
+    },
+
+    showTooltip: boolean;
+    tooltip: {
+        tooltipDataIDs: Array<DataID>,
+        tooltipTextAggregation: TooltipTextAggregation,
+        tooltipNumericAggregation: TooltipNumericAggregation,
+    }
+
+    colorMappingMode: ChromatinViewportColorMappingMode;
+
+    labeling: {
+        showDebugViewport: boolean;
+        showLabelingOverlay: boolean;
+        showLabelAnchors: boolean;
+        useMaxDistCPU: boolean;
+        shownDebugTexture: LabelingDebugTexture,
+    }
+
+    sasa: {
+        method: 'constant' | 'generated';
+        probeSize: number;
+        accuracy: number;
+        individual: boolean
+    }
+
+    density: {
+        probeSize: number;
+        individual: boolean;
+    }
 }
 
 export type ChromatinViewportAggregationFunction = "min" | "max" | "median" | "mean" | 'sum';
-export type ChromatinViewportColorMappingMode = 'none' | 'centromers' | '1d-numerical' | '1d-density' | 'linear-order' | 'sasa' | '3d-density';
+export type ChromatinViewportColorMappingMode = 'single-color' | 'selections' | 'centromers' | '1d-numerical' | '1d-density' | 'linear-order' | 'sasa' | '3d-density';
 export type TooltipTextAggregation = 'none' | 'count';
 export type TooltipNumericAggregation = 'none' | 'min' | 'max' | 'median' | 'mean' | 'sum';
 export type LabelingDebugTexture = 'id' | 'contours' | 'dt';
@@ -64,15 +112,10 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
 
     camera: OrbitCameraConfiguration | SmoothCameraConfiguration,
 
-    data: IChromatinDataConfiguration | null,
     chromosomes: Array<boolean>,
 
-    representation: ChromatinRepresentation,
-
-    mapValues: {
-        id: number;
-        aggregationFunction: ChromatinViewportAggregationFunction;
-    },
+    selectedDatum: number | null;
+    data: Array<IChromatinDataConfiguration>;    
 
     tooltip: {
         tooltipDataIDs: Array<DataID>,
@@ -84,16 +127,6 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
         radius: number;
     },
 
-    radiusRange: {
-        min: number,
-        max: number,
-    },
-
-    cutaway: {
-        axis: 'X' | 'Y' | 'Z' | vec3,
-        length: number,
-    },
-
     selectedCutaway: number,
     cutaways: Array<Cutaway>,
 
@@ -102,10 +135,6 @@ export interface ChromatinViewportConfiguration extends IViewportConfiguration {
         showDebugBins: boolean;
         showDebugIntersections: boolean;
     }
-
-    colorMappingMode: ChromatinViewportColorMappingMode;
-
-    tool: ChromatinViewportTool | NoViewportTool;
 
     explodedViewScale: number;
     labeling: {
@@ -139,10 +168,10 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         tabName: "Unnamed 3D Viewport",
         tag: "3D",
 
-        data: null,
-        chromosomes: [],
+        selectedDatum: 0,
 
-        representation: ChromatinRepresentation.ContinuousTube,
+        data: [],
+        chromosomes: [],
 
         selectedSelectionID: null,
 
@@ -155,10 +184,6 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
             lookAtPosition: { x: 0.0, y: 0.0, z: 0.0 }
         } as OrbitCameraConfiguration,
 
-        mapValues: {
-            id: -1,
-            aggregationFunction: 'mean'
-        },
         tooltip: {
             tooltipDataIDs: [],
             tooltipTextAggregation: 'none',
@@ -170,16 +195,6 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
             blurSize: 2,
         },
 
-        radiusRange: {
-            min: 0.0,
-            max: 1.0,
-        },
-
-        cutaway: {
-            axis: 'X',
-            length: -1.0,
-        },
-
         selectedCutaway: 0,
         cutaways: [],
 
@@ -188,7 +203,6 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
             showDebugBins: false,
             showDebugIntersections: false,
         },
-        colorMappingMode: 'none',
 
         tool: {
             type: 'no-tool',

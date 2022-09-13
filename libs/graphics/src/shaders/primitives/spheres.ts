@@ -10,7 +10,9 @@ struct BufferSphere {
     color: vec4<f32>,
     borderColor: vec4<f32>,
 
-    padding: array<f32, 19>,
+    cull: u32,
+
+    padding: array<f32, 17>,
 
     ty: i32,
 };
@@ -129,12 +131,6 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
 
   var outputColor = color;
 
-  let angle = dot(normal, normalize(camera.position.xyz - intersection1.xyz));
-
-  if (angle < 0.50) {
-    outputColor = borderColor;
-  }
-
   ${writeDepth ? `` : `
   let intersection2: vec3<f32> = camera.position.xyz + t.y * ray.direction.xyz;
   var intersection2ViewSpace = camera.projectionView * vec4<f32>(intersection2, 1.0);
@@ -175,7 +171,7 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
     ${writeDepth ? 'depth.z,' : ''}
     outputColor,
     ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-    ${writeDepth ? 'vec4<f32>(1.0, 0.0, 0.0, 1.0),' : '' }
+    ${writeDepth ? 'vec4<f32>(0, 0.0, 0.0, 1.0),' : ''}
   );  
 }
 `};

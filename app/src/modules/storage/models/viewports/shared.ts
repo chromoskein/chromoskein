@@ -28,12 +28,14 @@ export interface IDataConfiguration { }
 export type ViewportSelectionOptions = {
   selectionID: SelectionID,
   visible: boolean,
+  cullable: boolean,
 }
 
 export function getDefaultViewportSelectionOptions(selectionID: SelectionID): ViewportSelectionOptions {
   return {
     selectionID,
     visible: true,
+    cullable: false,
   };
 }
 

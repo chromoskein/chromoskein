@@ -3,15 +3,18 @@ import { vec3 } from 'gl-matrix';
 import React, { Dispatch, useEffect, useRef, useState } from 'react';
 import { CSVDelimiter, FileState, FileType, ParseResult, parseResultToXYZ, parseToRows, ParseConfiguration, ParseResultCSV, ParseResultPDB } from '../../modules/parsing';
 import { DataState, DataAction, DataActionKind, BinPositionsData, isoDataID } from '../../modules/storage/models/data';
+import { SelectionAction, SelectionActionKind, SelectionState } from '../../modules/storage/models/selections';
 import { UploadTextFilesButton } from '../buttons/UploadTextFilesButton';
 
 
 export function NewXYZDataDialog(props: {
   hidden: boolean,
   closeFunction: () => void,
-  dataReducer: [DataState, Dispatch<DataAction>]
+  dataReducer: [DataState, Dispatch<DataAction>],
+  selectionsReducer: [SelectionState, Dispatch<SelectionAction>],
 }): JSX.Element {
   const [data, dispatchData] = props.dataReducer;
+  const [selections, dispatchSelections] = props.selectionsReducer;
 
   // Reference to the true input file obscured by a fake one (for styling purposes)
   const inputFileElement = useRef<HTMLInputElement | null>(null);
@@ -51,18 +54,20 @@ export function NewXYZDataDialog(props: {
       if (parsedResultUntyped.type == 'CSV') {
         const parsedResult: ParseResultCSV = parsedResultUntyped as ParseResultCSV;
 
-        const values = parseResultToXYZ(parsedResult, selectedColumns);
+        const positions = parseResultToXYZ(parsedResult, selectedColumns);
 
         const data: BinPositionsData = {
           id: isoDataID.wrap(-1), // will be replaced in reducer
           name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
           type: '3d-positions',
-          values: values,
+          values: {
+            positions
+          },
           basePairsResolution: basePairsResolution,
           binOffset: 0,
           normalizeCenter: vec3.create(),
           normalizeScale: 1.0,
-          chromosomes: [{ name: "chr1", from: 0, to: (values.length - 1) }]
+          chromosomes: [{ name: "chr1", from: 0, to: (positions.length - 1) }]
         }
         dispatchData({
           type: DataActionKind.ADD_DATA,
@@ -72,11 +77,14 @@ export function NewXYZDataDialog(props: {
       } else {
         const parsedResult: ParseResultPDB = parsedResultUntyped as ParseResultPDB;
 
-        const data: BinPositionsData = {
+        const data3D: BinPositionsData = {
           id: isoDataID.wrap(-1), // will be replaced in reducer
           name: files[0].name + (parsedFile.length > 1 ? "(" + i + ")" : ""),
           type: '3d-positions',
-          values: parsedResult.atoms,
+          values: {
+            positions: parsedResult.atoms,
+            connectivity: parsedResult.connectivityBitset,
+          },
           basePairsResolution: basePairsResolution,
           binOffset: 0,
           normalizeCenter: parsedResult.normalizeCenter,
@@ -86,8 +94,25 @@ export function NewXYZDataDialog(props: {
 
         dispatchData({
           type: DataActionKind.ADD_DATA,
-          data: data
+          data: data3D
         });
+
+        const data3DID = data.dataMaxId + 1;
+
+        if (parsedResult.ranges.length > 0) {
+          for (const [rangeIndex, range] of parsedResult.ranges.entries()) {
+            dispatchSelections({
+              type: SelectionActionKind.ADD,
+
+              name: 'Chromosome ' + rangeIndex,
+              dataID: isoDataID.wrap(data3DID),
+              dataSize: data3D.values.positions.length,
+              bins: new Uint16Array(parsedResult.atoms.length).fill(1, range.from, range.to + 1),
+            });
+          }
+
+        }
+
       }
     }
 

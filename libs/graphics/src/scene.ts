@@ -308,12 +308,12 @@ export class Scene {
         return [spheresIndex, spheres];
     }
 
-    public addContinuousTube(structureName: string, points: Array<vec3>, radius: number | null = null, colors: Array<vec4> | null = null, partOfBVH = true, update = true): [number, ContinuousTube] {
+    public addContinuousTube(structureName: string, points: Array<vec3>, connectivityBitset: Array<0 | 1> | null, radius: number | null = null, colors: Array<vec4> | null = null, partOfBVH = true, update = true): [number, ContinuousTube] {
         this.removeStructureByName(structureName);
 
         this.lastStructureID += 1;
 
-        const continuousTube = new ContinuousTube(this.graphicsLibrary, this.lastStructureID, partOfBVH, points, radius ?? 1.0, colors);
+        const continuousTube = new ContinuousTube(this.graphicsLibrary, this.lastStructureID, partOfBVH, points, radius ?? 1.0, colors, connectivityBitset);
         const continuousTubeIndex = this.addStructure(structureName, continuousTube, update);
 
         return [continuousTubeIndex, continuousTube];
@@ -470,7 +470,7 @@ export class Scene {
 
                 if (depth && gBufferWorldPositions) {
                     passEncoder.setBindGroup(3, gBufferWorldPositions);
-                }                
+                }
             }
 
             for (const structure of this.structures) {

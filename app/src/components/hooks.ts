@@ -2,8 +2,8 @@ import { Actions, Model, TabNode } from "flexlayout-react";
 import { Dispatch, useEffect, useState, useCallback } from "react";
 import { useFreshTick } from "rooks";
 import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationActionKind, ConfigurationState, dataIndex, DistanceViewportConfiguration, ForceGraphViewportConfiguration, IViewportConfiguration, ViewportConfiguration, ViewportSelectionOptions } from "../modules/storage/models/viewports";
-import { DataAction, DataState } from "../modules/storage/models/data";
-import { SelectionAction, Selection, SelectionState } from "../modules/storage/models/selections";
+import { DataAction, DataID, DataState } from "../modules/storage/models/data";
+import { SelectionAction, Selection, SelectionState, SelectionID } from "../modules/storage/models/selections";
 
 // Only configurations that have selections can use this part
 export type ConfigurationsWithSelections = ChromatinViewportConfiguration | DistanceViewportConfiguration | ForceGraphViewportConfiguration;
@@ -67,26 +67,28 @@ export function useConfiguration<T extends ViewportConfiguration>(id: number, co
 export const useConfigurationTypeless = (id: number, configurationsReducer: [ConfigurationState, Dispatch<ConfigurationAction>]) => useConfiguration<ViewportConfiguration>(id, configurationsReducer);
 
 export function useSelections<T extends ConfigurationsWithSelections>(
-    dataPartIndex: dataIndex | null,
     configurationReducer: ConfigurationReducer<T>,
     dataReducer: [DataState, Dispatch<DataAction>],
-    selectionsReducer: [SelectionState, Dispatch<SelectionAction>]): Array<[Selection, ViewportSelectionOptions]> {
+    selectionsReducer: [SelectionState, Dispatch<SelectionAction>],
+    selectedDataIndex: number | null): Array<[Selection, ViewportSelectionOptions]> {
     const [configuration, updateConfiguration] = configurationReducer;
     const [globalSelections, dispatchGlobalSelections] = selectionsReducer;
 
     const [result, setResult] = useState<Array<[Selection, ViewportSelectionOptions]>>([]);
 
     useEffect(() => {
-        if (!configuration.data) {
+        if (!configuration.data || selectedDataIndex == null || (Array.isArray(configuration.data) && configuration.data.length === 0)) {
             setResult(() => []);
             return;
         }
 
-        const dataPartID = configuration.data.id;
-        const selections = dataPartID != null ? globalSelections.selections.filter(selection => selection.dataID === dataPartID) : [];
-        const selectionsAssociatedData: Array<ViewportSelectionOptions> = (dataPartID != null && dataPartIndex != null) ? configuration.data.selections.map(s => { return { ...s } }) : [];
+        const dataPartID: DataID | SelectionID | null = Array.isArray(configuration.data) ? configuration.data[selectedDataIndex]?.id || null : configuration.data.id;
+        const dataSelections = Array.isArray(configuration.data) ? configuration.data[selectedDataIndex]?.selections || null : configuration.data.selections;
 
-        if (dataPartIndex == null || dataPartID == null) return;
+        const selections = dataPartID != null ? globalSelections.selections.filter(selection => selection.dataID === dataPartID) : [];
+        const selectionsAssociatedData: Array<ViewportSelectionOptions> = dataPartID ? dataSelections.map(s => { return { ...s } }) : [];
+
+        if (dataPartID == null) return;
 
         const selectionsIDs = selections.map(s => s.id);
         const selectionsAssociatedDataIds = selectionsAssociatedData.map(s => s.selectionID);
@@ -94,25 +96,40 @@ export function useSelections<T extends ConfigurationsWithSelections>(
         const toRemoveAssociatedDataIds = selectionsAssociatedDataIds.filter(s => !selectionsIDs.includes(s));
         const toAddAssociatedDataIds = selectionsIDs.filter(s => !selectionsAssociatedDataIds.includes(s));
 
-        const newSelectionsAssociatedData = configuration.data.selections.filter(s => !toRemoveAssociatedDataIds.includes(s.selectionID)).map(s => { return { ...s } });
+        const newSelectionsAssociatedData = dataSelections.filter(s => !toRemoveAssociatedDataIds.includes(s.selectionID)).map(s => { return { ...s } });
 
         for (const addID of toAddAssociatedDataIds) {
             newSelectionsAssociatedData.push({
                 selectionID: addID,
                 visible: true,
+                cullable: true,
             });
         }
 
         if (toRemoveAssociatedDataIds.length > 0 || toAddAssociatedDataIds.length > 0) {
-            const newData = {
-                ...configuration.data,
-                selections: newSelectionsAssociatedData
+            if (Array.isArray(configuration.data)) {
+                const newData = [...configuration.data];
+                newData[selectedDataIndex] = {
+                    ...configuration.data[selectedDataIndex],
+                    selections: newSelectionsAssociatedData
+                };
+
+                updateConfiguration({
+                    ...configuration,
+                    data: newData
+                });
+            } else {
+                const newData = {
+                    ...configuration.data,
+                    selections: newSelectionsAssociatedData
+                };
+
+                updateConfiguration({
+                    ...configuration,
+                    data: newData
+                });
             }
 
-            updateConfiguration({
-                ...configuration,
-                data: newData
-            });
         }
 
         const newResult: Array<[Selection, ViewportSelectionOptions]> = [];
@@ -124,7 +141,7 @@ export function useSelections<T extends ConfigurationsWithSelections>(
             }
         }
         setResult(() => newResult);
-    }, [configuration, configuration.data, globalSelections, dataPartIndex]);
+    }, [configuration, configuration.data, globalSelections, selectedDataIndex]);
 
     return result;
 }

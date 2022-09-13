@@ -40,6 +40,9 @@ export type SelectionActionAdd = {
 
   dataID: DataID;
   dataSize: number;
+
+  name?: string;
+  bins?: Uint16Array;
 }
 
 export type SelectionActionUpdate = {
@@ -83,9 +86,9 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
         selections: [...state.selections, {
           id: isoSelectionID.wrap(maxId),
           dataID: action.dataID,
-          name: "Selection " + maxId,
+          name: action.name || ("Selection " + maxId),
           color: hexToRGBAUnit(randomColor(), 1.0),
-          bins: new Uint16Array(action.dataSize)
+          bins: action.bins || new Uint16Array(action.dataSize)
         }]
       };
     }

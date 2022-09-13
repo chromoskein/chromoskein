@@ -63,7 +63,7 @@ export function TADViewport(props: {
     useKey(["AltLeft"], () => setAltPressed(false), { eventTypes: ["keyup"] });
 
     // TADs/Selections
-    const selections = useSelections(0, [configuration, updateConfiguration], props.dataReducer, props.selectionsReducer);
+    const selections = useSelections([configuration, updateConfiguration], props.dataReducer, props.selectionsReducer, 0);
     const [hoveredBins, setHoveredBins] = useState<BinPosition | null>(null);
     const [hoveredBinRanges, setHoveredBinRanges] = useState<[[number, number], [number, number]] | null>(null);
 
@@ -103,7 +103,7 @@ export function TADViewport(props: {
                     break;
                 }
                 case '3d-positions': {
-                    const values = d.values as Positions3D;
+                    const values = (d.values as Positions3D).positions;
                     maxBin = values.length;
 
                     const positions = [];
@@ -128,7 +128,7 @@ export function TADViewport(props: {
         //             return;
         //         }
 
-        //         const values = d.values as Positions3D;
+        //         const values = (d.values as Positions3D).positions;
 
         //         const positions = [];
         //         const binNumbersAnnotation: Array<number> = [];
@@ -598,7 +598,7 @@ export function TADViewport(props: {
                 color: 'white'
             }}>
                 {(selections && selectionsRanges) && selectionsRanges.map((selectionRange, selectionRangeIndex) => {
-                    if (selections[selectionRangeIndex]) {
+                    if (selections[selectionRangeIndex] && selections[selectionRangeIndex][1].visible) {
                         return <div key={selectionRangeIndex} style={{
                             width: '100%',
                             height: '8px',

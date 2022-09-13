@@ -12,7 +12,10 @@ export type Sparse1DNumericData = Array<{
 }>
 export type SparseDistanceMatrix = Array<{ from: number, to: number, distance: number }>;
 export type Position3D = { x: number, y: number, z: number }
-export type Positions3D = Array<Position3D>;
+export type Positions3D = {
+  positions: Array<Position3D>;
+  connectivity?: Array<0 | 1>;
+}
 export type Colors = Array<{ r: number, g: number, b: number, a: number }>
 
 

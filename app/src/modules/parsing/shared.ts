@@ -70,11 +70,13 @@ export interface ParseResultCSV extends IParseResult {
 
 export interface ParseResultPDB extends IParseResult {
     type: 'PDB';
+
     atoms: Array<{ x: number, y: number, z: number }>;
 
     normalizeCenter: vec3;
     normalizeScale: number;
 
+    connectivityBitset: Array<0 | 1>;
     ranges: Array<{ name: string, from: number, to: number }>;
 }
 
@@ -106,6 +108,8 @@ function parsePDBToObjects(content: string, config: ParsePDBConfiguration): Arra
 
             normalizeCenter: p.normalizeCenter,
             normalizeScale: p.normalizeScale,
+
+            connectivityBitset: p.connectivityBitset,
             ranges: p.ranges,
         }
     });

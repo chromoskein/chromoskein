@@ -1,5 +1,5 @@
-import { DistanceMapDataConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
-import { DataAction, DataID, DataState } from "../../modules/storage/models/data";
+import { DistanceMapDataConfiguration, ChromatinViewportConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
+import { DataAction, DataID, DataState, Positions3D } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionID, Selection, SelectionState } from "../../modules/storage/models/selections";
 import { ConfigurationReducer, ConfigurationsWithSelections } from "../hooks";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
@@ -14,6 +14,7 @@ export interface PropsSelectionsPart<T extends ViewportConfiguration> {
     configurationReducer: ConfigurationReducer<T>,
     dataReducer: [DataState, Dispatch<DataAction>],
     selectionsReducer: [SelectionState, Dispatch<SelectionAction>],
+    selectedDataIndex: number,
 }
 
 export function SelectionsPart<T extends ConfigurationsWithSelections>(props: PropsSelectionsPart<T>): JSX.Element {
@@ -21,7 +22,16 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     const [globalSelections, globalSelectionsDispatch] = props.selectionsReducer;
     const [configuration, updateConfiguration] = props.configurationReducer;
 
-    const selectedDataPartID: DataID | SelectionID | null = configuration.data ? configuration.data.id : null;
+    let selectedDataPartID: DataID | SelectionID | null = null;
+    if (configuration.data) {
+        if (Array.isArray(configuration.data) && configuration.data[props.selectedDataIndex]) {
+            selectedDataPartID = configuration.data[props.selectedDataIndex].id;
+        }
+        
+        if (!Array.isArray(configuration.data)) {
+            selectedDataPartID = configuration.data.id;
+        }
+    }
 
     const selections = props.selections;
     const [renaming, setRenaming] = useState<{ id: SelectionID, newName: string } | null>(null);
@@ -36,7 +46,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
 
     const addSelection = () => {
         if (selectedDataPartID) {
-            const dataSize = data.data.find(d => d.id == selectedDataPartID)?.values?.length;
+            const dataSize = (data.data.find(d => d.id == selectedDataPartID)?.values as Positions3D | undefined)?.positions.length;
 
             if (dataSize) {
                 globalSelectionsDispatch({ type: SelectionActionKind.ADD, dataID: selectedDataPartID as DataID, dataSize });
@@ -45,10 +55,23 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     }
 
     const selectSelection = (selectionID: SelectionID) => {
-        updateConfiguration({
-            ...configuration,
-            selectedSelectionID: selectionID,
-        });
+        if (configuration.type === ViewportConfigurationType.Chromatin && props.selectedDataIndex != null) {
+            const newData = [...configuration.data];
+            newData[props.selectedDataIndex] = {
+                ...newData[props.selectedDataIndex],
+                selectedSelectionID: selectionID,
+            };
+
+            updateConfiguration({
+                ...configuration,
+                data: newData                
+            });
+        } else {
+            updateConfiguration({
+                ...configuration,
+                selectedSelectionID: selectionID,
+            });
+        }
     }
 
     const handleRenameStart = (selection: Selection) => setRenaming({ id: selection.id, newName: selection.name })
@@ -64,24 +87,81 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
             name: renaming!.newName.length == 0 ? "unnamed" : renaming!.newName
         })
         setRenaming(null);
-
     }
 
-    const setSelectionVisiblity = (selectionID: SelectionID, visible: boolean) => {
-        if (!configuration.data) return;
+    const setSelectionCullVisiblity = (selectionID: SelectionID, cullable: boolean, dataIndex = 0) => {
+        if (!configuration.data || ((Array.isArray(configuration.data) && configuration.data.length == 0))) {
+            return;
+        }
 
-        const associatedSelectionIndex = configuration.data.selections.findIndex(s => s.selectionID == selectionID);
-        const newData = {
-            ...configuration.data,
-            selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible } }),
-        };
+        if (Array.isArray(configuration.data)) {
+            const associatedSelectionIndex = configuration.data[props.selectedDataIndex].selections.findIndex(s => s.selectionID == selectionID);
 
-        newData.selections[associatedSelectionIndex].visible = visible;
+            const newData = [...configuration.data];
+            newData[props.selectedDataIndex] = {
+                ...newData[props.selectedDataIndex],
+                selections: [...configuration.data[dataIndex].selections]
+            };
+    
+            newData[props.selectedDataIndex].selections[associatedSelectionIndex] = {
+                ...newData[props.selectedDataIndex].selections[associatedSelectionIndex],
+                cullable,
+            };
+    
+            updateConfiguration({
+                ...configuration,
+                data: newData,
+            });
+        } else {
+            const associatedSelectionIndex = configuration.data.selections.findIndex(s => s.selectionID == selectionID);
+            const newData = {
+                ...configuration.data,
+                selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible, cullable: s.cullable } }),
+            };
+    
+            newData.selections[associatedSelectionIndex].cullable = cullable;
+    
+            updateConfiguration({
+                ...configuration,
+                data: newData,
+            });
+        }
+    }
 
-        updateConfiguration({
-            ...configuration,
-            data: newData,
-        });
+    const setSelectionVisiblity = (selectionID: SelectionID, visible: boolean, dataIndex = 0) => {
+        if (!configuration.data || ((Array.isArray(configuration.data) && configuration.data.length == 0))) {
+            return;
+        }
+
+        if (Array.isArray(configuration.data)) {
+            const associatedSelectionIndex = configuration.data[props.selectedDataIndex].selections.findIndex(s => s.selectionID == selectionID);
+
+            const newData = [...configuration.data];
+            newData[props.selectedDataIndex] = {
+                ...newData[props.selectedDataIndex],
+                selections: configuration.data[dataIndex].selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible, cullable: s.cullable } }),
+            };
+    
+            newData[props.selectedDataIndex].selections[associatedSelectionIndex].visible = visible;
+    
+            updateConfiguration({
+                ...configuration,
+                data: newData,
+            });
+        } else {
+            const associatedSelectionIndex = configuration.data.selections.findIndex(s => s.selectionID == selectionID);
+            const newData = {
+                ...configuration.data,
+                selections: configuration.data.selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible, cullable: s.cullable } }),
+            };
+    
+            newData.selections[associatedSelectionIndex].visible = visible;
+    
+            updateConfiguration({
+                ...configuration,
+                data: newData,
+            });
+        }
     }
 
     const removeSelection = (selectionID: SelectionID) => {
@@ -106,8 +186,6 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
     }
 
     function changeSelectionColor(selectionID: SelectionID, color: IColor) {
-        console.log(color);
-
         globalSelectionsDispatch({
             type: SelectionActionKind.UPDATE,
             id: selectionID,
@@ -118,7 +196,14 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                 a: color.a != undefined ? (color.a / 255) : 1
             },
         });
+    }
 
+    const isSelected = (id: SelectionID) => {
+        if (configuration.type === ViewportConfigurationType.Chromatin) {
+            return configuration.data[props.selectedDataIndex].selectedSelectionID == id;
+        } else {
+            return configuration.selectedSelectionID == id;
+        }
     }
 
     return <>
@@ -135,7 +220,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                                     <div ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
-                                        className={selection.id == configuration.selectedSelectionID ? "treeViewListItem selected" : "treeViewListItem"}
+                                        className={isSelected(selection.id) ? "treeViewListItem selected" : "treeViewListItem"}
                                         onClick={() => selectSelection(selection.id)}>
                                         <DefaultButton id="selectionColorButton"
                                             style={{
@@ -180,8 +265,13 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                                             <Text className="text" nowrap>{selection.name}</Text>
                                             <Rename16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={() => handleRenameStart(selection)}></Rename16Regular>
                                         </>}
+
+                                        {(options.cullable) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionCullVisiblity(selection.id, false) }}></EyeShow16Regular>)}
+                                        {(!options.cullable) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionCullVisiblity(selection.id, true) }}></EyeOff16Regular>)}
+
                                         {(options.visible) && (<EyeShow16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, false) }}></EyeShow16Regular>)}
                                         {(!options.visible) && (<EyeOff16Regular primaryFill={'white'} className='icon iconHoverBlue' onClick={(e) => { e.stopPropagation(); setSelectionVisiblity(selection.id, true) }}></EyeOff16Regular>)}
+
                                         <Delete16Regular primaryFill={'white'} className='icon iconHoverRed' onClick={(e) => { e.stopPropagation(); removeSelection(selection.id) }}></Delete16Regular>
                                     </div>
                                 )}

@@ -36,31 +36,25 @@ fn isSphereIntersected(ro: vec3<f32>, rd: vec3<f32>, ce: vec3<f32>, ra: f32) -> 
 
 //
 struct BufferRoundedCone {
+    //                        // size   |   aligned at   | ends at
+    from: vec3<f32>,          // 12          0             12
+    //                        
+    radius: f32,              // 4          12             16
     // 
-    from: vec3<f32>,
-    //
-    radius: f32,
+    to: vec3<f32>,            // 12         16             28
+    // (radius2)
+    leftPlane: vec4<f32>,     // 16         32             48
     // 
-    to: vec3<f32>,
+    rightPlane: vec4<f32>,    // 16         48             64
     //
-    leftPlane: vec4<f32>,
-    //
-    rightPlane: vec4<f32>,
-    //
-    colors: vec4<u32>,
-    // color: u32;
-    // color2: u32;
-    // //
-    // borderColor: u32;
-    // borderColor2: u32;
-    //
-    borderRatio: f32,
-    //
-    selectionId: f32, //~ 4 B
-    selectionId2: f32, //~ 4 B
+    colors: vec4<u32>,        // 16         64             80
 
-    // padding: array<f32, 10>, //~ TODO: this padding now needs to change after adding selectionId fields
-    padding: array<f32, 8>, 
+    cull: u32,                //  4         80             84
+    //
+    selectionId: f32,         //  4         84             88
+    selectionId2: f32,        //  4         88             92
+
+    padding: array<u32, 8>,   // 36                  
 
     ty: i32,
 };
@@ -79,20 +73,15 @@ struct VertexOutput {
   @location(0) from : vec3<f32>,
   @location(1) to : vec3<f32>,
 
-  @location(2) leftCap : vec3<f32>,
-  @location(3) rightCap : vec3<f32>,
+  @location(2) radius: f32,
 
-  @location(4) radius: f32,
+  @location(3) color: vec4<f32>,
+  @location(4) color2: vec4<f32>,
 
-  @location(5) color: vec4<f32>,
-  @location(6) color2: vec4<f32>,
-  @location(7) borderColor: vec4<f32>,
-  @location(8) borderColor2: vec4<f32>,
+  @location(5) @interpolate(flat) cull: u32,
 
-  @location(9) borderRatio: f32,
-
-  @location(10) selectionId: f32,
-  @location(11) selectionId2: f32,
+  @location(6) selectionId: f32,
+  @location(7) selectionId2: f32,  
 };
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32>
@@ -108,8 +97,6 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
                @builtin(instance_index) InstanceIndex : u32
 ) -> VertexOutput {
   let roundedCone: BufferRoundedCone = roundedConesBuffer.roundedCones[InstanceIndex];
-  let leftCap: vec3<f32> = roundedConesBuffer.roundedCones[InstanceIndex].leftPlane.xyz;
-  let rightCap: vec3<f32>  = roundedConesBuffer.roundedCones[InstanceIndex].rightPlane.xyz;
 
   let center: vec3<f32> = 0.5 * (roundedCone.from.xyz + roundedCone.to.xyz);
   let radius: f32 = roundedCone.radius;
@@ -164,18 +151,12 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
     vec4<f32>(position, vertexCenter.z, 1.0), 
     vec3<f32>(roundedCone.from.xyz),
     vec3<f32>(roundedCone.to.xyz),
-    leftCap,
-    rightCap,
     radius,
-    // vec4<f32>(c, c, c, 1.0),
-    // vec4<f32>(c, c, c, 1.0),
     unpack4x8unorm(roundedCone.colors[0]),
     unpack4x8unorm(roundedCone.colors[1]),
-    unpack4x8unorm(roundedCone.colors[2]),
-    unpack4x8unorm(roundedCone.colors[3]),
-    roundedCone.borderRatio,
+    roundedCone.cull,
     id,
-    id2,
+    id2,    
   );
 }
 
@@ -215,7 +196,7 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
   // Intersection
   var t: f32 = rayCapsuleIntersection(ray, capsuleOutside);
 
-  if (t < 0.0) {
+  if (t < 0.0 || vertexOutput.radius <= 0.0001) {
     discard;
   }
 
@@ -282,7 +263,7 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
     }
   }
 
-  if (cull) {
+  if (cull && vertexOutput.cull == 1) {
     discard;
   }
 
@@ -303,39 +284,6 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
     selectionId = vertexOutput.selectionId2;
   }
 
-  let shortRadius: f32 = (1.0 - vertexOutput.borderRatio) * vertexOutput.radius;
-  
-  let sphereLeftOutside = isSphereIntersected(ray.origin, ray.direction, capsuleOutside.from, vertexOutput.radius);
-  let sphereRightOutside = isSphereIntersected(ray.origin, ray.direction, capsuleOutside.to, vertexOutput.radius);
-  let sphereLeftInside = isSphereIntersected(ray.origin, ray.direction, capsuleOutside.from, shortRadius);
-  let sphereRightInside = isSphereIntersected(ray.origin, ray.direction, capsuleOutside.to, shortRadius);
-    
-  let leftCap = vertexOutput.leftCap;
-  let rightCap = vertexOutput.rightCap;
-
-  var outlineColor: vec4<f32>;
-  if (ratio < 0.5) {
-    outlineColor = vertexOutput.borderColor;
-  } else {
-    outlineColor = vertexOutput.borderColor2;
-  }
-  if ((sphereLeftOutside && !sphereLeftInside) || (sphereRightOutside && !sphereRightInside)) {
-      if (
-           rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.to, shortRadius)) < 0.0
-        && rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.from + leftCap, shortRadius)) < 0.0
-        && rayCapsuleIntersection(ray, Capsule(capsuleOutside.to, capsuleOutside.to + rightCap, shortRadius)) < 0.0
-      ) {               
-        color = outlineColor;
-      }
-  } else {
-      if (!isInfiniteCylinderIntersected(ray.origin, ray.direction, capsuleOutside.from, normalize(capsuleOutside.from - capsuleOutside.to), shortRadius)
-        && rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.from + leftCap, shortRadius)) < 0.0 
-        && rayCapsuleIntersection(ray, Capsule(capsuleOutside.to, capsuleOutside.to + rightCap, shortRadius)) < 0.0
-      ) {
-        color = outlineColor;
-      }
-  }
-
   //~ DK: getting UVs of the fragment:
   var fragmentScreenSpace = vec2<f32>(0, 0);
   fragmentScreenSpace.x = fragmentNormalizedSpace.x / 2.0 + 0.5;
@@ -344,29 +292,9 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
   // Final write
   return FragmentOutput(
     ${writeDepth ? 'depth.z,' : ''}
-    // dot(normal.xyz, normalize(camera.position.xyz - intersection.xyz)) * color,
     color,
     ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-    ${writeDepth ? 'vec4<f32>(selectionId, fragmentScreenSpace.x, fragmentScreenSpace.y, 1.0),' : '' }
- 
-    // ${writeDepth ? 'vec4<f32>(3.0, 0.0, 0.0, 1.0),' : '' }
+    ${writeDepth ? 'vec4<f32>(selectionId, fragmentScreenSpace.x, fragmentScreenSpace.y, 1.0),' : ''}
   );  
 }
 `};
-
-
-/////// Debug Outlines
-      // color = vec4<f32>(
-      //   0.33 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.to, shortRadius)) < 0.0),
-      //   0.33 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.from + leftCap, shortRadius)) < 0.0),
-      //   0.33 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.to, capsuleOutside.to + rightCap, shortRadius)) < 0.0),
-      //   1.0
-      // );
-      // color = vec4<f32>(
-      //   0.5 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.from, capsuleOutside.from + leftCap, shortRadius)) < 0.0)
-      //   + 0.5 * f32(isInfiniteCylinderIntersected(ray.origin, ray.direction, capsuleOutside.from, normalize(capsuleOutside.from - rightCap), shortRadius)),
-      //   0.5 * f32(rayCapsuleIntersection(ray, Capsule(capsuleOutside.to, capsuleOutside.to + rightCap, shortRadius)) < 0.0)
-      //   + 0.5 * f32(isInfiniteCylinderIntersected(ray.origin, ray.direction, capsuleOutside.to, normalize(capsuleOutside.to - rightCap), shortRadius)),
-      //   f32(isInfiniteCylinderIntersected(ray.origin, ray.direction, capsuleOutside.from, normalize(capsuleOutside.from - capsuleOutside.to), shortRadius)),
-      //   1.0
-      // );
