@@ -274,7 +274,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         const high = quantiles[1] + 1.5 * iqr;
 
         const radius = low;
-        const radiusRange = { min: low, max: high };
+        const radiusRange = { min: 0.0, max: high };
         //#region Calculate radius range
 
         newData.push({
@@ -742,8 +742,8 @@ export function ChromatinViewportConfigurationPanel(props: {
             />
             <Slider
                 label="Probe Size"
-                min={0}
-                max={1}
+                min={0.01}
+                max={1.0}
                 step={0.01}
                 value={configuration.sasa.probeSize}
                 showValue={true}

@@ -9,7 +9,8 @@ import { BinPosition, squareDiameter } from "../../modules/graphics";
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { DataAction, DataState, Positions3D } from "../../modules/storage/models/data";
 import { useConfiguration, useSelections } from "../hooks";
-
+import { sasa } from "../../modules/sasa";
+import { ChartShallowDataShape, LineChart, LineSeries, ScatterPlot, SparklineChart } from 'reaviz';
 
 function groupSubsequentNumbers(array: Array<number>): Array<Array<number>> {
     return array.reduce<Array<Array<number>>>((grouped, next) => {
@@ -72,6 +73,8 @@ export function TADViewport(props: {
     const [binGroups, setBinGroups] = useState<Array<Array<number>>>([]);
     const [svgNumbers, setSvgNumbers] = useState<Array<JSX.Element>>([]);
 
+    const [sasaValues, setSasaValues] = useState<Array<Array<number>>>([]);
+
     const updatePositions = () => {
         if (!viewport || !viewport.canvas) {
             return;
@@ -111,7 +114,39 @@ export function TADViewport(props: {
                         positions.push(vec4.fromValues(values[i].x, values[i].y, values[i].z, 1.0));
                     }
 
+                    const globalSasaValues = [sasa(values, {
+                        method: 'constant',
+                        probe_size: 0.02,
+                    }, 100)];
+
                     viewport.setPositions(positions);
+
+                    for(let lod = 1; lod < 32; lod++) {
+                        const size = viewport.globals.sizes[lod];
+                        if (size === 0) {
+                            break;
+                        }
+                        
+                        const offset = viewport.globals.offsets[lod-1];
+
+                        const values = [];
+                        for(let i = 0; i < size; i++) {
+                            const j = i;
+
+                            if (i == size - 1 && viewport.globals.sizes[lod - 1] % 2 !== 0) {
+                                values.push((globalSasaValues[lod-1][j] + globalSasaValues[lod-1][j + 1] + globalSasaValues[lod-1][j + 2]) * 0.33);
+                                break;
+                            } else {
+                                values.push((globalSasaValues[lod-1][j] + globalSasaValues[lod-1][j + 1]) * 0.5);
+                            }                            
+                        }
+
+                        globalSasaValues.push(values);
+                        console.log(globalSasaValues);
+                    }                    
+
+                    setSasaValues(() => globalSasaValues);
+
                     break;
                 }
             }
@@ -289,7 +324,7 @@ export function TADViewport(props: {
 
             colors.push(vec4.fromValues(selection.color.r, selection.color.g, selection.color.b, selection.color.a));
 
-            const selectionID = configuration.selectedSelectionID; 
+            const selectionID = configuration.selectedSelectionID;
             const selectedSelectionIndex = selections.findIndex(s => s[0].id == selectionID);
 
             for (let i = 0; i < binsLength; i++) {
@@ -574,6 +609,15 @@ export function TADViewport(props: {
         setSelectionsRanges(() => selectionsRanges);
     }, [viewport, data, allSelections, selections, viewport.currentLoD]);
 
+    let maxSasa = 0;
+    let normalizedSasaValues = null;
+    let xSize = 0;
+    if (sasaValues[viewport.currentLoD] && tracksBlock) {
+        maxSasa = Math.max(...sasaValues[viewport.currentLoD]);
+        normalizedSasaValues = sasaValues[viewport.currentLoD].map(v => (v / maxSasa));
+        xSize = tracksBlock.width / normalizedSasaValues.length;
+    }
+
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onClick={onClick}></canvas>
         <svg style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
@@ -589,7 +633,7 @@ export function TADViewport(props: {
             )}
             {/* {svgNumbers} */}
         </svg>
-        {(currentBinsAmount && tracksBlock && !isNaN(tracksBlock.top)) && (<div className={'topDiv'}>
+        {(currentBinsAmount && tracksBlock && normalizedSasaValues && !isNaN(tracksBlock.top)) && (<div className={'topDiv'}>
             <div style={{
                 width: tracksBlock.width,
                 position: 'absolute',
@@ -604,7 +648,8 @@ export function TADViewport(props: {
                             height: '8px',
                             display: 'grid',
                             marginTop: '8px',
-                            gridTemplateColumns: 'repeat(' + currentBinsAmount + ', 1fr)'
+                            gridTemplateColumns: 'repeat(' + currentBinsAmount + ', 1fr)',
+                            position: 'absolute'
                         }}>
                             {selectionRange.map((range, index) => {
                                 return <div key={index} style={{
@@ -615,6 +660,17 @@ export function TADViewport(props: {
                         </div>
                     } else { return <div key={selectionRangeIndex}></div> }
                 })}
+                <div style={{width: '100%', height: '40px' }}></div>
+                <SparklineChart 
+                width={tracksBlock.width} 
+                height={80} 
+                data={ normalizedSasaValues.map((v, i) => { return { key: i, data: 1.0 - v } as ChartShallowDataShape } ) }>
+                </SparklineChart>
+                {/* <svg style={{marginTop: '40px'}} width={tracksBlock.width.toString()} height={"80"} viewBox={"0 0 " + tracksBlock.width.toString() + " 80"}>
+                    <path fill="none" stroke="blue" strokeWidth={"1"}
+                        d={"" + normalizedSasaValues.map((v, i) => { return (i == 0 ? "M" : " L") + (i * xSize).toString() + "," + (80 - v).toString(); })}
+                    />
+                </svg> */}
             </div>
         </div>)}
     </div>
