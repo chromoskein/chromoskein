@@ -93,7 +93,9 @@ export class DistanceViewport {
 
     private _camera: Ortho2DCamera;
 
-    private globals: Globals;
+    public positionsCPU: Array<vec4> = [];
+
+    public globals: Globals;
     private globalsGPU: GPUBuffer;
 
     private positions: GPUBuffer | null = null;
@@ -206,7 +208,7 @@ export class DistanceViewport {
             colorAttachments: [
                 {
                     view: textureView,
-                    clearValue: { r: 0.5, g: 0.5, b: 0.5, a: 1.0 },
+                    clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
                     loadOp: 'clear',
                     storeOp: 'store',
                 },
@@ -522,6 +524,8 @@ export class DistanceViewport {
 
             this.globals.maxDistances[currentLoD] = Math.sqrt(maximumDistance);
         }
+
+        this.positionsCPU = newPositions;
 
         // Copy to GPU
         const bufferSizeF32 = 4 * newPositions.length;

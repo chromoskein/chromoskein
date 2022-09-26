@@ -161,34 +161,42 @@ fn main_fragment(
 ) -> FragmentOutput {
     var finalColor: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);
 
-    var newWeight = weight * 2.0;
-    newWeight = log2(newWeight + 1.0);
+    var newWeight = weight;
+    // newWeight = log2(newWeight + 1.0);
 
     // finalColor = mix(vec3<f32>(1.0, 0.4509803921568627, 0.4509803921568627), vec3<f32>(0.01, 0.6117647058823529, 1.0), newWeight);
 
+    // let colors = array<vec3<f32>, 4>(
+    //     vec3<f32>(0.0),
+    //     vec3<f32>(1.0, 0.0, 0.0),
+    //     vec3<f32>(1.0, 1.0, 0.0),
+    //     vec3<f32>(1.0),
+    // );
+    // if (newWeight < 0.33) {
+    //     finalColor = mix(colors[0], colors[1], newWeight / 0.33);
+    // } else if (newWeight < 0.66) {
+    //     finalColor = mix(colors[1], colors[2], (newWeight - 0.33) / 0.33);
+    // } else {
+    //     finalColor = mix(colors[2], colors[3], (newWeight - 0.66) / 0.33);
+    // }
+
     let colors = array<vec3<f32>, 4>(
-        vec3<f32>(0.0),
-        vec3<f32>(1.0, 0.0, 0.0),
-        vec3<f32>(1.0, 1.0, 0.0),
+        vec3<f32>(0.17254901960784313725490196078431, 0.10980392156862745098039215686275, 0.30980392156862745098039215686275),
         vec3<f32>(1.0),
+        vec3<f32>(0.4078431372549019607843137254902, 0.4078431372549019607843137254902, 0.31372549019607843137254901960784),
+        vec3<f32>(0.15294117647058823529411764705882, 0.15294117647058823529411764705882, 0.0078431372549019607843137254902),
     );
-    if (newWeight < 0.33) {
-        finalColor = mix(colors[0], colors[1], newWeight / 0.33);
-    } else if (newWeight < 0.66) {
-        finalColor = mix(colors[1], colors[2], (newWeight - 0.33) / 0.33);
+    if (newWeight < 0.50) {
+        finalColor = mix(colors[0], colors[1], newWeight / 0.50);
+    } else if (newWeight < 0.75) {
+        finalColor = mix(colors[1], colors[2], (newWeight - 0.50) / 0.25);
     } else {
-        finalColor = mix(colors[2], colors[3], (newWeight - 0.66) / 0.33);
+        finalColor = mix(colors[2], colors[3], (newWeight - 0.75) / 0.25);
     }
 
-    if (all(rightColor == vec3<f32>(1.0)) || all(leftColor == vec3<f32>(1.0))) {
-                return FragmentOutput(
+    return FragmentOutput(
             vec4<f32>(finalColor, 1.0)
         );
-    } else {
-        return FragmentOutput(
-            vec4<f32>(leftColor, 1.0)
-        );
-    }
 
     // if (all(leftColor == rightColor) && all(rightColor != vec3<f32>(1.0))) { 
     //     return FragmentOutput(
