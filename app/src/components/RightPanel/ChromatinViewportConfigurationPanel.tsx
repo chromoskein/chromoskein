@@ -129,7 +129,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         });
 
     const densityDataOptions = data.data
-        .filter(d => d.type == "sparse-1d-data-text" || d.type == "sparse-1d-data-numerical")
+        .filter(d => d.type == "sparse-1d-data-text" || d.type == "sparse-1d-data-numerical" || d.type == 'bed-annotation')
         .map(d => {
             return {
                 key: isoDataID.unwrap(d.id),
@@ -355,17 +355,29 @@ export function ChromatinViewportConfigurationPanel(props: {
     const [isSingleColorCalloutVisible, setIsSingleColorCalloutVisible] = useState<boolean>(false);
 
     const setColorMappingData = (event: React.FormEvent<IComboBox>, option?: IComboBoxOption) => {
-        // if (option) {
-        //     const selectedDataId: number = option.key as number;
+        console.log('color mapping change', configuration.selectedDatum);
+        if (option && configuration.selectedDatum != null) {
+            console.log('before', configuration.data[configuration.selectedDatum].mapValues);
 
-        //     updateConfiguration({
-        //         ...configuration,
-        //         mapValues: {
-        //             ...configuration.mapValues,
-        //             id: selectedDataId,
-        //         },
-        //     });
-        // }
+            const selectedDataId: number = option.key as number;
+
+            const newData = configuration.data;
+            newData[configuration.selectedDatum] = {
+                ...newData[configuration.selectedDatum],
+                colorMappingMode: '1d-density',
+                mapValues: {
+                    ...newData[configuration.selectedDatum].mapValues,
+                    id: selectedDataId,
+                }
+            };
+
+            updateConfiguration({
+                ...configuration,
+                data: newData
+            });
+
+            console.log('after', configuration.data[configuration.selectedDatum].mapValues)
+        }
     };
 
     const setSasaConfiguration = (sasaConfiguration: { method: "constant" | "generated", probeSize: number, accuracy: number, individual: boolean }) => {
@@ -633,8 +645,8 @@ export function ChromatinViewportConfigurationPanel(props: {
 
         {configuration.selectedDatum != null && configuration.data.length > configuration.selectedDatum && (<Slider
             label="Radius"
-            min={configuration.data[configuration.selectedDatum].radiusRange.min}
-            max={configuration.data[configuration.selectedDatum].radiusRange.max}
+            min={0.0}
+            max={configuration.data[configuration.selectedDatum].radiusRange.max * 2.0}
             step={(configuration.data[configuration.selectedDatum].radiusRange.max - configuration.data[configuration.selectedDatum].radiusRange.min) / 100.0}
             value={toNumber(configuration.data[configuration.selectedDatum].radius)}
             showValue={false}

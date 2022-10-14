@@ -239,15 +239,20 @@ export function ChromatinViewport(props: {
 
         const newColors = new Array(configuration.data.length);
         for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
-            const datum = data.data.find(d => d.id === configurationDatum.id)?.values as Positions3D;
+            const datum: Data | undefined = data.data.find(d => d.id === configurationDatum.id);
+
+            if (!datum) {
+                continue;
+            }
+            const datumPositions = datum.values as Positions3D;
             const chromatinPart = viewport.getChromatinPartByDataId(configurationDatumIndex);
             let dataMarkers = null;
 
-            if (!datum || !chromatinPart) {
+            if (!datumPositions || !chromatinPart) {
                 continue;
             }
 
-            const positions = datum.positions;
+            const positions = datumPositions.positions;
 
             const binsAmount = chromatinPart.getBinsPositions().length;
 
@@ -302,6 +307,60 @@ export function ChromatinViewport(props: {
 
                 const colorScale = chroma.scale(['#fcfdfd', '#010a4e']);
                 newColors[configurationDatumIndex] = chromatinPart.cacheColorArray(mapScaleToChromatin(chromatinPart, globalSasaValues, colorScale));
+            } else if (configurationDatum.colorMappingMode == "1d-density") {
+                const data1d: Array<{ chromosome: string, from: number, to: number }> | null = data.data.find(d => d.id == isoDataID.wrap(configurationDatum.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
+                
+                if (!data1d || !(datum.type == '3d-positions')) {
+                    return;
+                }
+
+                const datumTyped = datum as BinPositionsData;
+
+                const countPerBin: Array<number> = new Array(binsAmount).fill(0);
+
+                const chromosomeData1d = [...data1d.map(v => {return { ...v }})];
+                const res = datumTyped.basePairsResolution;
+
+                const connectivity = datumTyped.values.connectivity;
+
+                if (connectivity) {                    
+                    const indexes = [];
+                    for(let i = 0; i < connectivity.length; i++) {
+                        if (connectivity[i] === 0)
+                            indexes.push(i);
+                    }
+
+                    for(const [i, offset] of indexes.entries()) {
+                        const underChrosome = chromosomeData1d.filter(c => parseInt(c.chromosome) === i + 1);
+
+                        for (const v of underChrosome) {
+                            v.from += offset * res; 
+                            v.to += offset * res;
+                        }
+                    }
+                }
+
+                for (let binIndex = 0; binIndex < binsAmount; binIndex++) {
+                    for (const datum of chromosomeData1d) {
+                        if (datum.from <= (binIndex + 1) * res 
+                        && datum.to >= binIndex * res) {
+                            countPerBin[binIndex] += 1;
+                        }
+                    }
+                }
+
+                const logCountPerBin = countPerBin.map(v => Math.log(v) + 1);
+                const colorScale = chroma.scale(['#fcfdfd', '#010a4e']);
+
+                newColors[configurationDatumIndex] = chromatinPart.cacheColorArray(mapScaleToChromatin(chromatinPart, logCountPerBin, colorScale));
+            } else if (configurationDatum.colorMappingMode == "linear-order") {
+                const colorScale = chroma.scale(['#0d1a29', '#133250', '#1e4c7b', '#3868a7', '#658ac6', '#88a0c9', '#aab6ca', '#d3d6da']);
+
+                const numbers = [...Array(binsAmount).keys()];
+
+                console.log(numbers);
+
+                newColors[configurationDatumIndex] = chromatinPart.cacheColorArray(mapScaleToChromatin(chromatinPart, numbers, colorScale));
             }
         }
 
@@ -397,6 +456,10 @@ export function ChromatinViewport(props: {
 
         const selectedDatum = configuration.selectedDatum;
         if (selectedDatum == null || closestIntersection == null) {
+            return;
+        }
+
+        if (!configuration.data[selectedDatum] || !configuration.data[selectedDatum].selectedSelectionID) {
             return;
         }
 
