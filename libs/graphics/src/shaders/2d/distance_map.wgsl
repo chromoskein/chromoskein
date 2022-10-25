@@ -180,18 +180,21 @@ fn main_fragment(
     //     finalColor = mix(colors[2], colors[3], (newWeight - 0.66) / 0.33);
     // }
 
-    let colors = array<vec3<f32>, 4>(
+    let colors = array<vec3<f32>, 5>(
         vec3<f32>(0.17254901960784313725490196078431, 0.10980392156862745098039215686275, 0.30980392156862745098039215686275),
+        vec3<f32>(0.29411764705882352941176470588235, 0.45882352941176470588235294117647, 0.62745098039215686274509803921569),
         vec3<f32>(1.0),
         vec3<f32>(0.4078431372549019607843137254902, 0.4078431372549019607843137254902, 0.31372549019607843137254901960784),
         vec3<f32>(0.15294117647058823529411764705882, 0.15294117647058823529411764705882, 0.0078431372549019607843137254902),
     );
-    if (newWeight < 0.50) {
-        finalColor = mix(colors[0], colors[1], newWeight / 0.50);
+    if (newWeight < 0.25) {
+        finalColor = mix(colors[0], colors[1], newWeight / 0.25);
+    } else if (newWeight < 0.50) {
+        finalColor = mix(colors[1], colors[2], (newWeight - 0.25) / 0.25);
     } else if (newWeight < 0.75) {
-        finalColor = mix(colors[1], colors[2], (newWeight - 0.50) / 0.25);
+        finalColor = mix(colors[2], colors[3], (newWeight - 0.50) / 0.25);
     } else {
-        finalColor = mix(colors[2], colors[3], (newWeight - 0.75) / 0.25);
+        finalColor = mix(colors[3], colors[4], (newWeight - 0.75) / 0.25);
     }
 
     return FragmentOutput(
