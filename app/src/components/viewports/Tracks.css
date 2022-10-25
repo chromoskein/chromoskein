@@ -1,5 +1,16 @@
+.track {
+    width: calc(100% + 4px);
+    left: -2px;
+    border: 2px solid rgb(38, 38, 38);
+    margin: 10px 0px 10px 0px;
+    position: relative;
+}
+
+.track-selections {
+    height: 20px;
+}
+
 .track-add {
-    border: 3px dashed gray;
-    padding: 20px 00px 20px 0px;
-    margin: 20px 0px 20px 0px;
+    border: 2px dashed rgb(38, 38, 38);
+    padding: 20px 0px 20px 0px;
 }

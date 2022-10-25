@@ -1,9 +1,10 @@
-import { Dispatch } from "react";
-import { ConfigurationAction, ConfigurationState, DistanceViewportConfiguration, SelectionsTrack } from "../../../modules/storage/models/viewports";
+import { Dispatch, useMemo } from "react";
 import * as GraphicsModule from "../../../modules/graphics";
+import { ConfigurationAction, ConfigurationState, DistanceViewportConfiguration, SelectionsTrack } from "../../../modules/storage/models/viewports";
 import { SelectionAction, SelectionState } from "../../../modules/storage/models/selections";
 import { DataAction, DataState } from "../../../modules/storage/models/data";
 import { useConfiguration } from "../../hooks";
+import { notEmpty } from "../../../modules/utils";
 
 export function SelectionsTrack(props: {
     graphicsLibrary: GraphicsModule.GraphicsLibrary,
@@ -11,7 +12,8 @@ export function SelectionsTrack(props: {
     configurationsReducer: [ConfigurationState, Dispatch<ConfigurationAction>],
     dataReducer: [DataState, Dispatch<DataAction>],
     selectionsReducer: [SelectionState, Dispatch<SelectionAction>],
-    track: SelectionsTrack
+    track: SelectionsTrack,
+    viewport: GraphicsModule.DistanceViewport,
 }): JSX.Element {
     // Configuration/Data
     const configurationReducer = useConfiguration<DistanceViewportConfiguration>(props.configurationID, props.configurationsReducer);
@@ -20,17 +22,103 @@ export function SelectionsTrack(props: {
     const [allSelections, allSelectionsDispatch] = props.selectionsReducer;
     const [configuration, updateConfiguration] = configurationReducer;
 
+    const viewport = props.viewport;
+    const currentBinsAmount = viewport.sizes[viewport.currentLoD];
 
-    // let maxSasa = 0;
-    // let normalizedSasaValues = null;
-    // let xSize = 0;
-    // if (sasaValues[viewport.currentLoD] && tracksBlock) {
-    //     maxSasa = Math.max(...sasaValues[viewport.currentLoD]);
-    //     normalizedSasaValues = sasaValues[viewport.currentLoD].map(v => (v / maxSasa));
-    //     xSize = tracksBlock.width / normalizedSasaValues.length;
-    // }
+    const selections = useMemo(() => props.track.selections.map(selectionID => {
+        return allSelections.selections.find(s => s.id == selectionID);
+    }).filter(notEmpty), [props.track.selections, allSelections]);
 
-    return (<div>selections track</div>);
+    const selectionsRanges: Array<Array<{
+        from: number,
+        to: number;
+    }>> = useMemo(() => {
+        const selectionsRanges: Array<Array<{
+            from: number,
+            to: number;
+        }>> = [];
+
+        for (const selection of selections) {
+            if (!selection) continue;
+
+            const selectionRanges: Array<{
+                from: number,
+                to: number;
+            }> = [];
+
+            // Bitset to ranges
+            const bins = selection.bins;
+            const binsPerBit = Math.pow(2.0, viewport.currentLoD);
+            const connectivityBitset: Array<0 | 1> = new Array(viewport.sizes[viewport.currentLoD]).fill(0);
+            for (let i = 0; i < connectivityBitset.length; i++) {
+                const sliceBegin = i * binsPerBit;
+                const sliceEnd = Math.min(i * binsPerBit + binsPerBit, bins.length);
+
+                if (bins.slice(sliceBegin, sliceEnd).reduce((p, c) => (c === 1) || p, false)) {
+                    connectivityBitset[i] = 1;
+                }
+            }
+            let expandingRange = false;
+            for (let i = 0; i < connectivityBitset.length; i++) {
+                const currentValue = connectivityBitset[i];
+
+                if (expandingRange && i == connectivityBitset.length - 1 && currentValue === 1) {
+                    selectionRanges[selectionRanges.length - 1].to = connectivityBitset.length;
+                    break;
+                }
+
+                if (currentValue === 0 && !expandingRange) continue;
+                if (currentValue === 1 && expandingRange) continue;
+
+                if (currentValue === 1 && !expandingRange) {
+                    // Start new range
+                    selectionRanges.push({
+                        from: i,
+                        to: i + 1
+                    });
+                    expandingRange = true;
+                }
+
+                if (currentValue === 0 && expandingRange) {
+                    // End the range
+                    selectionRanges[selectionRanges.length - 1].to = i;
+                    expandingRange = false;
+                }
+            }
+
+            selectionsRanges.push(selectionRanges);
+        }
+
+        return selectionsRanges;
+    }, [viewport.currentLoD, viewport.sizes, selections]);
+
+    const onClick = () => {
+        updateConfiguration({
+            ...configuration,
+            selectedTrackID: props.track.id,
+        });
+    };
+
+    return <div className="track track-selections" onClick={() => onClick()} style={{pointerEvents: 'all'}}>
+        {(selections && selectionsRanges) && selectionsRanges.map((selectionRange, selectionRangeIndex) => {
+            if (selections[selectionRangeIndex]) {
+                return <div key={selectionRangeIndex} style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(' + currentBinsAmount + ', 1fr)',
+                    position: 'absolute'
+                }}>
+                    {selectionRange.map((range, index) => {
+                        return <div key={index} style={{
+                            backgroundColor: 'rgb(' + selections[selectionRangeIndex].color.r * 255 + ',' + selections[selectionRangeIndex].color.g * 255 + ',' + selections[selectionRangeIndex].color.b * 255 + ')',
+                            gridColumn: (range.from + 1).toString() + ' / ' + (range.to + 1).toString()
+                        }}></div>
+                    })}
+                </div>
+            } else { return <div key={selectionRangeIndex}></div> }
+        })}
+    </div>;
 }
 
 

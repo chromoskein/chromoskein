@@ -12,8 +12,10 @@ import { useConfiguration, useSelections } from "../hooks";
 import { sasa } from "../../modules/sasa";
 import { SelectionsTrack } from "./tracks/SelectionsTrack";
 import { Dropdown, IDropdownOption } from "@fluentui/react";
+import { v4 } from 'uuid';
 
 import './Tracks.css';
+import { BreakoutRoom20Filled } from "@fluentui/react-icons";
 
 export function TADViewport(props: {
     graphicsLibrary: GraphicsModule.GraphicsLibrary,
@@ -59,7 +61,7 @@ export function TADViewport(props: {
 
     useEffect(() => {
         viewport.cameraConfiguration = cameraConfiguration;
-    }, [cameraConfiguration]);
+    }, [viewport, cameraConfiguration]);
 
     const [isControlPressed, setControlPressed] = useState(false);
     const [isAltPressed, setAltPressed] = useState(false);
@@ -374,6 +376,27 @@ export function TADViewport(props: {
         { key: TrackType.Selections, text: 'Selections' }
     ];
 
+    const addTrack = (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number): void => {
+        if (!option) return;
+        const trackType = option.key as TrackType;
+
+        switch (trackType) {
+            case TrackType.Selections: {
+                updateConfiguration({
+                    ...configuration,
+                    tracks: [...configuration.tracks, {
+                        id: v4(),
+                        type: TrackType.Selections,
+                        selections: [],
+                    }]
+                })
+                break;
+            }
+        }
+    };
+
+    // console.log(configuration.tracks);
+
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             onClick={onClick}
@@ -392,22 +415,26 @@ export function TADViewport(props: {
                     switch (t.type) {
                         case TrackType.Selections: {
                             return <SelectionsTrack
+                                key={t.id}
                                 graphicsLibrary={props.graphicsLibrary}
                                 configurationID={props.configurationID}
                                 configurationsReducer={props.configurationsReducer}
                                 dataReducer={props.dataReducer}
                                 selectionsReducer={props.selectionsReducer}
                                 track={t}
+                                viewport={viewport}
                             ></SelectionsTrack>
                         }
                     }
                 })}
-                <div className="track-add">
+                <div className="track track-add">
                     <Dropdown
                         placeholder="Select a track to add"
                         label=""
                         options={tracksDropdownOptions}
-                        style={{pointerEvents: 'all', maxWidth: 200, margin: 'auto'}}
+                        style={{ pointerEvents: 'all', maxWidth: 200, margin: 'auto' }}
+                        onChange={addTrack}
+                        notifyOnReselect={true}
                     ></Dropdown>
                 </div>
             </div>

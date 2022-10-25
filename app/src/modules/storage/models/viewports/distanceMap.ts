@@ -44,12 +44,14 @@ export enum TrackType {
 }
 
 export type SelectionsTrack = {
+  id: string,
   type: TrackType.Selections,
 
   selections: Array<SelectionID>,
 };
 
 export type SASATrack = {
+  id: string,
   type: TrackType.SASA,
 };
 
@@ -66,7 +68,7 @@ export interface DistanceViewportConfiguration extends IViewportConfiguration {
   tool: DistanceMapTool | NoViewportTool,
 
   tracks: Array<Track>,
-  selectedTrack: number | null,
+  selectedTrackID: string | null,
 }
 
 export function defaultDistanceViewportConfiguration(): DistanceViewportConfiguration {
@@ -94,6 +96,6 @@ export function defaultDistanceViewportConfiguration(): DistanceViewportConfigur
     } as OrthoCameraConfiguration,
 
     tracks: [],
-    selectedTrack: null,
+    selectedTrackID: null,
   } as DistanceViewportConfiguration;
 }

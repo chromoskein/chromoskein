@@ -8,7 +8,7 @@ import { ConfigurationAction, ConfigurationState, DistanceDataConfiguration, Dis
 import { DataAction, DataID, DataState, isoDataID } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration, useSelections, useViewportName } from '../hooks';
-import { SelectionsPart } from './SelectionsPart';
+import { SelectionsTrack } from './tracks/SelectionsTrack';
 
 export function TADMapViewportConfiguration(props: {
     model: Model,
@@ -120,12 +120,13 @@ export function TADMapViewportConfiguration(props: {
         />
         <div style={{ display: 'block', width: '100%', marginTop: '32px' }}></div>
         <Separator></Separator>
-        <SelectionsPart
-            selections={selections}
-            configurationReducer={configurationReducer}
+        {configuration.selectedTrackID != null && (<SelectionsTrack
+            configurationID={props.node.getConfig()}
+            configurationsReducer={props.configurationsReducer}
             dataReducer={props.dataReducer}
             selectionsReducer={props.selectionsReducer}
-            selectedDataIndex={0}
-        ></SelectionsPart>
+            trackID={configuration.selectedTrackID}
+        ></SelectionsTrack>
+        )}
     </div>
 }
