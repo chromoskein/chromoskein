@@ -400,6 +400,10 @@ export function ChromatinViewport(props: {
             return;
         }
 
+        if (!configuration.data[selectedDatum] || !configuration.data[selectedDatum].selectedSelectionID) {
+            return;
+        }
+
         const selection = globalSelections.selections.find(s => s.id == configuration.data[selectedDatum].selectedSelectionID);
         if (!selection) {
             return;
