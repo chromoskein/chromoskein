@@ -38,6 +38,23 @@ export class DistanceSelectionConfiguration implements IDataConfiguration {
   selections: Array<ViewportSelectionOptions> = [];
 }
 
+export enum TrackType {
+  Selections,
+  SASA,
+}
+
+export type SelectionsTrack = {
+  type: TrackType.Selections,
+
+  selections: Array<SelectionID>,
+};
+
+export type SASATrack = {
+  type: TrackType.SASA,
+};
+
+export type Track = SelectionsTrack | SASATrack;
+
 export interface DistanceViewportConfiguration extends IViewportConfiguration {
   type: ViewportConfigurationType.TAD,
   tag: "DIST",
@@ -47,6 +64,9 @@ export interface DistanceViewportConfiguration extends IViewportConfiguration {
   camera: OrthoCameraConfiguration,
 
   tool: DistanceMapTool | NoViewportTool,
+
+  tracks: Array<Track>,
+  selectedTrack: number | null,
 }
 
 export function defaultDistanceViewportConfiguration(): DistanceViewportConfiguration {
@@ -71,6 +91,9 @@ export function defaultDistanceViewportConfiguration(): DistanceViewportConfigur
       zoom: 1.0,
       translateX: 0.0,
       translateY: 0.0,
-    } as OrthoCameraConfiguration
+    } as OrthoCameraConfiguration,
+
+    tracks: [],
+    selectedTrack: null,
   } as DistanceViewportConfiguration;
 }

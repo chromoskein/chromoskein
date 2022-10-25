@@ -1,29 +1,19 @@
 import useMouse, { MousePosition } from "@react-hook/mouse-position";
 import { vec2, vec4 } from "gl-matrix";
 import { Dispatch, useEffect, useRef, useState } from "react";
-import { useDeepCompareEffect, useHoverDirty, useMouseWheel } from "react-use";
+import { useHoverDirty } from "react-use";
 import { useKey, usePreviousImmediate } from "rooks";
-import { ConfigurationAction, ConfigurationState, DistanceMapDataConfiguration, DistanceViewportConfiguration, DistanceViewportToolType } from "../../modules/storage/models/viewports";
+import { ConfigurationAction, ConfigurationState, DistanceMapDataConfiguration, DistanceViewportConfiguration, DistanceViewportToolType, Track, TrackType } from "../../modules/storage/models/viewports";
 import * as GraphicsModule from "../../modules/graphics";
-import { BinPosition, squareDiameter } from "../../modules/graphics";
+import { BinPosition, CameraConfigurationType, OrthoCameraConfiguration, squareDiameter } from "../../modules/graphics";
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { DataAction, DataState, Positions3D } from "../../modules/storage/models/data";
 import { useConfiguration, useSelections } from "../hooks";
 import { sasa } from "../../modules/sasa";
-import { ChartShallowDataShape, LineChart, LineSeries, ScatterPlot, SparklineChart } from 'reaviz';
+import { SelectionsTrack } from "./tracks/SelectionsTrack";
+import { Dropdown, IDropdownOption } from "@fluentui/react";
 
-function groupSubsequentNumbers(array: Array<number>): Array<Array<number>> {
-    return array.reduce<Array<Array<number>>>((grouped, next) => {
-        const lastSubArray = grouped[grouped.length - 1];
-
-        if (!lastSubArray || lastSubArray[lastSubArray.length - 1] !== next - 1) {
-            grouped.push([]);
-        }
-        grouped[grouped.length - 1].push(next);
-
-        return grouped;
-    }, []);
-}
+import './Tracks.css';
 
 export function TADViewport(props: {
     graphicsLibrary: GraphicsModule.GraphicsLibrary,
@@ -46,13 +36,30 @@ export function TADViewport(props: {
     const previousConfiguration = usePreviousImmediate(configuration);
     const previousViewport = usePreviousImmediate(viewport);
 
-    // Input
+    // Camera/Input
+    const [cameraConfiguration, setCameraConfiguration] = useState<OrthoCameraConfiguration>({
+        type: CameraConfigurationType.Ortho,
+
+        zoom: 0.0,
+        maxZoom: 0.0,
+        translateX: 0.0,
+        translateY: 0.0,
+    });
+
     const isBeingHovered = useHoverDirty(canvasElement);
     const mousePosition = useMouse(canvasElement);
     const [lastHeldMousePosition, setLastHeldMousePosition] = useState<MousePosition | null>(null);
 
-    const mouseScroll = useMouseWheel();
-    const previousMouseScroll = usePreviousImmediate(mouseScroll);
+    const canvasOnWheel = (event: any) => {
+        setCameraConfiguration({
+            ...cameraConfiguration,
+            zoom: cameraConfiguration.zoom + event.deltaY / 1.0,
+        });
+    };
+
+    useEffect(() => {
+        viewport.cameraConfiguration = cameraConfiguration;
+    }, [cameraConfiguration]);
 
     const [isControlPressed, setControlPressed] = useState(false);
     const [isAltPressed, setAltPressed] = useState(false);
@@ -65,15 +72,32 @@ export function TADViewport(props: {
 
     // TADs/Selections
     const selections = useSelections([configuration, updateConfiguration], props.dataReducer, props.selectionsReducer, 0);
-    const [hoveredBins, setHoveredBins] = useState<BinPosition | null>(null);
-    const [hoveredBinRanges, setHoveredBinRanges] = useState<[[number, number], [number, number]] | null>(null);
 
-    // Annotation
-    const [binNumbers, setBinNumbers] = useState<Array<number>>([]);
-    const [binGroups, setBinGroups] = useState<Array<Array<number>>>([]);
-    const [svgNumbers, setSvgNumbers] = useState<Array<JSX.Element>>([]);
+    // Hovered Bins
+    let hoveredBins: BinPosition | null = null;
+    let hoveredBinRanges: [[number, number], [number, number]] | null = null;
 
-    const [sasaValues, setSasaValues] = useState<Array<Array<number>>>([]);
+    // Compute hovered bins
+    if (viewport && isBeingHovered && mousePosition && mousePosition.x && mousePosition.y) {
+        const hoveredElement = viewport.getHoveredElement(vec2.fromValues(mousePosition.x * window.devicePixelRatio, mousePosition.y * window.devicePixelRatio), viewport.currentLoD);
+
+        hoveredBins = hoveredElement;
+
+        if (hoveredElement && viewport.currentLoD > 0) {
+            const newRanges: [[number, number], [number, number]] = [[0, 0], [0, 0]];
+            const binsLength = Math.pow(2, viewport.currentLoD);
+            for (let i = 0; i <= 1; i++) {
+                const from = (i == 0 ? hoveredElement.from : hoveredElement.to) * binsLength;
+                const to = Math.min(from + binsLength, viewport.sizes[0]);
+
+                newRanges[i] = [from, to];
+            }
+
+            hoveredBinRanges = newRanges;
+        } else {
+            hoveredBinRanges = null;
+        }
+    }
 
     const updatePositions = () => {
         if (!viewport || !viewport.canvas) {
@@ -121,78 +145,43 @@ export function TADViewport(props: {
 
                     viewport.setPositions(positions);
 
-                    for(let lod = 1; lod < 32; lod++) {
-                        const size = viewport.globals.sizes[lod];
-                        if (size === 0) {
-                            break;
-                        }
-                        
-                        const offset = viewport.globals.offsets[lod-1];
+                    // for(let lod = 1; lod < 32; lod++) {
+                    //     const size = viewport.globals.sizes[lod];
+                    //     if (size === 0) {
+                    //         break;
+                    //     }
 
-                        const values = [];
-                        for(let i = 0; i < size; i++) {
-                            const j = i;
+                    //     const offset = viewport.globals.offsets[lod-1];
 
-                            if (i == size - 1 && viewport.globals.sizes[lod - 1] % 2 !== 0) {
-                                values.push((globalSasaValues[lod-1][j] + globalSasaValues[lod-1][j + 1] + globalSasaValues[lod-1][j + 2]) * 0.33);
-                                break;
-                            } else {
-                                values.push((globalSasaValues[lod-1][j] + globalSasaValues[lod-1][j + 1]) * 0.5);
-                            }                            
-                        }
+                    //     const values = [];
+                    //     for(let i = 0; i < size; i++) {
+                    //         const j = i;
 
-                        globalSasaValues.push(values);
-                        console.log(globalSasaValues);
-                    }                    
+                    //         if (i == size - 1 && viewport.globals.sizes[lod - 1] % 2 !== 0) {
+                    //             values.push((globalSasaValues[lod-1][j] + globalSasaValues[lod-1][j + 1] + globalSasaValues[lod-1][j + 2]) * 0.33);
+                    //             break;
+                    //         } else {
+                    //             values.push((globalSasaValues[lod-1][j] + globalSasaValues[lod-1][j + 1]) * 0.5);
+                    //         }                            
+                    //     }
 
-                    setSasaValues(() => globalSasaValues);
+                    //     globalSasaValues.push(values);
+                    //     console.log(globalSasaValues);
+                    // }                    
+
+                    // setSasaValues(() => globalSasaValues);
 
                     break;
                 }
             }
         }
 
-        // if (configuration.data && configuration.data.type === DistanceMapDataConfiguration.Selection) {
-        //     const selectedSelection = allSelections.selections.filter(s => s.id == configuration.data!.id).at(0);
-
-        //     if (selectedSelection) {
-        //         const dataID = selectedSelection.dataID;
-
-        //         const d = data.data.filter(d => d.id === dataID).at(0);
-        //         if (!d) {
-        //             return;
-        //         }
-
-        //         const values = (d.values as Positions3D).positions;
-
-        //         const positions = [];
-        //         const binNumbersAnnotation: Array<number> = [];
-
-        //         for (let i = 0; i < selectedSelection.bins.length; i++) {
-        //             if (selectedSelection.bins[i] == 1) {
-        //                 positions.push(vec4.fromValues(values[i].x, values[i].y, values[i].z, 1.0));
-        //                 binNumbersAnnotation.push(i);
-        //             }
-        //         }
-
-        //         const groupedBinNumbersAnnotations = groupSubsequentNumbers(binNumbersAnnotation);
-        //         setBinNumbers(() => binNumbersAnnotation);
-        //         setBinGroups(() => groupedBinNumbersAnnotations);
-        //         maxBin = positions.length;
-        //         viewport.setPositions(positions);
-        //     }
-        // }
-
-        updateConfiguration({
-            ...configuration,
-            camera: {
-                ...viewport.cameraConfiguration,
-                zoom: 0.5 * (maxBin * 1.4142),
-                translateX: (-0.5 * (maxBin * 1.4142)),
-                translateY: (-0.5 * (maxBin * 0.7071)),
-
-                maxZoom: (maxBin * 1.4142),
-            }
+        setCameraConfiguration({
+            ...cameraConfiguration,
+            zoom: 0.5 * (maxBin * 1.4142),
+            translateX: (-0.5 * (maxBin * 1.4142)),
+            translateY: (-0.5 * (maxBin * 0.7071)),
+            maxZoom: (maxBin * 1.4142),
         });
     };
 
@@ -214,7 +203,7 @@ export function TADViewport(props: {
     useEffect(() => {
         if (props.graphicsLibrary && canvasElement != null && canvasElement.current) {
             const viewport = props.graphicsLibrary.createDistanceViewport(canvasElement.current);
-            viewport.cameraConfiguration = configuration.camera;
+
             setViewport(() => viewport);
             updatePositions();
 
@@ -234,25 +223,6 @@ export function TADViewport(props: {
     }, [props.graphicsLibrary, canvasElement]);
     //#endregion
 
-    //#region Camera update
-    useDeepCompareEffect(() => {
-        viewport.cameraConfiguration = configuration.camera;
-    }, [configuration.camera]);
-
-    useDeepCompareEffect(() => {
-        if (!viewport.camera || !viewport.canvas) return;
-
-        const timer = setTimeout(() => {
-            updateConfiguration({
-                ...configuration,
-                camera: viewport.cameraConfiguration
-            });
-        }, 1000)
-
-        return () => clearTimeout(timer);
-    }, [viewport.cameraConfiguration]);
-    //#endregion
-
     //#region Data
     useEffect(() => {
         updatePositions();
@@ -261,35 +231,18 @@ export function TADViewport(props: {
 
     //#region Camera
     // - note: all of these must be in this order
-    // Scroll
-    useEffect(() => {
-        if (!mouseScroll || !previousMouseScroll || !isBeingHovered || isControlPressed) return;
-
-        const y = ((mouseScroll - previousMouseScroll) / 100.0) * (configuration.camera.zoom / 10.0);
-
-        updateConfiguration({
-            ...configuration,
-            camera: {
-                ...viewport.cameraConfiguration,
-                zoom: viewport.cameraConfiguration.zoom + y
-            }
-        });
-    }, [previousMouseScroll, mouseScroll, isControlPressed]);
 
     // Mouse movement
     useEffect(() => {
         if (!mousePosition || !lastHeldMousePosition || !mousePosition.clientX || !lastHeldMousePosition.clientX || !mousePosition.clientY || !lastHeldMousePosition.clientY || isControlPressed) return;
 
-        const x = ((mousePosition.clientX - lastHeldMousePosition.clientX) / 500.0) * configuration.camera.zoom;
-        const y = ((mousePosition.clientY - lastHeldMousePosition.clientY) / 500.0) * configuration.camera.zoom;
+        const x = ((mousePosition.clientX - lastHeldMousePosition.clientX) / 500.0) * cameraConfiguration.zoom;
+        const y = ((mousePosition.clientY - lastHeldMousePosition.clientY) / 500.0) * cameraConfiguration.zoom;
 
-        updateConfiguration({
-            ...configuration,
-            camera: {
-                ...viewport.cameraConfiguration,
-                translateX: configuration.camera.translateX + x,
-                translateY: configuration.camera.translateY - y
-            }
+        setCameraConfiguration({
+            ...cameraConfiguration,
+            translateX: cameraConfiguration.translateX + x,
+            translateY: cameraConfiguration.translateY - y
         });
     }, [lastHeldMousePosition, mousePosition, isControlPressed]);
 
@@ -307,12 +260,8 @@ export function TADViewport(props: {
 
     //#region Selections
     // Color selections
-    useEffect(() => {
-        if (!configuration.data) return;
-        if (configuration.data.type == DistanceMapDataConfiguration.Selection) return;
+    if (configuration.data && configuration.data.type != DistanceMapDataConfiguration.Selection) {
 
-        // console.time('tadViewport::selections');
-        const selectionColorIndex = 1;
         const colors = [
             vec4.fromValues(1.0, 1.0, 1.0, 1.0),
             vec4.fromValues(1.0, 0.0, 0.0, 1.0)
@@ -353,36 +302,7 @@ export function TADViewport(props: {
         }
 
         viewport.setColors(colors, finalColorIndices);
-        // console.timeEnd('tadViewport::selections');
-    }, [viewport, configuration.data, configuration.selectedSelectionID, allSelections, selections, hoveredBins]);
-
-    // Compute hovered bins
-    useEffect(() => {
-        if (!viewport || !isBeingHovered || !mousePosition || !mousePosition.x || !mousePosition.y) {
-            setHoveredBins(() => null);
-            setHoveredBinRanges(() => null);
-            return;
-        }
-
-        const hoveredElement = viewport.getHoveredElement(vec2.fromValues(mousePosition.x * window.devicePixelRatio, mousePosition.y * window.devicePixelRatio), viewport.currentLoD);
-
-        setHoveredBins(() => hoveredElement);
-
-        if (hoveredElement && viewport.currentLoD > 0) {
-            const newRanges: [[number, number], [number, number]] = [[0, 0], [0, 0]];
-            const binsLength = Math.pow(2, viewport.currentLoD);
-            for (let i = 0; i <= 1; i++) {
-                const from = (i == 0 ? hoveredElement.from : hoveredElement.to) * binsLength;
-                const to = Math.min(from + binsLength, viewport.sizes[0]);
-
-                newRanges[i] = [from, to];
-            }
-
-            setHoveredBinRanges(() => newRanges);
-        } else {
-            setHoveredBinRanges(() => null);
-        }
-    }, [viewport, mousePosition, mouseScroll, isBeingHovered]);
+    }
 
     // Add selected bins to selection
     const onClick = () => {
@@ -429,248 +349,67 @@ export function TADViewport(props: {
     };
     //#endregion
 
-    //#region Annotations
-    useEffect(() => {
-        function labelTransformation(index: number, type: "fill" | "end" | "start" | "mid") {
-            const transformations = {
-
-                "end": {
-                    labelScale: 14,
-                    xTransform: 0,
-                    rotation: 45
-                },
-                "start": {
-                    labelScale: 14,
-                    xTransform: 0,
-                    rotation: 45
-
-                },
-                "mid": {
-                    labelScale: 14,
-                    xTransform: 0,
-                    rotation: 45
-                },
-                "fill": {
-                    labelScale: 12,
-                    xTransform: 0,
-                    rotation: 0
-
-                }
-            }
-
-            let additionalScaling = 1.0;
-            if (hoveredBins?.from == index || hoveredBins?.to == index) {
-                additionalScaling = 1.5;
-            }
-
-
-            const start = viewport.worldSpaceToScreenSpace(vec4.fromValues(index * 1.4142 + 0.7071, -0.35355, 0.0, 1.0));
-
-            return `translate(${start[0]},  ${start[1]}),
-             scale(${additionalScaling * transformations[type].labelScale / viewport.cameraConfiguration.zoom}),
-             translate(0, 10)`;
-        }
-
-        function renderLabel(index: number, label: string, key: string, type: "end" | "start" | "mid" | "fill") {
-            return <g transform={labelTransformation(index, type)} key={key} ><text
-                x={0}
-                y={0}
-                fill="cyan"
-                textAnchor="middle"
-                fontSize={14}
-            >{label}
-            </text></g>
-        }
-        if (configuration.data && configuration.data.type != DistanceMapDataConfiguration.Selection) {
-            setSvgNumbers([]);
-            return
-        }
-
-
-        if (!viewport || !viewport.canvas) return;
-
-        const labels: Array<JSX.Element> = [];
-
-        let renderedBins = 0;
-        for (const binGroup of binGroups) {
-
-
-
-            if (binGroup.length == 1) {
-                labels.push(renderLabel(renderedBins, `${binGroup[0]} `, `${binGroup[0]} `, "mid"));
-                renderedBins++;
-            } else {
-                labels.push(renderLabel(renderedBins, `${binGroup[0]} `, `${binGroup[0]} `, "start"));
-                renderedBins++;
-                for (const bin of binGroup.slice(1, binGroup.length - 1)) {
-                    labels.push(renderLabel(renderedBins, "•", `${bin} `, "fill"));
-                    renderedBins++;
-                }
-                labels.push(renderLabel(renderedBins, `${binGroup[binGroup.length - 1]} `, `${binGroup[binGroup.length - 1]} `, "end"));
-                renderedBins++;
-            }
-
-
-
-        }
-        setSvgNumbers(() => labels);
-    }, [viewport, binGroups, hoveredBins, viewport.cameraConfiguration.zoom, viewport.cameraConfiguration.translateX, viewport.cameraConfiguration.translateY]);
-    //#endregion
-
-    const [currentBinsAmount, setCurrentBinsAmount] = useState(0);
-    const [tracksBlock, setTracksBlock] = useState<{
+    let currentBinsAmount = 0;
+    let tracksBlock: {
         width: number;
         left: number;
         top: number;
-    } | null>(null);
-    // Selections Ranges
-    // Array (selections) of Array (ranges for each selection)
-    const [selectionsRanges, setSelectionsRanges] = useState<Array<Array<{
-        from: number,
-        to: number;
-    }>>>([]);
+    } | null = null;
 
-    useEffect(() => {
-        if (!viewport) {
-            return;
-        }
-
-        const currentBins = viewport.sizes[viewport.currentLoD];
+    if (viewport) {
+        currentBinsAmount = viewport.sizes[viewport.currentLoD];
         const currentSquareDiameter = Math.pow(2.0, viewport.currentLoD) * squareDiameter;
 
         const beginPositionScreenSpace = viewport.worldSpaceToScreenSpace(vec4.fromValues(0.0, 0.0, 0.0, 1.0));
-        const endPosition = viewport.worldSpaceToScreenSpace(vec4.fromValues(currentSquareDiameter * currentBins, 0.0, 0.0, 1.0));
+        const endPosition = viewport.worldSpaceToScreenSpace(vec4.fromValues(currentSquareDiameter * currentBinsAmount, 0.0, 0.0, 1.0));
 
-        setCurrentBinsAmount(() => currentBins);
-        setTracksBlock(() => {
-            return {
-                width: endPosition[0] - beginPositionScreenSpace[0],
-                left: beginPositionScreenSpace[0],
-                top: beginPositionScreenSpace[1],
-            }
-        });
-    }, [viewport, mousePosition, mouseScroll]);
-
-    useEffect(() => {
-        const selectionsRanges: Array<Array<{
-            from: number,
-            to: number;
-        }>> = [];
-
-        for (const [selection] of selections) {
-            const selectionRanges: Array<{
-                from: number,
-                to: number;
-            }> = [];
-
-            // Bitset to ranges
-            const bins = selection.bins;
-            const binsPerBit = Math.pow(2.0, viewport.currentLoD);
-            const connectivityBitset: Array<0 | 1> = new Array(viewport.sizes[viewport.currentLoD]).fill(0);
-            for (let i = 0; i < connectivityBitset.length; i++) {
-                const sliceBegin = i * binsPerBit;
-                const sliceEnd = Math.min(i * binsPerBit + binsPerBit, bins.length);
-
-                if (bins.slice(sliceBegin, sliceEnd).reduce((p, c) => (c === 1) || p, false)) {
-                    connectivityBitset[i] = 1;
-                }
-            }
-            let expandingRange = false;
-            for (let i = 0; i < connectivityBitset.length; i++) {
-                const currentValue = connectivityBitset[i];
-
-                if (expandingRange && i == connectivityBitset.length - 1 && currentValue === 1) {
-                    selectionRanges[selectionRanges.length - 1].to = connectivityBitset.length;
-                    break;
-                }
-
-                if (currentValue === 0 && !expandingRange) continue;
-                if (currentValue === 1 && expandingRange) continue;
-
-                if (currentValue === 1 && !expandingRange) {
-                    // Start new range
-                    selectionRanges.push({
-                        from: i,
-                        to: i + 1
-                    });
-                    expandingRange = true;
-                }
-
-                if (currentValue === 0 && expandingRange) {
-                    // End the range
-                    selectionRanges[selectionRanges.length - 1].to = i;
-                    expandingRange = false;
-                }
-            }
-
-            selectionsRanges.push(selectionRanges);
-        }
-
-        setSelectionsRanges(() => selectionsRanges);
-    }, [viewport, data, allSelections, selections, viewport.currentLoD]);
-
-    let maxSasa = 0;
-    let normalizedSasaValues = null;
-    let xSize = 0;
-    if (sasaValues[viewport.currentLoD] && tracksBlock) {
-        maxSasa = Math.max(...sasaValues[viewport.currentLoD]);
-        normalizedSasaValues = sasaValues[viewport.currentLoD].map(v => (v / maxSasa));
-        xSize = tracksBlock.width / normalizedSasaValues.length;
+        tracksBlock = {
+            width: endPosition[0] - beginPositionScreenSpace[0],
+            left: beginPositionScreenSpace[0],
+            top: beginPositionScreenSpace[1],
+        };
     }
 
-    return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
-        <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onClick={onClick}></canvas>
-        <svg style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
-            {(viewport && hoveredBins && !hoveredBinRanges) && (
-                <g>
-                    {/* <text x={18} y={34} fontSize={18} fill='white'>{`Bin numbers: [${binNumbers[hoveredBins.from]} × ${binNumbers[hoveredBins.to]}]`}</text> */}
-                    <text x={18} y={34} fontSize={18} fill='white'>Bins: {`[${hoveredBins.from + 1} × ${hoveredBins.to + 1}]`}</text>
-                </g>
+    const tracksDropdownOptions: IDropdownOption[] = [
+        { key: TrackType.Selections, text: 'Selections' }
+    ];
 
-            )}
-            {(viewport && hoveredBinRanges) && (
-                <text x={18} y={34} fontSize={18} fill='white'>Bins: [{hoveredBinRanges[0][0] + 1}-{hoveredBinRanges[0][1]} × {hoveredBinRanges[1][0] + 1}-{hoveredBinRanges[1][1]}]</text>
-            )}
-            {/* {svgNumbers} */}
-        </svg>
-        {(currentBinsAmount && tracksBlock && normalizedSasaValues && !isNaN(tracksBlock.top)) && (<div className={'topDiv'}>
+    return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
+        <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={onClick}
+            onWheel={canvasOnWheel}
+        >
+        </canvas>
+        {(currentBinsAmount > 0 && tracksBlock && !isNaN(tracksBlock.top)) && (<div className={'topDiv'}>
             <div style={{
                 width: tracksBlock.width,
                 position: 'absolute',
                 top: tracksBlock.top,
                 left: tracksBlock.left,
-                color: 'white'
+                color: 'white',
             }}>
-                {(selections && selectionsRanges) && selectionsRanges.map((selectionRange, selectionRangeIndex) => {
-                    if (selections[selectionRangeIndex] && selections[selectionRangeIndex][1].visible) {
-                        return <div key={selectionRangeIndex} style={{
-                            width: '100%',
-                            height: '8px',
-                            display: 'grid',
-                            marginTop: '8px',
-                            gridTemplateColumns: 'repeat(' + currentBinsAmount + ', 1fr)',
-                            position: 'absolute'
-                        }}>
-                            {selectionRange.map((range, index) => {
-                                return <div key={index} style={{
-                                    backgroundColor: 'rgb(' + selections[selectionRangeIndex][0].color.r * 255 + ',' + selections[selectionRangeIndex][0].color.g * 255 + ',' + selections[selectionRangeIndex][0].color.b * 255 + ')',
-                                    gridColumn: (range.from + 1).toString() + ' / ' + (range.to + 1).toString()
-                                }}></div>
-                            })}
-                        </div>
-                    } else { return <div key={selectionRangeIndex}></div> }
+                {configuration.tracks.map((t: Track) => {
+                    switch (t.type) {
+                        case TrackType.Selections: {
+                            return <SelectionsTrack
+                                graphicsLibrary={props.graphicsLibrary}
+                                configurationID={props.configurationID}
+                                configurationsReducer={props.configurationsReducer}
+                                dataReducer={props.dataReducer}
+                                selectionsReducer={props.selectionsReducer}
+                                track={t}
+                            ></SelectionsTrack>
+                        }
+                    }
                 })}
-                <div style={{width: '100%', height: '40px' }}></div>
-                <SparklineChart 
-                width={tracksBlock.width} 
-                height={80} 
-                data={ normalizedSasaValues.map((v, i) => { return { key: i, data: 1.0 - v } as ChartShallowDataShape } ) }>
-                </SparklineChart>
-                {/* <svg style={{marginTop: '40px'}} width={tracksBlock.width.toString()} height={"80"} viewBox={"0 0 " + tracksBlock.width.toString() + " 80"}>
-                    <path fill="none" stroke="blue" strokeWidth={"1"}
-                        d={"" + normalizedSasaValues.map((v, i) => { return (i == 0 ? "M" : " L") + (i * xSize).toString() + "," + (80 - v).toString(); })}
-                    />
-                </svg> */}
+                <div className="track-add">
+                    <Dropdown
+                        placeholder="Select a track to add"
+                        label=""
+                        options={tracksDropdownOptions}
+                        style={{pointerEvents: 'all', maxWidth: 200, margin: 'auto'}}
+                    ></Dropdown>
+                </div>
             </div>
         </div>)}
     </div>
