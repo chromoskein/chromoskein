@@ -3,19 +3,14 @@ import * as GraphicsModule from "../../modules/graphics";
 import { sasa } from "../../modules/sasa";
 import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, getDefaultViewportSelectionOptions, ChromatinViewportToolType } from "../../modules/storage/models/viewports";
 import { useDeepCompareEffect, useMouseHovered, usePrevious } from "react-use";
-import { ChromatinIntersection, ContinuousTube, Sphere, Spheres, CullPlane, ChromatinRepresentation } from "../../modules/graphics";
+import { ChromatinIntersection, ContinuousTube, Sphere, CullPlane } from "../../modules/graphics";
 import { vec3, vec4 } from "gl-matrix";
-import { BEDAnnotations, BEDAnnotation, BinPositionsData, Data, DataAction, DataID, DataState, isoDataID, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "../../modules/storage/models/data";
-import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
+import { BEDAnnotations, BEDAnnotation, BinPositionsData, Data, DataAction, DataState, isoDataID, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "../../modules/storage/models/data";
+import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration } from "../hooks";
 import { useKey } from "rooks";
 import * as chroma from "chroma-js";
 import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
-import { iso } from "newtype-ts";
-import { quantile } from "simple-statistics";
-import _ from "lodash";
-import { Spline } from "../../modules/graphics/primitives/spline";
-import { density } from "../../modules/density";
 import { LabelingOverlay } from "./LabelingOverlay"
 import { LabelingDebugViewport } from "./LabelingDebugViewport";
 
@@ -92,7 +87,7 @@ export function ChromatinViewport(props: {
     useEffect(() => {
         if (props.graphicsLibrary && canvasElement != null && canvasElement.current) {
             const newViewport = props.graphicsLibrary.createChromatinViewport(canvasElement.current);
-            newViewport.cameraConfiguration = configuration.camera;
+            ///newViewport.cameraConfiguration = configuration.camera;
             setViewport(() => newViewport);
 
             // Draw the scene repeatedly
@@ -121,18 +116,18 @@ export function ChromatinViewport(props: {
     //     viewport.cameraConfiguration = configuration.camera;
     // }, [configuration.camera]);
 
-    useDeepCompareEffect(() => {
-        if (!viewport.camera || !viewport.canvas) return;
+    // useDeepCompareEffect(() => {
+    //     if (!viewport.camera || !viewport.canvas) return;
 
-        const timer = setTimeout(() => {
-            updateConfiguration({
-                ...configuration,
-                camera: viewport.cameraConfiguration
-            });
-        }, 500)
+    //     const timer = setTimeout(() => {
+    //         updateConfiguration({
+    //             ...configuration,
+    //             camera: viewport.cameraConfiguration
+    //         });
+    //     }, 500)
 
-        return () => clearTimeout(timer);
-    }, [viewport.cameraConfiguration]);
+    //     return () => clearTimeout(timer);
+    // }, [viewport.cameraConfiguration]);
 
     // Disable camera if control is pressed
     useEffect(() => {
@@ -151,6 +146,7 @@ export function ChromatinViewport(props: {
 
     // }, [data, globalSelections]);
 
+    // Data
     useEffect(() => {
         if (!viewport.canvas) return;
 
@@ -202,10 +198,6 @@ export function ChromatinViewport(props: {
         }
 
         const additionalInfo: Array<string> = [];
-        const rulerInfo = makeRulerTooltipInfo(closestIntersection);
-        if (rulerInfo) {
-            additionalInfo.push(rulerInfo);
-        }
 
         dispatchCoordinatePreview({
             visible: true,
@@ -309,7 +301,7 @@ export function ChromatinViewport(props: {
                 newColors[configurationDatumIndex] = chromatinPart.cacheColorArray(mapScaleToChromatin(chromatinPart, globalSasaValues, colorScale));
             } else if (configurationDatum.colorMappingMode == "1d-density") {
                 const data1d: Array<{ chromosome: string, from: number, to: number }> | null = data.data.find(d => d.id == isoDataID.wrap(configurationDatum.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
-                
+
                 if (!data1d || !(datum.type == '3d-positions')) {
                     return;
                 }
@@ -318,23 +310,23 @@ export function ChromatinViewport(props: {
 
                 const countPerBin: Array<number> = new Array(binsAmount).fill(0);
 
-                const chromosomeData1d = [...data1d.map(v => {return { ...v }})];
+                const chromosomeData1d = [...data1d.map(v => { return { ...v } })];
                 const res = datumTyped.basePairsResolution;
 
                 const connectivity = datumTyped.values.connectivity;
 
-                if (connectivity) {                    
+                if (connectivity) {
                     const indexes = [];
-                    for(let i = 0; i < connectivity.length; i++) {
+                    for (let i = 0; i < connectivity.length; i++) {
                         if (connectivity[i] === 0)
                             indexes.push(i);
                     }
 
-                    for(const [i, offset] of indexes.entries()) {
+                    for (const [i, offset] of indexes.entries()) {
                         const underChrosome = chromosomeData1d.filter(c => parseInt(c.chromosome) === i + 1);
 
                         for (const v of underChrosome) {
-                            v.from += offset * res; 
+                            v.from += offset * res;
                             v.to += offset * res;
                         }
                     }
@@ -342,8 +334,8 @@ export function ChromatinViewport(props: {
 
                 for (let binIndex = 0; binIndex < binsAmount; binIndex++) {
                     for (const datum of chromosomeData1d) {
-                        if (datum.from <= (binIndex + 1) * res 
-                        && datum.to >= binIndex * res) {
+                        if (datum.from <= (binIndex + 1) * res
+                            && datum.to >= binIndex * res) {
                             countPerBin[binIndex] += 1;
                         }
                     }
@@ -404,25 +396,6 @@ export function ChromatinViewport(props: {
             data3D.setCullableBins(cullableBins);
         }
     }, [viewport, globalSelections.selections, configuration.data, data.data]);
-
-    //~ Propagate selections to labelLayoutGenerator
-    useEffect(() => {
-        layoutGenerator.selections = globalSelections.selections;
-    }, [globalSelections.selections, layoutGenerator]);
-
-    //~ Turn label computation on/off (to save computation when label overlay is anyway disabled)
-    useEffect(() => {
-        if (configuration.labeling.showLabelingOverlay) {
-            layoutGenerator.enableLabeling();
-        } else {
-            layoutGenerator.disableLabeling();
-        }
-    }, [configuration.labeling.showLabelingOverlay, layoutGenerator]);
-
-    //~ propagate debug setting: whether labeling uses CPU or GPU implementation for the final step
-    useEffect(() => {
-        layoutGenerator.useMaxDistCPU = configuration.labeling.useMaxDistCPU;
-    }, [configuration.labeling.useMaxDistCPU, layoutGenerator]);
 
     // Color bins
     useEffect(() => {
@@ -555,24 +528,7 @@ export function ChromatinViewport(props: {
         // console.timeEnd('colorBins');
     }, [viewport, closestIntersection, colors, configuration.data, configuration.selectedDatum, configuration.tool, configuration.selectedSelectionID, configuration.chromosomes, data.data, globalSelections.selections, isShiftPressed]);
 
-    useEffect(() => {
-        if (viewport && configuration.backgroundColor) {
-            const bgColor = configuration.backgroundColor;
-            viewport.backgroundColor = {
-                r: bgColor.r / 255.0,
-                g: bgColor.g / 255.0,
-                b: bgColor.b / 255.0,
-                a: (bgColor.a ?? 100.0) / 100.0,
-            };
-        }
-    }, [viewport, configuration.backgroundColor]);
-
-    useEffect(() => {
-        if (!viewport) return;
-
-        viewport.ssaoKernelRadius = configuration.ssao.radius;
-    }, [viewport, configuration.ssao.radius]);
-
+    // Cutaways
     useEffect(() => {
         if (!viewport) return;
 
@@ -606,22 +562,75 @@ export function ChromatinViewport(props: {
         viewport.updateCullObjects();
     }, [viewport, configuration.cutaways]);
 
-    function makeRulerTooltipInfo(closestIntersection: ChromatinIntersection): string | null {
-        // if (configuration.tool.type == 'ruler' && configuration.tool.from) {
-        //     const measuringChromosomeName = configuration.tool.from.chrom;
-        //     const datum = data.data.find((d: Data) => configuration.data && d.id == configuration.data.id) as BinPositionsData;
-        //     const hoverChromosome = datum.chromosomes.find((c) => c.name == closestIntersection.chromatinPart.name);
-        //     const measuringChromosome = datum.chromosomes.find((c) => c.name == measuringChromosomeName);
-        //     if (hoverChromosome && measuringChromosome) {
-        //         const from3D = datum.values[measuringChromosome.from + configuration.tool.from.bin];
-        //         const to3D = datum.values[hoverChromosome.from + closestIntersection.binIndex];
-        //         const distance = vec3.distance(vec3.fromValues(from3D.x, from3D.y, from3D.z), vec3.fromValues(to3D.x, to3D.y, to3D.z));
-        //         return `Distance from bin #${configuration.tool.from.bin} on ${configuration.tool.from.chrom} is ${Math.round(distance * 1000) / 1000} units`;
-        //     }
-        // }
-        return null;
-    }
+    //#region Labels
+    const [labelsWorldSpace, setLabelsWorldSpace] = useState<Array<[vec3, string | number]>>([]);
 
+    // Create Labels
+    useEffect(() => {
+        for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
+            const primaryData = data.data.find((d: Data) => d.id == configurationDatum.id);
+
+            // Let's only go through markers
+            if (primaryData?.type == 'bed-annotation' && configurationDatum.secondaryID) {
+                const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values as Positions3D | undefined;
+
+                if (data3D) {
+                    setLabelsWorldSpace((primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => [
+                        vec3.fromValues(data3D.positions[annotation.from].x, data3D.positions[annotation.from].y, data3D.positions[annotation.from].z),
+                        annotation.attributes[0] || 'None'
+                    ]));
+                }
+            }
+        }
+    }, [viewport, configuration.data, data.data, viewport.cameraConfiguration]);
+
+    // Update screen space positions
+    useEffect(() => {
+        // TODO
+        console.log(labelsWorldSpace);
+    }, [viewport, viewport.cameraConfiguration, labelsWorldSpace]);
+
+
+    //~ Propagate selections to labelLayoutGenerator
+    useEffect(() => {
+        layoutGenerator.selections = globalSelections.selections;
+    }, [globalSelections.selections, layoutGenerator]);
+
+    //~ Turn label computation on/off (to save computation when label overlay is anyway disabled)
+    useEffect(() => {
+        if (configuration.labeling.showLabelingOverlay) {
+            layoutGenerator.enableLabeling();
+        } else {
+            layoutGenerator.disableLabeling();
+        }
+    }, [configuration.labeling.showLabelingOverlay, layoutGenerator]);
+
+    //~ propagate debug setting: whether labeling uses CPU or GPU implementation for the final step
+    useEffect(() => {
+        layoutGenerator.useMaxDistCPU = configuration.labeling.useMaxDistCPU;
+    }, [configuration.labeling.useMaxDistCPU, layoutGenerator]);
+
+    //#endregion Labels
+
+    //#region Options
+    useEffect(() => {
+        if (viewport && configuration.backgroundColor) {
+            const bgColor = configuration.backgroundColor;
+            viewport.backgroundColor = {
+                r: bgColor.r / 255.0,
+                g: bgColor.g / 255.0,
+                b: bgColor.b / 255.0,
+                a: (bgColor.a ?? 100.0) / 100.0,
+            };
+        }
+    }, [viewport, configuration.backgroundColor]);
+
+    useEffect(() => {
+        if (!viewport) return;
+
+        viewport.ssaoKernelRadius = configuration.ssao.radius;
+    }, [viewport, configuration.ssao.radius]);
+    //#endregion Options
 
     const onClick = () => {
         if (!viewport || !configuration.data || !closestIntersection || !isPrimaryModPressed || !configuration.tool || configuration.selectedDatum == null || !configuration.data[configuration.selectedDatum]) {
@@ -696,23 +705,6 @@ export function ChromatinViewport(props: {
                     });
                 }
             }
-        } else if (tool.type == ChromatinViewportToolType.Ruler) {
-            // const ruler = { ...tool };
-
-            // if (!isSecondaryModPressed) {
-            //     ruler.from = {
-            //         bin: closestIntersection.binIndex,
-            //         chrom: closestIntersection.chromatinPart.name,
-            //     };
-            // } else {
-            //     ruler.from = null;
-            // }
-
-
-            // updateConfiguration({
-            //     ...configuration,
-            //     tool: ruler
-            // });
         }
 
         globalSelectionsDispatch({ type: SelectionActionKind.UPDATE, id: selectionId, bins: newBins });
