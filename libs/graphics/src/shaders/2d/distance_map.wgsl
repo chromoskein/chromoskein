@@ -164,8 +164,11 @@ fn main_fragment(
     var newWeight = weight;
     // newWeight = log2(newWeight + 1.0);
 
-    // finalColor = mix(vec3<f32>(1.0, 0.4509803921568627, 0.4509803921568627), vec3<f32>(0.01, 0.6117647058823529, 1.0), newWeight);
-
+    if(!all(leftColor == vec3<f32>(1.0)) && !all(rightColor == vec3<f32>(1.0))) {
+            return FragmentOutput(
+            vec4<f32>(leftColor.rgb, 1.0)
+        );
+    }
     // let colors = array<vec3<f32>, 4>(
     //     vec3<f32>(0.0),
     //     vec3<f32>(1.0, 0.0, 0.0),
