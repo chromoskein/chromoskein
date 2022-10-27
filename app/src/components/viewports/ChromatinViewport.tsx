@@ -13,6 +13,7 @@ import * as chroma from "chroma-js";
 import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
 import { LabelingOverlay } from "./LabelingOverlay"
 import { LabelingDebugViewport } from "./LabelingDebugViewport";
+import { IColor } from "@fluentui/react";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
 
@@ -563,7 +564,7 @@ export function ChromatinViewport(props: {
     }, [viewport, configuration.cutaways]);
 
     //#region Labels
-    const [labelsWorldSpace, setLabelsWorldSpace] = useState<Array<[vec3, string | number]>>([]);
+    const [labelsWorldSpace, setLabelsWorldSpace] = useState<Array<[vec3, string | number, IColor]>>([]);
 
     // Create Labels
     useEffect(() => {
@@ -573,12 +574,14 @@ export function ChromatinViewport(props: {
             // Let's only go through markers
             if (primaryData?.type == 'bed-annotation' && configurationDatum.secondaryID) {
                 const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values as Positions3D | undefined;
+                const markerColor = configurationDatum.color;
 
                 if (data3D) {
                     setLabelsWorldSpace((primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => [
                         vec3.fromValues(data3D.positions[annotation.from].x, data3D.positions[annotation.from].y, data3D.positions[annotation.from].z),
                         // annotation.attributes[0] || 'None'
-                        annotation.attributes[4] || 'None'
+                        annotation.attributes[4] || 'None',
+                        markerColor
                     ]));
                 }
             }
@@ -587,14 +590,15 @@ export function ChromatinViewport(props: {
 
     // Update screen space positions
     useEffect(() => {
-        function makeLabel(text: string, id: number, x: number, y: number): GraphicsModule.Label | null {
+        function makeLabel(text: string, id: number, x: number, y: number, color: IColor): GraphicsModule.Label | null {
             const devicePixelRatio = window.devicePixelRatio || 1.0;
             const xScreen = x * (viewport.width / devicePixelRatio);
             const yScreen = (1.0 - y) * (viewport.height / devicePixelRatio);
 
             const labelText = text;
             // const labelColor = found ? found.color : { r: 0, g: 0, b: 0, a: 0 };
-            const labelColor = { r: 1, g: 1, b: 1, a: 1 };
+            
+            const labelColor = { r: color.r / 255.0, g: color.g / 255.0, b: color.b / 255.0, a: 1.0 };
 
             const lbl = {
                 x: xScreen,
@@ -615,14 +619,14 @@ export function ChromatinViewport(props: {
 
         const labels: GraphicsModule.Label[] = [];
         let i = 0;
-        for (const [position, marker] of labelsWorldSpace) {
+        for (const [position, marker, color] of labelsWorldSpace) {
             const viewSpacePosition = vec4.transformMat4(vec4.create(), vec4.fromValues(position[0], position[1], position[2], 1.0), mvm);
             const screenSpacePosition = vec4.transformMat4(vec4.create(), viewSpacePosition, pm);
             const w = screenSpacePosition[3];
             const finalPos = vec3.fromValues(screenSpacePosition[0] / w, screenSpacePosition[1] / w, screenSpacePosition[2] / w);
             
             const text = (typeof marker === "string") ? marker : "error";
-            const newLbl = makeLabel(text, i, 0.5 * finalPos[0] + 0.5, 0.5 * finalPos[1] + 0.5);
+            const newLbl = makeLabel(text, i, 0.5 * finalPos[0] + 0.5, 0.5 * finalPos[1] + 0.5, color);
             if (newLbl != null) {
                 labels.push(newLbl);
                 i += 1;
