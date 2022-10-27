@@ -577,7 +577,8 @@ export function ChromatinViewport(props: {
                 if (data3D) {
                     setLabelsWorldSpace((primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => [
                         vec3.fromValues(data3D.positions[annotation.from].x, data3D.positions[annotation.from].y, data3D.positions[annotation.from].z),
-                        annotation.attributes[0] || 'None'
+                        // annotation.attributes[0] || 'None'
+                        annotation.attributes[4] || 'None'
                     ]));
                 }
             }
