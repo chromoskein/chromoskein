@@ -4,7 +4,7 @@ import { sasa } from "../../modules/sasa";
 import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, getDefaultViewportSelectionOptions, ChromatinViewportToolType } from "../../modules/storage/models/viewports";
 import { useDeepCompareEffect, useMouseHovered, usePrevious } from "react-use";
 import { ChromatinIntersection, ContinuousTube, Sphere, CullPlane } from "../../modules/graphics";
-import { vec3, vec4 } from "gl-matrix";
+import { vec2, vec3, vec4 } from "gl-matrix";
 import { BEDAnnotations, BEDAnnotation, BinPositionsData, Data, DataAction, DataState, isoDataID, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration } from "../hooks";
@@ -583,7 +583,7 @@ export function ChromatinViewport(props: {
 
         const labelText = text;
         // const labelColor = found ? found.color : { r: 0, g: 0, b: 0, a: 0 };
-        
+
         const labelColor = { r: color.r / 255.0, g: color.g / 255.0, b: color.b / 255.0, a: 1.0 };
 
         const lbl = {
@@ -605,15 +605,29 @@ export function ChromatinViewport(props: {
         let i = 0;
         for (const [position, marker, color] of labelsWorldSpace) {
             const viewSpacePosition = vec4.transformMat4(vec4.create(), vec4.fromValues(position[0], position[1], position[2], 1.0), mvm);
-            const screenSpacePosition = vec4.transformMat4(vec4.create(), viewSpacePosition, pm);
-            const w = screenSpacePosition[3];
-            const finalPos = vec3.fromValues(screenSpacePosition[0] / w, screenSpacePosition[1] / w, screenSpacePosition[2] / w);
-            
+            const clipSpacePosition = vec4.transformMat4(vec4.create(), viewSpacePosition, pm);
+            const w = clipSpacePosition[3];
+
+            const finalPos = vec3.fromValues(clipSpacePosition[0] / w, clipSpacePosition[1] / w, clipSpacePosition[2] / w);
+            finalPos[0] = 0.5 * finalPos[0] + 0.5;
+            finalPos[1] = 0.5 * finalPos[1] + 0.5;
+
             const text = (typeof marker === "string") ? marker : "error";
-            const newLbl = makeLabel(text, i, 0.5 * finalPos[0] + 0.5, 0.5 * finalPos[1] + 0.5, color);
+            const newLbl = makeLabel(text, i, finalPos[0], finalPos[1], color);
             if (newLbl != null) {
-                labels.push(newLbl);
-                i += 1;
+                if (viewport?.depthArrayBuffer) {
+                    const screenSpacePosition = vec2.fromValues(Math.round(finalPos[0] * viewport.width), Math.round(finalPos[1] * viewport.height));
+                    const floats = new Float32Array(viewport.depthArrayBuffer);
+
+                    const rowSize = viewport.width + (64 - viewport.width % 64);
+                    const depth = floats[screenSpacePosition[1] * rowSize + screenSpacePosition[0]];
+
+                    if (depth < finalPos[2]) {
+                        labels.push(newLbl);
+                        i += 1;
+                    }
+
+                }
             }
         }
     }

@@ -20,6 +20,8 @@ export class Viewport3D {
 
   protected outputTexture: GPUTexture | null = null;
   protected depthTexture: GPUTexture | null = null;
+  public depthArrayBuffer: ArrayBuffer | null = null;
+
   protected gBuffer: {
     colorsOpaque: GPUTexture,
     colorsTransparent: GPUTexture,
@@ -315,7 +317,7 @@ export class Viewport3D {
       size,
       sampleCount,
       format: "depth32float",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC
     });
 
     this.outputTexture = this.graphicsLibrary.device.createTexture({
@@ -398,13 +400,18 @@ export class Viewport3D {
       this._context == null ||
       this.depthTexture == null ||
       this.outputTexture == null ||
-      this.gBuffer == null || 
+      this.gBuffer == null ||
       this._canvas.width == 0 || this._canvas.height == 0
-      ) {
+    ) {
       return;
     }
 
     // console.log('render ', this._canvas.width);
+
+    const depthBuffer = this.graphicsLibrary.device.createBuffer({
+      size: (this.width + (64 - (this.width % 64))) * this.height *  4,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
 
     const textureView = this._context.getCurrentTexture().createView();
 
@@ -660,7 +667,7 @@ export class Viewport3D {
       device.createBindGroup({
         layout: this.graphicsLibrary.bindGroupLayouts.ssaoJoin,
         entries: [
-          { binding: 0, resource: this.gBuffer.ambientOcclusion[0].createView() },          
+          { binding: 0, resource: this.gBuffer.ambientOcclusion[0].createView() },
           { binding: 1, resource: this.gBuffer.ambientOcclusion[1].createView() },
           { binding: 2, resource: this.gBuffer.ambientOcclusion[2].createView() },
         ],
@@ -676,7 +683,7 @@ export class Viewport3D {
       device.createBindGroup({
         layout: this.graphicsLibrary.bindGroupLayouts.aoBlurIO,
         entries: [
-          { binding: 0, resource: this.gBuffer.ambientOcclusion[2].createView() },          
+          { binding: 0, resource: this.gBuffer.ambientOcclusion[2].createView() },
           { binding: 1, resource: this.gBuffer.worldNormals.createView() },
           { binding: 2, resource: this.depthTexture.createView() },
           { binding: 3, resource: this.gBuffer.ambientOcclusion[1].createView() },
@@ -763,6 +770,12 @@ export class Viewport3D {
     // commandEncoder.resolveQuerySet(this.timestampsQuerySet, 0, 3, this.timestampsBuffer, 0);
     // commandEncoder.copyBufferToBuffer(this.timestampsBuffer, 0, this.timestampsResolvedBuffer, 0, 4 * 8);
 
+    commandEncoder.copyTextureToBuffer(
+      { texture: this.depthTexture, aspect: 'depth-only' },
+      { buffer: depthBuffer, rowsPerImage: this.height, bytesPerRow: (this.width + (64 - (this.width % 64))) * 4 },
+      { width: this.width, height: this.height }
+    );
+
     const commandBuffer = commandEncoder.finish();
     device.queue.submit([commandBuffer]);
 
@@ -784,9 +797,20 @@ export class Viewport3D {
     // console.log((combined2 - combined) / 1000000.0, (combined3 - combined2) / 1000000.0);
 
     this.dirty = false;
+
+    //#region Download Depth Buffer
+    const shouldHaveSize = (this.width + (64 - (this.width % 64))) * this.height *  4;
+    if (depthBuffer) {
+      await depthBuffer.mapAsync(GPUMapMode.READ);
+      const depthArrayBuffer = depthBuffer.getMappedRange(0, shouldHaveSize);
+
+      this.depthArrayBuffer = depthArrayBuffer.slice(0);
+      depthBuffer.unmap();
+    }
+    //#endregion Download Depth Buffer
   }
 
-  public getIDBuffer() : GPUTexture | null {
+  public getIDBuffer(): GPUTexture | null {
     if (this.gBuffer) {
       // return this.gBuffer?.colorsOpaque;
       // return this.gBuffer.worldNormals;
