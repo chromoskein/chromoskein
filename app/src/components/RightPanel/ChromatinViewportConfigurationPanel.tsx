@@ -889,6 +889,10 @@ export function ChromatinViewportConfigurationPanel(props: {
             }
         </>}
 
+       <Separator></Separator>
+        <Text nowrap block variant='large'>Labeling</Text>
+        <Checkbox label="Show marker labels" checked={configuration.labeling.showLabelingOverlay} onChange={handleShowLabelingOverlayChange} />
+         
         {/* <Separator></Separator>
         <Text nowrap block variant='large'>Labeling</Text>
         <Checkbox label="Show labels" checked={configuration.labeling.showLabelingOverlay} onChange={handleShowLabelingOverlayChange} />
