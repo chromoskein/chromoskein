@@ -47,8 +47,6 @@ export function ChromatinViewport(props: {
     const canvasElement = useRef<HTMLCanvasElement>(null);
     const [viewport, setViewport] = useState<GraphicsModule.ChromatinViewport>(() => props.graphicsLibrary.createChromatinViewport(null));
 
-    const previousConfiguration = usePrevious(configuration);
-
     const mousePosition = useMouseHovered(canvasElement);
 
     const [closestIntersection, setClosestIntersection] = useState<ChromatinIntersection | null>(null);
@@ -67,8 +65,7 @@ export function ChromatinViewport(props: {
     const [isShiftPressed, setShiftPressed] = useState(false);
 
     //~ Labeling
-    const [layoutGenerator, setLayoutGenerator] = useState<GraphicsModule.LabelLayoutGenerator>(() => new GraphicsModule.LabelLayoutGenerator(viewport, props.graphicsLibrary));
-    const [labels, setLabels] = useState<GraphicsModule.Label[]>([]);
+    let labels: GraphicsModule.Label[] = [];
 
     // Input
     useKey(["Control", "Meta"], () => setPrimaryModPressed(true), { eventTypes: ["keydown"] });
@@ -82,7 +79,6 @@ export function ChromatinViewport(props: {
 
     // 
     const [colors, setColors] = useState<Array<Array<vec4>>>([]);
-    const [binIds, setBinIds] = useState<number[][]>([]); //~ should be equivalent to Array<Array<number>>
 
     // Viewport Setup
     useEffect(() => {
@@ -94,8 +90,6 @@ export function ChromatinViewport(props: {
             // Draw the scene repeatedly
             const render = async (frametime: number) => {
                 await newViewport.render(frametime);
-                //~ label rendered scene. 
-                // setLabels(await layoutGenerator.getLabelPositions());
 
                 requestAnimationFrame(render);
             }
@@ -108,27 +102,23 @@ export function ChromatinViewport(props: {
         }
     }, [props.graphicsLibrary, props.configurationID, canvasElement]);
 
-    useEffect(() => {
-        layoutGenerator.viewport = viewport;
-    }, [layoutGenerator, viewport, viewport.width, viewport.height]);
-
     // Camera Update
-    // useDeepCompareEffect(() => {
-    //     viewport.cameraConfiguration = configuration.camera;
-    // }, [configuration.camera]);
+    useDeepCompareEffect(() => {
+        viewport.cameraConfiguration = configuration.camera;
+    }, [configuration.camera]);
 
-    // useDeepCompareEffect(() => {
-    //     if (!viewport.camera || !viewport.canvas) return;
+    useDeepCompareEffect(() => {
+        if (!viewport.camera || !viewport.canvas) return;
 
-    //     const timer = setTimeout(() => {
-    //         updateConfiguration({
-    //             ...configuration,
-    //             camera: viewport.cameraConfiguration
-    //         });
-    //     }, 500)
+        const timer = setTimeout(() => {
+            updateConfiguration({
+                ...configuration,
+                camera: viewport.cameraConfiguration
+            });
+        }, 500)
 
-    //     return () => clearTimeout(timer);
-    // }, [viewport.cameraConfiguration]);
+        return () => clearTimeout(timer);
+    }, [viewport.cameraConfiguration]);
 
     // Disable camera if control is pressed
     useEffect(() => {
@@ -239,7 +229,6 @@ export function ChromatinViewport(props: {
             }
             const datumPositions = datum.values as Positions3D;
             const chromatinPart = viewport.getChromatinPartByDataId(configurationDatumIndex);
-            let dataMarkers = null;
 
             if (!datumPositions || !chromatinPart) {
                 continue;
@@ -564,60 +553,55 @@ export function ChromatinViewport(props: {
     }, [viewport, configuration.cutaways]);
 
     //#region Labels
-    const [labelsWorldSpace, setLabelsWorldSpace] = useState<Array<[vec3, string | number, IColor]>>([]);
+    let labelsWorldSpace: Array<[vec3, string | number, IColor]> = [];
 
     // Create Labels
-    useEffect(() => {
-        for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
-            const primaryData = data.data.find((d: Data) => d.id == configurationDatum.id);
+    for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
+        const primaryData = data.data.find((d: Data) => d.id == configurationDatum.id);
 
-            // Let's only go through markers
-            if (primaryData?.type == 'bed-annotation' && configurationDatum.secondaryID) {
-                const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values as Positions3D | undefined;
-                const markerColor = configurationDatum.color;
+        // Let's only go through markers
+        if (primaryData?.type == 'bed-annotation' && configurationDatum.secondaryID) {
+            const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values as Positions3D | undefined;
+            const markerColor = configurationDatum.color;
 
-                if (data3D) {
-                    setLabelsWorldSpace((primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => [
-                        vec3.fromValues(data3D.positions[annotation.from].x, data3D.positions[annotation.from].y, data3D.positions[annotation.from].z),
-                        // annotation.attributes[0] || 'None'
-                        annotation.attributes[4] || 'None',
-                        markerColor
-                    ]));
-                }
+            if (data3D) {
+                labelsWorldSpace = (primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => [
+                    vec3.fromValues(data3D.positions[annotation.from].x, data3D.positions[annotation.from].y, data3D.positions[annotation.from].z),
+                    // annotation.attributes[0] || 'None'
+                    annotation.attributes[4] || 'None',
+                    markerColor
+                ]);
             }
         }
-    }, [viewport, configuration.data, data.data, viewport.cameraConfiguration]);
+    }
 
     // Update screen space positions
-    useEffect(() => {
-        function makeLabel(text: string, id: number, x: number, y: number, color: IColor): GraphicsModule.Label | null {
-            const devicePixelRatio = window.devicePixelRatio || 1.0;
-            const xScreen = x * (viewport.width / devicePixelRatio);
-            const yScreen = (1.0 - y) * (viewport.height / devicePixelRatio);
+    function makeLabel(text: string, id: number, x: number, y: number, color: IColor): GraphicsModule.Label | null {
+        const devicePixelRatio = window.devicePixelRatio || 1.0;
+        const xScreen = x * (viewport.width / devicePixelRatio);
+        const yScreen = (1.0 - y) * (viewport.height / devicePixelRatio);
 
-            const labelText = text;
-            // const labelColor = found ? found.color : { r: 0, g: 0, b: 0, a: 0 };
-            
-            const labelColor = { r: color.r / 255.0, g: color.g / 255.0, b: color.b / 255.0, a: 1.0 };
+        const labelText = text;
+        // const labelColor = found ? found.color : { r: 0, g: 0, b: 0, a: 0 };
+        
+        const labelColor = { r: color.r / 255.0, g: color.g / 255.0, b: color.b / 255.0, a: 1.0 };
 
-            const lbl = {
-                x: xScreen,
-                y: yScreen,
-                id: id,
-                text: labelText,
-                color: labelColor,
-            };
+        const lbl = {
+            x: xScreen,
+            y: yScreen,
+            id: id,
+            text: labelText,
+            color: labelColor,
+        };
 
-            return lbl;
-        }
+        return lbl;
+    }
 
-        // TODO
-        const pm = viewport.camera?.projectionMatrix;
-        if (!pm) return; // ???
-        const mvm = viewport.camera?.viewMatrix;
-        if (!mvm) return; // ???
+    const pm = viewport.camera?.projectionMatrix;
+    const mvm = viewport.camera?.viewMatrix;
 
-        const labels: GraphicsModule.Label[] = [];
+    if (pm && mvm) {
+        labels = [];
         let i = 0;
         for (const [position, marker, color] of labelsWorldSpace) {
             const viewSpacePosition = vec4.transformMat4(vec4.create(), vec4.fromValues(position[0], position[1], position[2], 1.0), mvm);
@@ -632,29 +616,7 @@ export function ChromatinViewport(props: {
                 i += 1;
             }
         }
-        setLabels(labels);
-    }, [viewport, viewport.cameraConfiguration, labelsWorldSpace]);
-
-
-    //~ Propagate selections to labelLayoutGenerator
-    useEffect(() => {
-        layoutGenerator.selections = globalSelections.selections;
-    }, [globalSelections.selections, layoutGenerator]);
-
-    //~ Turn label computation on/off (to save computation when label overlay is anyway disabled)
-    useEffect(() => {
-        if (configuration.labeling.showLabelingOverlay) {
-            layoutGenerator.enableLabeling();
-        } else {
-            layoutGenerator.disableLabeling();
-        }
-    }, [configuration.labeling.showLabelingOverlay, layoutGenerator]);
-
-    //~ propagate debug setting: whether labeling uses CPU or GPU implementation for the final step
-    useEffect(() => {
-        layoutGenerator.useMaxDistCPU = configuration.labeling.useMaxDistCPU;
-    }, [configuration.labeling.useMaxDistCPU, layoutGenerator]);
-
+    }
     //#endregion Labels
 
     //#region Options
@@ -757,9 +719,6 @@ export function ChromatinViewport(props: {
 
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas data-tip data-for='tooltip' ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden' }} tabIndex={1} onClick={() => onClick()}></canvas>
-        {configuration.labeling.showDebugViewport && (
-            <LabelingDebugViewport graphicsLibrary={props.graphicsLibrary} viewport={viewport} labelingGenerator={layoutGenerator} shownTexture={configuration.labeling.shownDebugTexture}></LabelingDebugViewport>
-        )}
         {configuration.labeling.showLabelingOverlay && (
             <LabelingOverlay labels={labels} configuration={{ showAnchors: configuration.labeling.showLabelAnchors, }}></LabelingOverlay>
         )}

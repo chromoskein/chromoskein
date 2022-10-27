@@ -11,7 +11,7 @@ export function LabelingOverlay(props: { labels: GraphicsModule.Label[], configu
     const bgRefs = useRef<Array<SVGGraphicsElement | null>>([]);
 
     useEffect(() => {
-            for (let i = 0; i < textRefs.current.length; i++) {
+        for (let i = 0; i < textRefs.current.length; i++) {
             const textEl = textRefs.current[i];
             if (!textEl) return;
             const bgEl = bgRefs.current[i];
@@ -30,10 +30,10 @@ export function LabelingOverlay(props: { labels: GraphicsModule.Label[], configu
         <div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', left: '0', top: '0', pointerEvents: 'none' }}>
             <svg style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
                 {props.configuration.showAnchors && (
-                    props.labels.map(({ id, x, y, text }: GraphicsModule.Label, i: number) => (<circle key={"anchor"+id} cx={x} cy={y} r={2} fill='red'></circle>))
+                    props.labels.map(({ id, x, y, text }: GraphicsModule.Label, i: number) => (<circle key={"anchor" + id} cx={x} cy={y} r={2} fill='red'></circle>))
                 )}
-                {props.labels.map(({ id, x, y, text, color }: GraphicsModule.Label, i: number) => (<rect ref={(el) => (bgRefs.current[i] = el)} key={"bg"+id} fill={"rgb(" + 255 * color.r + ", " + 255 * color.g + ", " + 255 * color.b + ")"}>{text}</rect>))}
-                {props.labels.map(({ id, x, y, text }: GraphicsModule.Label, i: number) => (<text ref={(el) => (textRefs.current[i] = el)} key={"label"+id} x={x} y={y} fontSize={18} fill='white'>{text}</text>))}
+                {props.labels.map(({ id, x, y, text, color }: GraphicsModule.Label, i: number) => (<rect ref={(el) => (bgRefs.current[i] = el)} key={"bg" + id} fill={"rgb(" + 255 * color.r + ", " + 255 * color.g + ", " + 255 * color.b + ")"}>{text}</rect>))}
+                {props.labels.map(({ id, x, y, text }: GraphicsModule.Label, i: number) => (<text ref={(el) => (textRefs.current[i] = el)} key={"label" + id} x={x} y={y} fontSize={18} fill='white'>{text}</text>))}
             </svg>
         </div>
     );
