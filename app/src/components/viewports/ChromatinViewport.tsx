@@ -586,8 +586,48 @@ export function ChromatinViewport(props: {
 
     // Update screen space positions
     useEffect(() => {
+        function makeLabel(text: string, id: number, x: number, y: number): GraphicsModule.Label | null {
+            const devicePixelRatio = window.devicePixelRatio || 1.0;
+            const xScreen = x * (viewport.width / devicePixelRatio);
+            const yScreen = (1.0 - y) * (viewport.height / devicePixelRatio);
+
+            const labelText = text;
+            // const labelColor = found ? found.color : { r: 0, g: 0, b: 0, a: 0 };
+            const labelColor = { r: 1, g: 1, b: 1, a: 1 };
+
+            const lbl = {
+                x: xScreen,
+                y: yScreen,
+                id: id,
+                text: labelText,
+                color: labelColor,
+            };
+
+            return lbl;
+        }
+
         // TODO
-        console.log(labelsWorldSpace);
+        const pm = viewport.camera?.projectionMatrix;
+        if (!pm) return; // ???
+        const mvm = viewport.camera?.viewMatrix;
+        if (!mvm) return; // ???
+
+        const labels: GraphicsModule.Label[] = [];
+        let i = 0;
+        for (const [position, marker] of labelsWorldSpace) {
+            const viewSpacePosition = vec4.transformMat4(vec4.create(), vec4.fromValues(position[0], position[1], position[2], 1.0), mvm);
+            const screenSpacePosition = vec4.transformMat4(vec4.create(), viewSpacePosition, pm);
+            const w = screenSpacePosition[3];
+            const finalPos = vec3.fromValues(screenSpacePosition[0] / w, screenSpacePosition[1] / w, screenSpacePosition[2] / w);
+            
+            const text = (typeof marker === "string") ? marker : "error";
+            const newLbl = makeLabel(text, i, 0.5 * finalPos[0] + 0.5, 0.5 * finalPos[1] + 0.5);
+            if (newLbl != null) {
+                labels.push(newLbl);
+                i += 1;
+            }
+        }
+        setLabels(labels);
     }, [viewport, viewport.cameraConfiguration, labelsWorldSpace]);
 
 
