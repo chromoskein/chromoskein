@@ -220,7 +220,7 @@ export function defaultChromatinViewportConfiguration(): ChromatinViewportConfig
         sasa: {
             method: 'constant',
             constant: 0.1,
-            probeSize: 0,
+            probeSize: 0.01,
             accuracy: 100,
             individual: false
         },

@@ -30,7 +30,8 @@ export function SelectionsTrack(props: {
         throw "";
     }
 
-    const selectionsList = allSelections.selections.map(s => {
+    const d = configuration.data as DistanceDataConfiguration;
+    const selectionsList = allSelections.selections.filter(s => s.dataID == d.id).map(s => {
         return {
             key: isoSelectionID.unwrap(s.id),
             text: s.name,

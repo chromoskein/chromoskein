@@ -646,7 +646,7 @@ export function ChromatinViewportConfigurationPanel(props: {
         {configuration.selectedDatum != null && configuration.data.length > configuration.selectedDatum && (<Slider
             label="Radius"
             min={0.0}
-            max={configuration.data[configuration.selectedDatum].radiusRange.max * 2.0}
+            max={configuration.data[configuration.selectedDatum].radiusRange.max}
             step={(configuration.data[configuration.selectedDatum].radiusRange.max - configuration.data[configuration.selectedDatum].radiusRange.min) / 100.0}
             value={toNumber(configuration.data[configuration.selectedDatum].radius)}
             showValue={false}

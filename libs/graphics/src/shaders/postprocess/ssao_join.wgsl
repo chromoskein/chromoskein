@@ -4,10 +4,10 @@
 
 @compute @workgroup_size(8, 8) fn
 main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
-  let textureSize: vec2<i32> = textureDimensions(gBufferAmbientOcclusionNear);
+  let textureSize: vec2<u32> = textureDimensions(gBufferAmbientOcclusionNear);
 
-  if (i32(GlobalInvocationID.x) >= textureSize.x ||
-      i32(GlobalInvocationID.y) >= textureSize.y) {
+  if (u32(GlobalInvocationID.x) >= textureSize.x ||
+      u32(GlobalInvocationID.y) >= textureSize.y) {
     return;
   }
 

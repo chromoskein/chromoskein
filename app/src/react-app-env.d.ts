@@ -82,3 +82,4 @@ declare module '*.chromoskein' {
 
 declare module '@fluentui/react-icons';
 declare module '@gmod/gff';
+declare module 'static-kdtree';

@@ -2,6 +2,8 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -74,6 +76,7 @@ export const config = {
     resolve: {
         symlinks: false,
         extensions: ['.tsx', '.ts', '.js', '.svg'],
+        fallback: { "buffer": require.resolve("buffer/") }
     },
     stats: {
         errorDetails: true

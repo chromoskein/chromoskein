@@ -553,7 +553,7 @@ export function ChromatinViewport(props: {
     }, [viewport, configuration.cutaways]);
 
     //#region Labels
-    let labelsWorldSpace: Array<[vec3, string | number, IColor]> = [];
+    let labelsWorldSpace: Array<[vec4, string | number, IColor]> = [];
 
     // Create Labels
     for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
@@ -566,7 +566,7 @@ export function ChromatinViewport(props: {
 
             if (data3D) {
                 labelsWorldSpace = (primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => [
-                    vec3.fromValues(data3D.positions[annotation.from].x, data3D.positions[annotation.from].y, data3D.positions[annotation.from].z),
+                    vec4.fromValues(data3D.positions[annotation.from].x, data3D.positions[annotation.from].y, data3D.positions[annotation.from].z, configurationDatum.radius),
                     // annotation.attributes[0] || 'None'
                     annotation.attributes[4] || 'None',
                     markerColor
@@ -605,6 +605,7 @@ export function ChromatinViewport(props: {
         let i = 0;
         for (const [position, marker, color] of labelsWorldSpace) {
             const viewSpacePosition = vec4.transformMat4(vec4.create(), vec4.fromValues(position[0], position[1], position[2], 1.0), mvm);
+            viewSpacePosition[2] += 2.0 * position[3];
             const clipSpacePosition = vec4.transformMat4(vec4.create(), viewSpacePosition, pm);
             const w = clipSpacePosition[3];
 

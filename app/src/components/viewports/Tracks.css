@@ -10,6 +10,10 @@
     height: 20px;
 }
 
+.track-sasa {
+    height: 40px;
+}
+
 .track-add {
     border: 2px dashed rgb(38, 38, 38);
     padding: 20px 0px 20px 0px;

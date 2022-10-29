@@ -65,7 +65,7 @@ fn main(
     kernel[23] = 1.0/64.0;
     kernel[24] = 1.0/256.0;
 
-  let resolution : vec2<i32> = textureDimensions(colorTexture, 0);
+  let resolution: vec2<i32> = vec2<i32>(textureDimensions(colorTexture, 0));
   let tx = vec2<i32>(GlobalInvocationID.xy);
 
   if (tx.x >= resolution.x ||

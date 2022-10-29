@@ -7,7 +7,7 @@ import { ConfigurationAction, ConfigurationState, DistanceMapDataConfiguration, 
 import * as GraphicsModule from "../../modules/graphics";
 import { BinPosition, CameraConfigurationType, OrthoCameraConfiguration, squareDiameter } from "../../modules/graphics";
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
-import { DataAction, DataState, Positions3D } from "../../modules/storage/models/data";
+import { BinPositionsData, DataAction, DataState, Positions3D } from "../../modules/storage/models/data";
 import { useConfiguration, useSelections } from "../hooks";
 import { sasa } from "../../modules/sasa";
 import { SelectionsTrack } from "./tracks/SelectionsTrack";
@@ -16,6 +16,7 @@ import { v4 } from 'uuid';
 
 import './Tracks.css';
 import { BreakoutRoom20Filled } from "@fluentui/react-icons";
+import { SASATrack } from "./tracks/SASATrack";
 
 export function TADViewport(props: {
     graphicsLibrary: GraphicsModule.GraphicsLibrary,
@@ -140,38 +141,7 @@ export function TADViewport(props: {
                         positions.push(vec4.fromValues(values[i].x, values[i].y, values[i].z, 1.0));
                     }
 
-                    const globalSasaValues = [sasa(values, {
-                        method: 'constant',
-                        probe_size: 0.02,
-                    }, 100)];
-
                     viewport.setPositions(positions);
-
-                    // for(let lod = 1; lod < 32; lod++) {
-                    //     const size = viewport.globals.sizes[lod];
-                    //     if (size === 0) {
-                    //         break;
-                    //     }
-
-                    //     const offset = viewport.globals.offsets[lod-1];
-
-                    //     const values = [];
-                    //     for(let i = 0; i < size; i++) {
-                    //         const j = i;
-
-                    //         if (i == size - 1 && viewport.globals.sizes[lod - 1] % 2 !== 0) {
-                    //             values.push((globalSasaValues[lod-1][j] + globalSasaValues[lod-1][j + 1] + globalSasaValues[lod-1][j + 2]) * 0.33);
-                    //             break;
-                    //         } else {
-                    //             values.push((globalSasaValues[lod-1][j] + globalSasaValues[lod-1][j + 1]) * 0.5);
-                    //         }                            
-                    //     }
-
-                    //     globalSasaValues.push(values);
-                    //     console.log(globalSasaValues);
-                    // }                    
-
-                    // setSasaValues(() => globalSasaValues);
 
                     break;
                 }
@@ -373,7 +343,8 @@ export function TADViewport(props: {
     }
 
     const tracksDropdownOptions: IDropdownOption[] = [
-        { key: TrackType.Selections, text: 'Selections' }
+        { key: TrackType.Selections, text: 'Selections' },
+        { key: TrackType.SASA, text: 'Solvent Accessible Surface Area' }
     ];
 
     const addTrack = (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number): void => {
@@ -392,10 +363,18 @@ export function TADViewport(props: {
                 })
                 break;
             }
+            case TrackType.SASA: {
+                updateConfiguration({
+                    ...configuration,
+                    tracks: [...configuration.tracks, {
+                        id: v4(),
+                        type: TrackType.SASA,
+                    }]
+                })
+                break;
+            }
         }
     };
-
-    // console.log(configuration.tracks);
 
     return (<div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <canvas ref={canvasElement} style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -424,6 +403,18 @@ export function TADViewport(props: {
                                 track={t}
                                 viewport={viewport}
                             ></SelectionsTrack>
+                        }
+                        case TrackType.SASA: {
+                            return <SASATrack
+                                key={t.id}
+                                graphicsLibrary={props.graphicsLibrary}
+                                configurationID={props.configurationID}
+                                configurationsReducer={props.configurationsReducer}
+                                dataReducer={props.dataReducer}
+                                selectionsReducer={props.selectionsReducer}
+                                track={t}
+                                viewport={viewport}
+                            ></SASATrack>
                         }
                     }
                 })}
