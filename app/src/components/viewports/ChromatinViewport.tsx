@@ -56,7 +56,7 @@ export function ChromatinViewport(props: {
     const interesctionSecondaryData = interesctionConfigurationDatum ? data.data.find(d => isoDataID.unwrap(d.id) == closestIntersection.chromatinPart.dataId) || null : null;
 
     const intersection3DDataID = (interesctionConfigurationDatum?.secondaryID || interesctionConfigurationDatum?.id) || null;
-    const intersection3DDataBin = (closestIntersection && interesctionConfigurationDatum?.secondaryID) ? ((interesctionPrimaryData?.values as BEDAnnotations)[closestIntersection.binIndex].from) : closestIntersection?.binIndex;
+    const intersection3DDataBin = (closestIntersection && interesctionConfigurationDatum?.secondaryID) ? undefined : closestIntersection?.binIndex;
 
     const [isPrimaryModPressed, setPrimaryModPressed] = useState(false);
     const [isSecondaryModPressed, setSecondaryModPressed] = useState(false);
