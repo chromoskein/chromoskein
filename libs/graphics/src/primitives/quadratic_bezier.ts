@@ -40,7 +40,7 @@ export function quadraticBezierToBoundingBox(array: ArrayViews, offset: number):
         t[0] = clamp((p0[0] - p1[0]) / (p0[0] - 2.0*p1[0] + p2[0]), 0.0, 1.0);
         t[1] = clamp((p0[1] - p1[1]) / (p0[1] - 2.0*p1[1] + p2[1]), 0.0, 1.0);
         t[1] = clamp((p0[2] - p1[2]) / (p0[2] - 2.0*p1[2] + p2[2]), 0.0, 1.0);
-        const s = t.map(v => 1.0 - v);
+        const s = t.map((v: number) => 1.0 - v);
         const q = vec3.create();
         q[0] = s[0]*s[0]*p0[0] + 2.0*s[0]*t[0]*p1[0] + t[0]*t[0]*p2[0];
         q[1] = s[1]*s[1]*p0[1] + 2.0*s[1]*t[1]*p1[1] + t[1]*t[1]*p2[1];

@@ -2,17 +2,16 @@ import { useEffect, useRef, useState, Dispatch } from "react";
 import * as GraphicsModule from "../../modules/graphics";
 import { sasa } from "../../modules/sasa";
 import { ChromatinViewportConfiguration, ConfigurationAction, ConfigurationState, getDefaultViewportSelectionOptions, ChromatinViewportToolType } from "../../modules/storage/models/viewports";
-import { useDeepCompareEffect, useMouseHovered, usePrevious } from "react-use";
+import { useDeepCompareEffect, useMouseHovered } from "react-use";
 import { ChromatinIntersection, ContinuousTube, Sphere, CullPlane } from "../../modules/graphics";
 import { vec2, vec3, vec4 } from "gl-matrix";
-import { BEDAnnotations, BEDAnnotation, BinPositionsData, Data, DataAction, DataState, isoDataID, Positions3D, Sparse1DNumericData, Sparse1DTextData } from "../../modules/storage/models/data";
+import { BEDAnnotations, BinPositionsData, Data, DataAction, DataState, isoDataID, Positions3D, Sparse1DNumericData, Sparse1DTextData, Position3D } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration } from "../hooks";
 import { useKey } from "rooks";
 import * as chroma from "chroma-js";
 import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
 import { LabelingOverlay } from "./LabelingOverlay"
-import { LabelingDebugViewport } from "./LabelingDebugViewport";
 import { IColor } from "@fluentui/react";
 
 const SphereSelectionName = 'SPHERE_SELECTION';
@@ -145,6 +144,7 @@ export function ChromatinViewport(props: {
 
         for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
             const primaryData = data.data.find((d: Data) => d.id == configurationDatum.id);
+
             if (primaryData?.type == '3d-positions') {
                 const datum = primaryData as BinPositionsData;
                 const positions = datum.values.positions;
@@ -152,13 +152,33 @@ export function ChromatinViewport(props: {
                 const chromatinPart = viewport.addPart(datum.name, positions, datum.values.connectivity || null, configurationDatumIndex, configurationDatum.representation, false);
                 chromatinPart.structure.radius = configurationDatum.radius;
             } else if (primaryData?.type == 'bed-annotation' && configurationDatum.secondaryID) {
-                const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values as Positions3D | undefined;
+                const data3D: BinPositionsData | undefined = data.data.find((d: Data) => d.id == configurationDatum.secondaryID) as BinPositionsData | undefined;
 
                 if (data3D) {
-                    const positions = (primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => data3D.positions[annotation.from]);
+                    const positions = data3D.values.positions;
+                    const resolution = data3D.basePairsResolution;
+                    const annotations = (primaryData.values as BEDAnnotations);
 
-                    const chromatinPart = viewport.addPart(primaryData.name, positions, null, configurationDatumIndex, configurationDatum.representation, false);
+                    const interpolatedPositions: Position3D[] = [];
+                    for(const annotation of annotations) {
+                        const startBin = Math.floor(annotation.from / resolution);
+                        const endBin = Math.ceil(annotation.from / resolution);
+
+                        const startPosition = positions[startBin];
+                        const endPosition = positions[endBin];
+
+                        const tBegin = (annotation.from - startBin * resolution) / resolution;
+
+                        interpolatedPositions.push({
+                            x: startPosition.x + tBegin * (endPosition.x - startPosition.x),
+                            y: startPosition.y + tBegin * (endPosition.y - startPosition.y),
+                            z: startPosition.z + tBegin * (endPosition.z - startPosition.z),
+                        });
+                    }
+
+                    const chromatinPart = viewport.addPart(primaryData.name, interpolatedPositions, null, configurationDatumIndex, configurationDatum.representation, false);
                     chromatinPart.structure.radius = configurationDatum.radius;
+                    // chromatinPart.structure.partOfBVH = false;
                 }
             }
         }
@@ -561,13 +581,32 @@ export function ChromatinViewport(props: {
 
         // Let's only go through markers
         if (primaryData?.type == 'bed-annotation' && configurationDatum.secondaryID) {
-            const data3D = data.data.find((d: Data) => d.id == configurationDatum.secondaryID)?.values as Positions3D | undefined;
+            const data3D: BinPositionsData | undefined = data.data.find((d: Data) => d.id == configurationDatum.secondaryID) as BinPositionsData | undefined;
             const markerColor = configurationDatum.color;
 
             if (data3D) {
-                labelsWorldSpace = (primaryData.values as BEDAnnotations).map((annotation: BEDAnnotation) => [
-                    vec4.fromValues(data3D.positions[annotation.from].x, data3D.positions[annotation.from].y, data3D.positions[annotation.from].z, configurationDatum.radius),
-                    // annotation.attributes[0] || 'None'
+                const positions = data3D.values.positions;
+                const resolution = data3D.basePairsResolution;
+                const annotations = (primaryData.values as BEDAnnotations);
+
+                const interpolatedPositions: Position3D[] = [];
+                for(const annotation of annotations) {
+                    const startBin = Math.floor(annotation.from / resolution);
+                    const endBin = Math.ceil(annotation.from / resolution);
+
+                    const startPosition = positions[startBin];
+                    const endPosition = positions[endBin];
+
+                    const tBegin = (annotation.from - startBin * resolution) / resolution;
+
+                    interpolatedPositions.push({
+                        x: startPosition.x + tBegin * (endPosition.x - startPosition.x),
+                        y: startPosition.y + tBegin * (endPosition.y - startPosition.y),
+                        z: startPosition.z + tBegin * (endPosition.z - startPosition.z),
+                    });
+                }
+                labelsWorldSpace = annotations.map((annotation, annotationIndex) => [
+                    vec4.fromValues(interpolatedPositions[annotationIndex].x, interpolatedPositions[annotationIndex].y, interpolatedPositions[annotationIndex].z, configurationDatum.radius),
                     annotation.attributes[4] || 'None',
                     markerColor
                 ]);

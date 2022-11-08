@@ -90,15 +90,15 @@ export class Spline implements HighLevelStructure {
         this.catmullRomPoints.unshift(startPoint);
         this.catmullRomPoints.push(endPoint);
 
-        const newPoints = [];
-        for(let i = 0; i < this.catmullRomPoints.length - 1; i++) {
-            // newPoints.push(this.catmullRomPoints[i]);
-            const newPoint = vec3.scale(vec3.create(), vec3.add(vec3.create(), this.catmullRomPoints[i], this.catmullRomPoints[i + 1]), 0.5);
-            newPoints.push(newPoint);
-        }
-        newPoints.push(vec3.scale(vec3.create(), vec3.add(vec3.create(), newPoints[newPoints.length - 1], endPoint), 0.5));
-        newPoints.push(endPoint);
-        this.catmullRomPoints = newPoints;
+        // const newPoints = [];
+        // for(let i = 0; i < this.catmullRomPoints.length - 1; i++) {
+        //     // newPoints.push(this.catmullRomPoints[i]);
+        //     const newPoint = vec3.scale(vec3.create(), vec3.add(vec3.create(), this.catmullRomPoints[i], this.catmullRomPoints[i + 1]), 0.5);
+        //     newPoints.push(newPoint);
+        // }
+        // newPoints.push(vec3.scale(vec3.create(), vec3.add(vec3.create(), newPoints[newPoints.length - 1], endPoint), 0.5));
+        // newPoints.push(endPoint);
+        // this.catmullRomPoints = newPoints;
 
         // N points creates N - 3 catmull rom splines.
         // N - 3 catmull rom splines are approximated by N - 3 cubic beziers
@@ -113,7 +113,7 @@ export class Spline implements HighLevelStructure {
 
         this.cubicBezierPoints = new Array(this.catmullRomPoints.length);
         this.quadraticBeziers = new Array(quadraticBeziersLength);
-        this._radius = Math.min(0.05, radius);
+        this._radius = radius;
 
         for (let i = 0; i < this.catmullRomPoints.length - 3; i++) {
             let p0 = this.catmullRomPoints[i + 0];
@@ -180,7 +180,6 @@ export class Spline implements HighLevelStructure {
         this._bufferPosition = offset;
 
         if (type == null || type == LowLevelStructure.QuadraticBezierCurve) {
-            console.log('writing', buffer);
             for (let i = 0; i < this.quadraticBeziers.length; i++) {
                 const curve = this.quadraticBeziers[i];
                 const offsetWords = (offset + i) * LL_STRUCTURE_SIZE;
@@ -248,7 +247,7 @@ export class Spline implements HighLevelStructure {
     }
 
     public set radius(radius: number) {
-        this._radius = Math.min(0.05, radius);
+        this._radius = radius;
         
         if (!this.buffer) return;
 

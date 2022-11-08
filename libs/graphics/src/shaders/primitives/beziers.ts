@@ -186,11 +186,8 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
   // if (curveBuffer.ty != 2) {
   //   return VertexOutput(
   //     vec4<f32>(0.0, 0.0, 0.0, 0.0), 
-  //     vec3<f32>(0.0, 0.0, 0.0),
-  //     vec3<f32>(0.0, 0.0, 0.0),
-  //     vec3<f32>(0.0, 0.0, 0.0),
-  //     0.0,
-  //     vec3<f32>(0.0, 0.0, 0.0),
+  //     vec4<f32>(0.0, 0.0, 0.0, 0.0),
+  //     vec4<f32>(0.0, 0.0, 0.0, 0.0)
   //   );
   // }
 
@@ -237,9 +234,9 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 
 struct FragmentOutput {
   ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32,' : ''}
-  @location(0) color : vec4<f32>,  
-  ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}  
-  ${writeDepth ? '@location(2) selectionID: vec4<f32>,' : ''}  
+  @location(0) color : vec4<f32>,
+  ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}
+  ${writeDepth ? '@location(2) selectionID: vec4<f32>,' : '' } 
 };
 
 @fragment
@@ -277,59 +274,28 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
   );
 
   // Transform the curve to ray-centric coordinates
-  var curve: QuadraticBezierCurve = transformToRayFrame(ray, curve_ws);
+  let curve: QuadraticBezierCurve = transformToRayFrame(ray, curve_ws);
 
   // 
-  var result: CurveIntersectionResult = rayQuadraticBezierIntersection(ray, curve);
+  let result: CurveIntersectionResult = rayQuadraticBezierIntersection(ray, curve);
 
-  var intersectionBezier: vec3<f32> = vec3<f32>(0.0);
-  var intersection: vec3<f32> = ray.origin + result.rayT * ray.direction;
-  var normal: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);
-  var depth: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+  let intersection: vec3<f32> = ray.origin + result.rayT * ray.direction;
+  var depth: vec4<f32> = camera.projectionView * vec4<f32>(intersection, 1.0);
+  depth = depth * (1.0 / depth.w);
 
-  // Discard based on culling objects
-  var cull = false;
+  if (result.hit) {
+    let pointOnCurve = evaluateQuadraticBezier(curve, result.curveT);
 
-  if (!result.hit) {
-    // discard;
-    cull = true;
+    let normal: vec3<f32> = normalize(intersection.xyz - pointOnCurve.xyz);
+
+    return FragmentOutput(
+      ${writeDepth ? 'depth.z,' : ''}
+      vec4<f32>(1.0),
+      ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
+      ${writeDepth ? 'vec4<f32>(0, 0.0, 0.0, 1.0),' : ''}
+    );  
   } else {
-      intersection = ray.origin + result.rayT * ray.direction;
-      intersectionBezier = evaluateQuadraticBezier(curve_ws, result.curveT);
-      normal = normalize(intersection - intersectionBezier);
-      depth = camera.projectionView * vec4<f32>(intersection, 1.0);
-      depth = depth * (1.0 / depth.w);
-  }
-
-  var fragmentColor = color;
-
-  if (cullObjectsBuffer.len <= u32(0)) {
-    cull = false;
-  }
-
-  for (var i: u32 = u32(0); i < cullObjectsBuffer.len; i = i + u32(1)) {
-    let object = cullObjectsBuffer.objects[i];
-
-    if (object.ty == u32(2)) {
-      let plane = vec4<f32>(bitcast<f32>(object.content[0]), bitcast<f32>(object.content[1]), bitcast<f32>(object.content[2]), bitcast<f32>(object.content[3]));
-
-      if (dot(plane, vec4<f32>(intersection, 1.0)) < 0.0) {
-        let planeT = -(dot(ray.origin, plane.xyz) + plane.w) / dot(ray.direction, plane.xyz);
-        cull = true;
-      }
-    }
-  }
-
-  if (cull) {
     discard;
   }
-
-  // Final write
-  return FragmentOutput(
-    ${writeDepth ? 'depth.z,' : ''}
-    vec4<f32>(fragmentColor, 1.0),    
-    ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-    ${writeDepth ? 'vec4<f32>(1.0, 0.0, 0.0, 1.0),' : '' }
-  );  
 }
 `};

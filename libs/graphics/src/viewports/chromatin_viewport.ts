@@ -235,7 +235,11 @@ export class ChromatinViewport extends Viewport3D {
    * 
    * @returns created structure
    */
-  public addPart(chromosomeName: string, bins: Array<{ x: number, y: number, z: number }>, connectivityBitset: Array<0 | 1> | null, dataId: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
+  public addPart(
+    chromosomeName: string, 
+    bins: Array<{ x: number, y: number, z: number }>, 
+    connectivityBitset: Array<0 | 1> | null, 
+    dataId: number, representation: ChromatinRepresentation, update = true): ChromatinPart {
     const pointsVec3 = bins.map(p => vec3.fromValues(p.x, p.y, p.z));
 
     this.binPositions = pointsVec3.map(p => vec3.clone(p));
@@ -248,7 +252,7 @@ export class ChromatinViewport extends Viewport3D {
         break;
       }
       case ChromatinRepresentation.Spheres: {
-        [highLevelID, structure] = this._scene.addSpheres(CHROMATIN_OBJECT_NAME + this.maxId, pointsVec3, null, null, true, update);
+        [highLevelID, structure] = this._scene.addSpheres(CHROMATIN_OBJECT_NAME + this.maxId, pointsVec3, null, null, false, update);
         break;
       }
       case ChromatinRepresentation.Spline: {

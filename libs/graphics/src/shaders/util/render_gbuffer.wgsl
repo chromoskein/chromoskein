@@ -69,5 +69,5 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
   // let gamma = 1.0 / 2.2;
   // return vec4<f32>(pow(ao * colorOpaque.rgb, vec3<f32>(gamma)), 1.0);
   // return vec4<f32>(ao, ao, ao, 1.0);
-  // return vec4<f32>(ao * colorOpaque.rgb, 1.0);  
+  // return vec4<f32>(colorOpaque.rgb, 1.0);  
 }

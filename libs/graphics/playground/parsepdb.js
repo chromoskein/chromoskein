@@ -3,7 +3,7 @@ const RESIDUE_NAME = 'SEQRES';
 
 function parsePdb(pdb) {
   const pdbLines = pdb.split('\n');
-  const atoms = [];
+  let atoms = [];
   const seqRes = []; // raw SEQRES entry data
   let residues = []; // individual residue data parsed from SEQRES
   const chains = new Map(); // individual rchaindata parsed from SEQRES
@@ -55,18 +55,35 @@ function parsePdb(pdb) {
     }
   });
 
-  // Add residues to chains
-  chains.forEach((chain) => {
-    chain.residues = residues.filter((residue) =>
-      residue.chainID === chain.chainID,
-    );
-  });
+  // Normalize to [-1.0, 1.0] and center
+  // Build bounding box
+  const bb = chromatin_3d_viewport.BoundingBoxEmpty();
+  let points = atoms.map(v => glMatrix.vec3.fromValues(v.x, v.y, v.z));
+  console.log(points);
+  for (const point of points) {
+    chromatin_3d_viewport.BoundingBoxExtendByPoint(bb, point);
+  }
 
-  // Add atoms to residues
-  residues.forEach((residue) => {
-    residue.atoms = atoms.filter((atom) =>
-      atom.chainID === residue.chainID && atom.resSeq === residue.serNum,
-    );
+  points = points.map(v => glMatrix.vec3.sub(glMatrix.vec3.create(), v, bb.center));
+
+  console.log(bb);
+
+  const bbSizeLengthsglMatrix = glMatrix.vec3.sub(glMatrix.vec3.create(), bb.max, bb.min);
+  console.log(bbSizeLengthsglMatrix);
+  const bbSizeLengths = [Math.abs(bbSizeLengthsglMatrix[0]), Math.abs(bbSizeLengthsglMatrix[1]), Math.abs(bbSizeLengthsglMatrix[2])];
+
+  const maxLength = Math.max(...bbSizeLengths);
+  const scale = 1.0 / maxLength;
+
+  points = points.map(v => glMatrix.vec3.scale(glMatrix.vec3.create(), v, scale));
+
+  atoms = atoms.map((a, i) => {
+    return {
+      ...a,
+      x: points[i][0],
+      y: points[i][1],
+      z: points[i][2]
+    };
   });
 
   return {

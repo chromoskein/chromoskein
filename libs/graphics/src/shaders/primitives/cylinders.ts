@@ -98,10 +98,8 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 
 struct FragmentOutput {
   ${writeDepth ? '@builtin(frag_depth) fragmentDepth : f32,' : ''}
-  @location(0) color : vec4<f32>,
-  
-  ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}
-  
+  @location(0) color : vec4<f32>,  
+  ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}  
 };
 
 @fragment
@@ -149,10 +147,8 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
   // Final write
   return FragmentOutput(
     ${writeDepth ? 'depth.z,' : ''}
-    vec4<f32>(cylinderColor.xyz, 1.0),
-    
-    ${writeDepth ? 'vec4<f32>(normal, 1.0),' : ''}
-    
+    vec4<f32>(cylinderColor.xyz, 1.0),    
+    ${writeDepth ? 'vec4<f32>(normal, 1.0),' : ''}    
   );   
 }
 `};

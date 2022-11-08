@@ -21,20 +21,25 @@
             border: 0px;
 
         }
+
         .canvasWrap {
             width: 100vw;
             height: 100vh;
             display: grid;
             grid-column-gap: 0px;
-            grid-template-areas:
+            /* grid-template-areas:
                 "viewport1 viewport2"
-                "viewport3 viewport4";
+                "viewport3 viewport4"; */
+
+            grid-template-areas:
+                "viewport1 viewport1"
+                "viewport1 viewport1";
             overflow: hidden;
         }
 
-        .canvasWrap > div {
-            max-width: 50vw;
-            max-height: 50vh;
+        .canvasWrap>div {
+            max-width: 100vw;
+            max-height: 100vh;
         }
 
         .viewport {
@@ -58,26 +63,48 @@
         div#viewport4 {
             grid-area: viewport4;
         }
+
+        .ui {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+
+            width: 800px;
+            height: 30px;
+
+            background: grey;
+        }
+
+        .ui>input {
+            width: 100%;
+        }
     </style>
 </head>
 
 <body>
     <div class="canvasWrap">
         <div id="viewport1"><canvas id="canvasViewport1" class="viewport"></div>
-        <div id="viewport2"><canvas id="canvasViewport2" class="viewport"></div>
+        <!-- <div id="viewport2"><canvas id="canvasViewport2" class="viewport"></div>
         <div id="viewport3"><canvas id="canvasViewport3" class="viewport"></div>
-        <div id="viewport4"><canvas id="canvasViewport4" class="viewport"></div>
+        <div id="viewport4"><canvas id="canvasViewport4" class="viewport"></div> -->
     </div>
 
+    <div class="ui">
+        <input type="range" min="0.0" max="0.5" value="0.01" step="0.01" class="simplification" id="simplification">
+    </div>
+
+    <script src="../dist/chromatin_3d_viewport.js"></script>
+    <script src="gl-matrix-min.js"></script>
     <script src="parsepdb.js"></script>
     <script src="simplify.js"></script>
-    <script src="../dist/chromatin_3d_viewport.js"></script>
+
     <script>
-        let slider = document.getElementById("bin");
+        let slider = document.getElementById("simplification");
         let chromatinPart = null;
         let viewports = [];
         let sphereCull = null;
         let currentBin = 0;
+        let data;
 
         window.addEventListener("load", function () {
             (async () => {
@@ -112,42 +139,75 @@
                 for (const c of canvases) {
                     let v = graphics.createChromatinViewport(c);
 
-                    v.ssaoKernelSize = 2;
-                    v.ssaoKernelRadius = 10;
+                    v.ssaoKernelSize = 64;
+                    v.ssaoKernelRadius = 0.5;
                     v.ssaoBlurSize = 2;
 
                     viewports.push(v);
                 };
+
+                slider.oninput = function () {
+                    viewports[0].clearChromatin();
+
+                    simplifiedData = simplify(data.slice().map(e => { return { x: e.x, y: e.y, z: e.z } }), this.value);
+                    chromatinPartSpheres = viewports[0].addPart(
+                        "something_spheres",
+                        simplifiedData,
+                        null,
+                        1,
+                        chromatin_3d_viewport.ChromatinRepresentation.Spheres,
+                        true
+                    );
+                    chromatinPartSpheres.structure.radius = 0.01;
+                    chromatinPart = viewports[0].addPart(
+                        "something_",
+                        simplifiedData,
+                        null,
+                        0,
+                        chromatin_3d_viewport.ChromatinRepresentation.Spline,
+                        true
+                    );
+                    chromatinPart.structure.radius = 0.005;
+
+                    viewports[0].rebuild();
+
+                    console.log(simplifiedData.length);
+                }
+
                 let rawFile = new XMLHttpRequest();
                 rawFile.onreadystatechange = () => {
                     if (rawFile.readyState == 4 && rawFile.status == 200) {
                         const pdbData = parsePdb(rawFile.responseText);
-                        let data = pdbData.atoms.map(d => { return { x: d.x, y: d.y, z: d.z } });
+                        data = pdbData.atoms.map(d => { return { x: d.x, y: d.y, z: d.z } });
 
-                        // let viewport = viewports[0];
-                        // data = simplify(data, 4.0);
-                        // console.log('simplified length', data.length);
-                        // chromatinPart = viewport.addPart(
-                        //     data,
-                        //     true, 1, chromatin_3d_viewport.ChromatinRepresentation.ContinuousTube, true
-                        // );
-                        // chromatinPart.structure.radius = 0.005;
-
-                        for(let i = 0; i < 4; i++) {
+                        for (let i = 0; i < 1; i++) {
                             let viewport = viewports[i];
                             viewport.camera = viewports[0].camera;
 
-                            data = simplify(data.map(e => { return { x: e.x, y: e.y, z: e.z }}), i * 1.5);
-                            console.log('simplified length', data.length);
+                            simplifiedData = simplify(data.map(e => { return { x: e.x, y: e.y, z: e.z } }), i * 0.075, true);
+                            chromatinPartSpheres = viewport.addPart(
+                                "something_spheres" + i.toString(),
+                                simplifiedData,
+                                null,
+                                i,
+                                chromatin_3d_viewport.ChromatinRepresentation.Spheres,
+                                true
+                            );
+                            chromatinPartSpheres.structure.radius = 0.1;
                             chromatinPart = viewport.addPart(
-                                data,
-                                true, 1, chromatin_3d_viewport.ChromatinRepresentation.ContinuousTube, true
+                                "something_" + i.toString(),
+                                simplifiedData,
+                                null,
+                                i,
+                                chromatin_3d_viewport.ChromatinRepresentation.Spline,
+                                true
                             );
                             chromatinPart.structure.radius = 0.005;
                         }
                     }
                 }
-                rawFile.open("GET", './wholegenome_test1.pdb');
+                // rawFile.open("GET", './cell7_3dmodel_renamed.pdb');
+                rawFile.open("GET", './chr1.pdb');
                 rawFile.send();
 
                 const doFrame = (frametime) => {
