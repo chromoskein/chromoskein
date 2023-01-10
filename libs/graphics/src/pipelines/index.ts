@@ -68,8 +68,6 @@ export function createRenderPipelines(device: GPUDevice, shaderModules: ShaderMo
         cylindersDiscardDepth: device.createRenderPipeline(cylindersPipelineDescriptor(pipelineLayouts, shaderModules, false)),
         quadraticBeziersWriteDepth: device.createRenderPipeline(quadraticBeziersPipelineDescriptor(pipelineLayouts, shaderModules, true)),
         quadraticBeziersDiscardDepth: device.createRenderPipeline(quadraticBeziersPipelineDescriptor(pipelineLayouts, shaderModules, false)),
-        aabbsWriteDepth: device.createRenderPipeline(aabbsPipelineDescriptor(pipelineLayouts, shaderModules, true)),
-        aabbsDiscardDepth: device.createRenderPipeline(aabbsPipelineDescriptor(pipelineLayouts, shaderModules, false)),
         roundedConesWriteDepth: device.createRenderPipeline(roundedConesPipelineDescriptor(pipelineLayouts, shaderModules, true)),
         roundedConesDiscardDepth: device.createRenderPipeline(roundedConesPipelineDescriptor(pipelineLayouts, shaderModules, false)),
 

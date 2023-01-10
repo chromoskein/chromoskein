@@ -159,7 +159,7 @@ fn aoHit(ray: Ray) -> bool {
                     let intersection: vec4<f32> = rayRoundedConeIntersection(ray, roundedCone);
                     let t = intersection.x;
 
-                    let null = vec4<f32>(0.0);
+                    let zero = vec4<f32>(0.0);
                     let tmpIntersection = vec4<f32>(camera.position.xyz + t * ray.direction.xyz, 1.0);
 
                     // if (any(roundedCone.leftPlane != null) && (dot(roundedCone.leftPlane, tmpIntersection) > 0.0)) {

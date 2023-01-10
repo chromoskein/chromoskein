@@ -2,7 +2,7 @@ import React, { Dispatch, Fragment, useMemo } from "react";
 
 import { ConfigurationAction, ConfigurationState, DistanceDataConfiguration, DistanceMapDataConfiguration, DistanceViewportConfiguration, TrackType } from '../../../modules/storage/models/viewports';
 import { DataAction, DataState } from "../../../modules/storage/models/data";
-import { isoSelectionID, SelectionAction, SelectionState } from "../../../modules/storage/models/selections";
+import { isoSelectionID, SelectionAction, SelectionID, SelectionState } from "../../../modules/storage/models/selections";
 import { useConfiguration } from '../../hooks';
 import { Delete16Regular } from "@fluentui/react-icons";
 import { ComboBox, DefaultButton, IComboBox, IComboBoxOption } from "@fluentui/react";
@@ -71,6 +71,14 @@ export function SelectionsTrack(props: {
         }
     }).filter(notEmpty), [configuration.data, track.selections, allSelections]);
 
+
+    const selectSelection = (id: SelectionID) => {
+        updateConfiguration({
+            ...configuration,
+            selectedSelectionID: id,
+        });
+    };
+
     return <Fragment><ComboBox
         label="Add a selection"
         allowFreeform={true}
@@ -79,7 +87,7 @@ export function SelectionsTrack(props: {
         onChange={addSelection}
     /><div className="treeViewList" style={{ marginTop: '16px' }}>
             {track.type == TrackType.Selections && (selections.map(selection => {
-                return <div className="treeViewListItem" key={isoSelectionID.unwrap(selection.id)}>
+                return <div className="treeViewListItem" key={isoSelectionID.unwrap(selection.id)} onClick={() => selectSelection(selection.id)}>
                     <DefaultButton id="selectionColorButton"
                         style={{
                             padding: 0,

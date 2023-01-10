@@ -3,7 +3,7 @@ struct VertexOutput {
   @location(0) textureCoordinates : vec2<f32>,
 };
 
-@stage(vertex)
+@vertex
 fn main_vertex(@builtin(vertex_index) VertexIndex : u32)
         -> VertexOutput {
     return VertexOutput(

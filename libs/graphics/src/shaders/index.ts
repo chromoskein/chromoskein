@@ -6,7 +6,6 @@ import { spheres } from "./primitives/spheres";
 import { cylinders } from "./primitives/cylinders";
 import primitiveBeziers from "./beziers.wgsl";
 import { beziers } from "./primitives/beziers";
-import { aabbs } from "./primitives/aabbs";
 import { roundedCones } from "./primitives/rounded_cones";
 
 import rayTracingGBuffer from "./raytrace_gbuffer.wgsl";
@@ -46,8 +45,6 @@ export function createShaderModules(device: GPUDevice): ShaderModules {
         cylindersDiscardDepth: device.createShaderModule({ code: primitivesBase + cylinders(false) }),
         quadraticBeziersWriteDepth: device.createShaderModule({ code: primitivesBase + primitiveBeziers + beziers(true) }),
         quadraticBeziersDiscardDepth: device.createShaderModule({ code: primitivesBase + primitiveBeziers + beziers(false) }),
-        aabbsWriteDepth: device.createShaderModule({ code: primitivesBase + aabbs(true) }),
-        aabbsDiscardDepth: device.createShaderModule({ code: primitivesBase + aabbs(false) }),
         roundedConesWriteDepth: device.createShaderModule({ code: primitivesBase + roundedCones(true) }),
         roundedConesDiscardDepth: device.createShaderModule({ code: primitivesBase + roundedCones(false) }),
         //#endregion

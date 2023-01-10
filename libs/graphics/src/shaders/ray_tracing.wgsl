@@ -51,7 +51,7 @@ struct Sphere {
 //
 struct Cylinder {
     // 
-    from: vec3<f32>,
+    start: vec3<f32>,
     // 
     to: vec3<f32>,
     //
@@ -70,13 +70,13 @@ struct Disk {
 };
 
 struct AABB {
-  from: vec3<f32>,
+  start: vec3<f32>,
   to: vec3<f32>,
 };
 
 struct RoundedCone {
       // 
-    from: vec3<f32>,
+    start: vec3<f32>,
     // 
     to: vec3<f32>,
     //
@@ -89,7 +89,7 @@ struct RoundedCone {
 
 struct Capsule {
       // 
-    from: vec3<f32>,
+    start: vec3<f32>,
     // 
     to: vec3<f32>,
     //
@@ -100,8 +100,8 @@ fn rayCylinderInteresection(ray: Ray, cylinder: Cylinder) -> vec4<f32>
 {
     let radius: f32 = cylinder.radius;
 
-    let ba: vec3<f32> = cylinder.to - cylinder.from;
-    let oc: vec3<f32> = ray.origin - cylinder.from;
+    let ba: vec3<f32> = cylinder.to - cylinder.start;
+    let oc: vec3<f32> = ray.origin - cylinder.start;
 
     let baba: f32 = dot(ba,ba);
     let bard: f32 = dot(ba, ray.direction);
@@ -223,7 +223,7 @@ fn rayDiskIntersectionBothSides(ray: Ray, disk: Disk) -> bool
 fn rayAABBIntersection(ray: Ray, aabb: AABB) -> f32 {
   let invRayDirection = vec3<f32>(1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z);
 
-  let t0 = (aabb.from - ray.origin) * invRayDirection;
+  let t0 = (aabb.start - ray.origin) * invRayDirection;
   let t1 = (aabb.to   - ray.origin) * invRayDirection;
 
   let tmin = min(t0, t1);
@@ -242,8 +242,8 @@ fn rayAABBIntersection(ray: Ray, aabb: AABB) -> f32 {
 fn rayRoundedConeIntersection(ray: Ray, roundedCone: RoundedCone) -> vec4<f32> {
   let invRayDirection = vec3<f32>(1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z);
 
-  let ba = roundedCone.to - roundedCone.from;
-  let oa = ray.origin - roundedCone.from;
+  let ba = roundedCone.to - roundedCone.start;
+  let oa = ray.origin - roundedCone.start;
   let ob = ray.origin - roundedCone.to;
   let rr = roundedCone.radius - roundedCone.radius;
   let m0 = dot(ba,ba);
@@ -300,8 +300,8 @@ fn rayRoundedConeIntersection(ray: Ray, roundedCone: RoundedCone) -> vec4<f32> {
 fn rayRoundedConeIntersectionWireframe(ray: Ray, roundedCone: RoundedCone) -> vec2<f32> {
   let invRayDirection = vec3<f32>(1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z);
 
-  let ba = roundedCone.to - roundedCone.from;
-  let oa = ray.origin - roundedCone.from;
+  let ba = roundedCone.to - roundedCone.start;
+  let oa = ray.origin - roundedCone.start;
   let ob = ray.origin - roundedCone.to;
   let rr = roundedCone.radius - roundedCone.radius;
   let m0 = dot(ba,ba);
@@ -313,7 +313,7 @@ fn rayRoundedConeIntersectionWireframe(ray: Ray, roundedCone: RoundedCone) -> ve
   let m7 = dot(ob,ob);
 
   var planeA = vec4<f32>(normalize(ba), 0.0);
-  planeA.w = -dot(roundedCone.from, planeA.xyz);
+  planeA.w = -dot(roundedCone.start, planeA.xyz);
   var planeB = vec4<f32>(-normalize(ba), 0.0);
   planeB.w = -dot(roundedCone.to, planeB.xyz);
 
@@ -417,7 +417,7 @@ fn rayRoundedConeIntersectionWireframe(ray: Ray, roundedCone: RoundedCone) -> ve
 
 fn roundedConeDistance(p: vec3<f32>, roundedCone: RoundedCone) -> f32 {
     let b = roundedCone.to;
-    let a = roundedCone.from;
+    let a = roundedCone.start;
     let r1 = roundedCone.radius;
     let r2 = roundedCone.radius;
 
@@ -446,8 +446,8 @@ fn roundedConeDistance(p: vec3<f32>, roundedCone: RoundedCone) -> f32 {
 
 fn capsuleDistance(p: vec3<f32>, capsule: Capsule) -> f32
 {
-  let pa = p - capsule.from.xyz;
-  let ba = capsule.to.xyz - capsule.from.xyz;
+  let pa = p - capsule.start.xyz;
+  let ba = capsule.to.xyz - capsule.start.xyz;
 
   let h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
 
@@ -458,7 +458,7 @@ fn rayCapsuleIntersection(ray: Ray, capsule: Capsule) -> f32 {
   let ro = ray.origin;
   let rd = ray.direction;
   let r = capsule.radius;
-  let pa = capsule.from;
+  let pa = capsule.start;
   let pb = capsule.to;
 
   let  ba = pb - pa;

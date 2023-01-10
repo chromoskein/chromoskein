@@ -283,19 +283,19 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
   var depth: vec4<f32> = camera.projectionView * vec4<f32>(intersection, 1.0);
   depth = depth * (1.0 / depth.w);
 
-  if (result.hit) {
-    let pointOnCurve = evaluateQuadraticBezier(curve, result.curveT);
-
-    let normal: vec3<f32> = normalize(intersection.xyz - pointOnCurve.xyz);
-
-    return FragmentOutput(
-      ${writeDepth ? 'depth.z,' : ''}
-      vec4<f32>(1.0),
-      ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
-      ${writeDepth ? 'vec4<f32>(0, 0.0, 0.0, 1.0),' : ''}
-    );  
-  } else {
+  if (!result.hit) {
     discard;
   }
+
+  let pointOnCurve = evaluateQuadraticBezier(curve, result.curveT);
+
+  let normal: vec3<f32> = normalize(intersection.xyz - pointOnCurve.xyz);
+
+  return FragmentOutput(
+    ${writeDepth ? 'depth.z,' : ''}
+    vec4<f32>(1.0),
+    ${writeDepth ? '0.5 * vec4<f32>(normal, 1.0) + vec4<f32>(0.5),' : ''}
+    ${writeDepth ? 'vec4<f32>(0, 0.0, 0.0, 1.0),' : ''}
+  );  
 }
 `};

@@ -19,7 +19,7 @@ fn compareIDs(X: i32, R: i32, L: i32, T: i32, B: i32) -> bool {
   return ((X == R) && (X == L) && (X == T) && (X == B));
 }
 
-@stage(compute) @workgroup_size(8, 8) fn 
+@compute @workgroup_size(8, 8) fn 
 main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   if (f32(GlobalInvocationID.x) >= camera.viewportSize.x ||
       f32(GlobalInvocationID.y) >= camera.viewportSize.y) {

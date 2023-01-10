@@ -37,7 +37,7 @@ fn isSphereIntersected(ro: vec3<f32>, rd: vec3<f32>, ce: vec3<f32>, ra: f32) -> 
 //
 struct BufferRoundedCone {
     //                        // size   |   aligned at   | ends at
-    from: vec3<f32>,          // 12          0             12
+    start: vec3<f32>,          // 12          0             12
     //                        
     radius: f32,              // 4          12             16
     // 
@@ -70,7 +70,7 @@ struct RoundedConesBuffer {
 struct VertexOutput {
   @builtin(position) Position: vec4<f32>,
 
-  @location(0) from : vec3<f32>,
+  @location(0) start : vec3<f32>,
   @location(1) to : vec3<f32>,
 
   @location(2) radius: f32,
@@ -98,13 +98,13 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 ) -> VertexOutput {
   let roundedCone: BufferRoundedCone = roundedConesBuffer.roundedCones[InstanceIndex];
 
-  let center: vec3<f32> = 0.5 * (roundedCone.from.xyz + roundedCone.to.xyz);
+  let center: vec3<f32> = 0.5 * (roundedCone.start.xyz + roundedCone.to.xyz);
   let radius: f32 = roundedCone.radius;
 
-  let sphereRadius = 0.5 * length(roundedCone.from.xyz - roundedCone.to.xyz);  
+  let sphereRadius = 0.5 * length(roundedCone.start.xyz - roundedCone.to.xyz);  
   // let boundingRectangle: BoundingRectangle = sphereBoundingRectangle(Sphere(center, sphereRadius), camera.projectionView);
 
-  let br1 = sphereBoundingRectangle(Sphere(roundedCone.from.xyz, radius), camera.projectionView);
+  let br1 = sphereBoundingRectangle(Sphere(roundedCone.start.xyz, radius), camera.projectionView);
   let br2 = sphereBoundingRectangle(Sphere(roundedCone.to.xyz, radius), camera.projectionView);
 
   let ssv = normalize(br2.center - br1.center);
@@ -116,16 +116,16 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
   let ortSsv1 = half_size1 * vec2<f32>(-ssv.y, ssv.x);
   let ortSsv2 = half_size2 * vec2<f32>(ssv.y, -ssv.x);
 
-  var from: vec2<f32> = br1.center - half_size1 * ssv;
+  var start: vec2<f32> = br1.center - half_size1 * ssv;
   var to: vec2<f32> = br2.center + half_size2 * ssv;
 
   var position: vec2<f32>;
   switch(i32(VertexIndex)) {
     case 0: {
-      position = from + ortSsv1;
+      position = start + ortSsv1;
     }
     case 1: {
-      position = from + ortSsv2;
+      position = start + ortSsv2;
     }
     case 2: {
       position = to + ortSsv1;
@@ -149,7 +149,7 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 
   return VertexOutput(
     vec4<f32>(position, vertexCenter.z, 1.0), 
-    vec3<f32>(roundedCone.from.xyz),
+    vec3<f32>(roundedCone.start.xyz),
     vec3<f32>(roundedCone.to.xyz),
     radius,
     unpack4x8unorm(roundedCone.colors[0]),
@@ -191,7 +191,7 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
   );
 
   // Rounded Cone
-  let capsuleOutside: Capsule = Capsule(vertexOutput.from, vertexOutput.to, vertexOutput.radius);
+  let capsuleOutside: Capsule = Capsule(vertexOutput.start, vertexOutput.to, vertexOutput.radius);
 
   // Intersection
   var t: f32 = rayCapsuleIntersection(ray, capsuleOutside);
@@ -202,8 +202,8 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
 
   var intersection: vec3<f32> = ray.origin.xyz  + t * ray.direction.xyz;
 
-  let ba = capsuleOutside.to - capsuleOutside.from;
-  let pa = intersection - capsuleOutside.from;
+  let ba = capsuleOutside.to - capsuleOutside.start;
+  let pa = intersection - capsuleOutside.start;
   let h = clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);
   var normal: vec3<f32> = (pa - h*ba) / capsuleOutside.radius;
 
@@ -228,11 +228,11 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
     // }
 
     // if (object.ty == u32(1)) {
-    //   let from = vec3<f32>(bitcast<f32>(object.content[0]), bitcast<f32>(object.content[1]), bitcast<f32>(object.content[2]));
+    //   let start = vec3<f32>(bitcast<f32>(object.content[0]), bitcast<f32>(object.content[1]), bitcast<f32>(object.content[2]));
     //   let radius = bitcast<f32>(object.content[3]);
     //   let to = vec3<f32>(bitcast<f32>(object.content[4]), bitcast<f32>(object.content[5]), bitcast<f32>(object.content[6]));
 
-    //   let cullObject: RoundedCone = RoundedCone(from, to, radius, vec4<f32>(0.0), vec4<f32>(0.0));
+    //   let cullObject: RoundedCone = RoundedCone(start, to, radius, vec4<f32>(0.0), vec4<f32>(0.0));
 
     //   let distance = roundedConeDistance(intersection, cullObject);
     //   if (distance < 0.0) {
@@ -272,8 +272,8 @@ fn main_fragment(vertexOutput: VertexOutput) -> FragmentOutput {
   var color: vec4<f32> = vec4<f32>(1.0); // vertexOutput.color;
   var selectionId: f32 = -1.0; 
 
-  let totalLength = length(vertexOutput.to - vertexOutput.from);
-  let lengthOnIntersection = length(vertexOutput.from - (intersection - vertexOutput.radius * normal));
+  let totalLength = length(vertexOutput.to - vertexOutput.start);
+  let lengthOnIntersection = length(vertexOutput.start - (intersection - vertexOutput.radius * normal));
   let ratio = lengthOnIntersection / totalLength;
 
   if (ratio < 0.5) {

@@ -30,7 +30,7 @@ fn scaleDistance(a: vec2<f32>, b: vec2<f32>, widthScale: f32, heightScale: f32) 
     return sqrt(dx*dx + dy*dy);
 }
 
-@stage(compute) @workgroup_size(8, 8) fn 
+@compute @workgroup_size(8, 8) fn 
 main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   if (f32(GlobalInvocationID.x) >= 512.0 ||
       f32(GlobalInvocationID.y) >= 512.0) {

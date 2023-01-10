@@ -13,7 +13,7 @@ fn cylinderBoundingSphere(pa: vec3<f32>, pb: vec3<f32>, ra: f32) -> Sphere
 //
 struct BufferCylinder {
     // 
-    from: vec3<f32>,
+    start: vec3<f32>,
     //
     radius: f32,
     // 
@@ -38,7 +38,7 @@ struct CylindersBuffer {
 
 struct VertexOutput {
   @builtin(position) Position : vec4<f32>,
-  @location(0) cylinderFrom : vec3<f32>,
+  @location(0) cylinderStart : vec3<f32>,
   @location(1) cylinderTo : vec3<f32>,
   @location(2) cylinderRadius: f32,
   @location(3) cylinderColor: vec3<f32>,
@@ -60,10 +60,10 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
     );
   }
 
-  let cylinderCenter: vec3<f32> = 0.5 * (cylinder.from.xyz + cylinder.to.xyz);
+  let cylinderCenter: vec3<f32> = 0.5 * (cylinder.start.xyz + cylinder.to.xyz);
   let cylinderRadius: f32 = cylinder.radius;
   
-  let boundingSphere: Sphere = cylinderBoundingSphere(cylinder.from.xyz, cylinder.to.xyz, cylinderRadius);
+  let boundingSphere: Sphere = cylinderBoundingSphere(cylinder.start.xyz, cylinder.to.xyz, cylinderRadius);
   let boundingRectangle: BoundingRectangle = sphereBoundingRectangle(boundingSphere, camera.projectionView);
 
   var position: vec2<f32>;
@@ -89,7 +89,7 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
 
   return VertexOutput(
     vec4<f32>(position, center.z, 1.0), 
-    vec3<f32>(cylinder.from.xyz),
+    vec3<f32>(cylinder.start.xyz),
     vec3<f32>(cylinder.to.xyz),
     cylinderRadius,
     cylinder.color
@@ -104,7 +104,7 @@ struct FragmentOutput {
 
 @fragment
 fn main_fragment(@builtin(position) Position : vec4<f32>, 
-                 @location(0) cylinderFrom : vec3<f32>,
+                 @location(0) cylinderStart : vec3<f32>,
                  @location(1) cylinderTo : vec3<f32>,
                  @location(2) cylinderRadius: f32,
                  @location(3) cylinderColor: vec3<f32>,
@@ -131,7 +131,7 @@ fn main_fragment(@builtin(position) Position : vec4<f32>,
   );
 
   // Cylinder
-  let cylinder: Cylinder = Cylinder(cylinderFrom, cylinderTo, cylinderRadius);
+  let cylinder: Cylinder = Cylinder(cylinderStart, cylinderTo, cylinderRadius);
 
   // Ray-Cylinder intersection
   let t: vec4<f32> = rayCylinderInteresection(ray, cylinder);
