@@ -4,7 +4,7 @@
 
 @group(0) @binding(3) var outputTex : texture_storage_2d<r32float, write>;
 
-@stage(compute) @workgroup_size(8, 8, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(
   @builtin(global_invocation_id) GlobalInvocationID: vec3<u32>,
   @builtin(workgroup_id) WorkGroupID: vec3<u32>,

@@ -3,7 +3,7 @@ struct VertexOutput {
   @location(0) textureCoordinates : vec2<f32>,
 };
 
-@stage(vertex)
+@vertex
 fn main_vertex(@builtin(vertex_index) VertexIndex : u32)
         -> VertexOutput {
     return VertexOutput(
@@ -21,7 +21,7 @@ fn main_vertex(@builtin(vertex_index) VertexIndex : u32)
 
 @group(0) @binding(0) var input : texture_2d<f32>;
 
-@stage(fragment)
+@fragment
 fn main_fragment(@builtin(position) Position : vec4<f32>,
         @location(0) textureCoordinates : vec2<f32>)
      -> @location(0) vec4<f32> {

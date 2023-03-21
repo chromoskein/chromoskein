@@ -182,7 +182,7 @@ fn rnd(i: f32) -> f32 {
 	return (4000.0*sin(23464.345*i+45.345)) % 1.0;
 }
 
-@stage(vertex)
+@vertex
 fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
                @builtin(instance_index) InstanceIndex : u32
 ) -> VertexOutput {
@@ -252,7 +252,7 @@ struct FragmentOutput {
   ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}  
 };
 
-@stage(fragment)
+@fragment
 fn main_fragment(@builtin(position) Position : vec4<f32>, 
                  @location(0) p0 : vec3<f32>,
                  @location(1) p1 : vec3<f32>,

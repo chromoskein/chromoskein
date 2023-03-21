@@ -26,7 +26,7 @@ struct VertexOutput {
   @location(1) to : vec3<f32>,
 };
 
-@stage(vertex)
+@vertex
 fn main_vertex(@builtin(vertex_index) VertexIndex : u32,
                @builtin(instance_index) InstanceIndex : u32
 ) -> VertexOutput {
@@ -80,7 +80,7 @@ struct FragmentOutput {
   ${writeDepth ? '@location(1) worldNormal : vec4<f32>,' : ''}  
 };
 
-@stage(fragment)
+@fragment
 fn main_fragment(@builtin(position) Position : vec4<f32>, 
                  @location(0) aabbFrom : vec3<f32>,
                  @location(1) aabbTo : vec3<f32>

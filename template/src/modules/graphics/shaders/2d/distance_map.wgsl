@@ -46,7 +46,7 @@ struct VertexOutput {
   @location(3) rightColor: vec3<f32>,
 };
 
-@stage(vertex)
+@vertex
 fn main_vertex(@builtin(vertex_index) VertexIndex: u32, @builtin(instance_index) InstanceIndex: u32) -> VertexOutput {
   let squareMultiples = pow(2.0, f32(globals.currentLoD));
   let sideLength = squareMultiples * (sqrt(2.0) * 0.5);
@@ -153,7 +153,7 @@ struct FragmentOutput {
   @location(0) color: vec4<f32>,
 };
 
-@stage(fragment)
+@fragment
 fn main_fragment(
     @location(0) weight: f32,
     @location(1) uv: vec2<f32>,

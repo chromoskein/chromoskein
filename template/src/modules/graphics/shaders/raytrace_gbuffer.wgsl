@@ -79,7 +79,7 @@ fn rayBoundingBoxInteresctionT(inverseRay: Ray, boundingBox: BoundingBox) -> Bou
   return BoundingBoxIntersection(maxMin, maxMin <= minMax);
 }
 
-@stage(compute) @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16)
 fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   if (f32(GlobalInvocationID.x) >= camera.viewportSize.x || f32(GlobalInvocationID.y) >= camera.viewportSize.y) {
     return;

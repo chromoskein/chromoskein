@@ -60,26 +60,35 @@ export function binToInstanceIndex(binPosition: BinPosition, size: number): numb
     return gaussSum + diff;
 }
 
-class Globals {
-    sizes = new Array(32).fill(0);
-    offsets = new Array(32).fill(0);
-    maxDistances = new Array(32).fill(0);
-    currentLoD = 0;
+export type Globals = {
+    sizes: number[],
+    offsets: number[],
+    maxDistances: number[],
+    currentLoD: number,
+}
 
-    toArrayBuffer(): ArrayBuffer {
-        const buffer = new ArrayBuffer(512);
-
-        const i32View = new Int32Array(buffer);
-        const u32View = new Uint32Array(buffer);
-        const f32View = new Float32Array(buffer);
-
-        u32View.set(this.sizes, 0);
-        u32View.set(this.offsets, 32);
-        f32View.set(this.maxDistances, 64);
-        u32View.set([this.currentLoD], 96);
-
-        return buffer;
+export function globalsNew(): Globals {
+    return {
+        sizes: new Array(32).fill(0),
+        offsets: new Array(32).fill(0),
+        maxDistances: new Array(32).fill(0),
+        currentLoD: 0,
     }
+}
+
+export function globalsToArrayBuffer(globals: Globals): ArrayBuffer {
+    const buffer = new ArrayBuffer(512);
+
+    const i32View = new Int32Array(buffer);
+    const u32View = new Uint32Array(buffer);
+    const f32View = new Float32Array(buffer);
+
+    u32View.set(globals.sizes, 0);
+    u32View.set(globals.offsets, 32);
+    f32View.set(globals.maxDistances, 64);
+    u32View.set([globals.currentLoD], 96);
+
+    return buffer;
 }
 
 export class DistanceViewport {
@@ -139,7 +148,7 @@ export class DistanceViewport {
             0
         );
 
-        this.globals = new Globals();
+        this.globals = globalsNew();
         this.globalsGPU = this.graphicsLibrary.device.createBuffer({
             size: 512,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -219,7 +228,7 @@ export class DistanceViewport {
 
         this._camera.updateGPU(device.queue);
 
-        const globalsBuffer = this.globals.toArrayBuffer();
+        const globalsBuffer = globalsToArrayBuffer(this.globals);
         device.queue.writeBuffer(
             this.globalsGPU, 0,
             globalsBuffer, 0,
@@ -436,133 +445,51 @@ export class DistanceViewport {
         console.time('distanceMap::setPositions');
         const device = this.graphicsLibrary.device;
 
-        const newPositions = [...positions];
+        const worker = new Worker(new URL('./maximum_distance.worker.ts', import.meta.url));
+        worker.onmessage = (result) => {
+            this.globals = result.data.globals;
+            this.positionsCPU = result.data.positions;
 
-        // LoD 0
-        let currentLoD = 0;
-        this.globals.sizes[0] = positions.length;
-        this.globals.offsets[0] = 0;
+            // Copy to GPU
+            const bufferSizeF32 = 4 * this.positionsCPU.length;
+            const bufferSizeBytes = 4 * bufferSizeF32;
 
-        // Calculate maximum distance
-        let topMaximumDistance = 0.0;
-        for (let i = 0; i < this.globals.sizes[0]; i++) {
-            for (let j = i + 1; j < this.globals.sizes[0]; j++) {
-                const v1 = positions[i];
-                const v2 = positions[j];
-
-                const distance = vec4.squaredDistance(v1, v2);
-
-                if (distance > topMaximumDistance) {
-                    topMaximumDistance = distance;
-                }
-            }
-        }
-
-        this.globals.maxDistances[0] = Math.sqrt(topMaximumDistance);
-
-        // LoD 1+
-        let currentSize = this.globals.sizes[0];
-        let evenStrategy = true;
-        while (currentSize > 1) {
-            currentLoD += 1;
-
-            let newSize = 0;
-            if (currentSize % 2 == 0) {
-                newSize = Math.floor(currentSize / 2);
-            } else {
-                newSize = evenStrategy ? Math.floor(currentSize / 2) : Math.floor(currentSize / 2) + 1;
+            const positionsCPU = new Float32Array(bufferSizeF32);
+            for (let i = 0; i < this.positionsCPU.length; i++) {
+                positionsCPU.set(this.positionsCPU[i], i * 4);
             }
 
-            const currentOffset = this.globals.offsets[currentLoD - 1];
+            this.positions = device.createBuffer({
+                size: bufferSizeBytes,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+            device.queue.writeBuffer(
+                this.positions, 0,
+                positionsCPU.buffer, 0,
+                positionsCPU.buffer.byteLength,
+            );
 
-            const end = (currentSize % 2 == 0) ? newSize : newSize - 1;
-            for (let i = 0; i < end; i++) {
-                const newPosition = vec4.add(vec4.create(), newPositions[currentOffset + i * 2], newPositions[currentOffset + i * 2 + 1]);
-                vec4.scale(newPosition, newPosition, 0.5);
-
-                newPositions.push(newPosition);
+            const colorsCPU = new Float32Array(bufferSizeF32);
+            const white = vec4.fromValues(1.0, 1.0, 1.0, 1.0);
+            for (let i = 0; i < this.positionsCPU.length; i++) {
+                colorsCPU.set(white, i * 4);
             }
 
-            if (currentSize % 2 !== 0) {
-                const offset = this.globals.sizes[currentLoD - 1] + this.globals.offsets[currentLoD - 1] - 1;
-
-                if (evenStrategy) {
-                    const newPosition = vec4.add(vec4.create(), newPositions[offset - 2], newPositions[offset - 1]);
-                    vec4.add(newPosition, newPosition, newPositions[offset]);
-                    vec4.scale(newPosition, newPosition, 1.0 / 3.0);
-
-                    newPositions.push(newPosition);
-                } else {
-                    newPositions.push(newPositions[offset]);
-                }
-
-                evenStrategy = !evenStrategy;
-            }
-
-            currentSize = newSize;
-            this.globals.sizes[currentLoD] = currentSize;
-            this.globals.offsets[currentLoD] = this.globals.offsets[currentLoD - 1] + this.globals.sizes[currentLoD - 1];
-
-            let maximumDistance = 0.0;
-
-            // console.time('distanceMap::setPositions::maxDistance');
-            const subsetStart = this.globals.offsets[currentLoD];
-            const subsetEnd = this.globals.offsets[currentLoD] + this.globals.sizes[currentLoD];
-            for (let i = subsetStart; i < subsetEnd; i++) {
-                for (let j = i + 1; j < subsetEnd; j++) {
-                    const v1 = newPositions[i];
-                    const v2 = newPositions[j];
-
-                    const distance = vec4.squaredDistance(v1, v2);
-
-                    if (distance > maximumDistance) {
-                        maximumDistance = distance;
-                    }
-                }
-            }
-            // console.timeEnd('distanceMap::setPositions::maxDistance');
-
-            this.globals.maxDistances[currentLoD] = Math.sqrt(maximumDistance);
-        }
-
-        this.positionsCPU = newPositions;
-
-        // Copy to GPU
-        const bufferSizeF32 = 4 * newPositions.length;
-        const bufferSizeBytes = 4 * bufferSizeF32;
-
-        const positionsCPU = new Float32Array(bufferSizeF32);
-        for (let i = 0; i < newPositions.length; i++) {
-            positionsCPU.set(newPositions[i], i * 4);
-        }
-
-        this.positions = device.createBuffer({
-            size: bufferSizeBytes,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            this.colors = device.createBuffer({
+                size: bufferSizeBytes,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+            device.queue.writeBuffer(
+                this.colors, 0,
+                colorsCPU.buffer, 0,
+                colorsCPU.buffer.byteLength,
+            );
+        };
+        this.globals = globalsNew();
+        worker.postMessage({
+            globals: this.globals,
+            positions,
         });
-        device.queue.writeBuffer(
-            this.positions, 0,
-            positionsCPU.buffer, 0,
-            positionsCPU.buffer.byteLength,
-        );
-
-        const colorsCPU = new Float32Array(bufferSizeF32);
-        const white = vec4.fromValues(1.0, 1.0, 1.0, 1.0);
-        for (let i = 0; i < newPositions.length; i++) {
-            colorsCPU.set(white, i * 4);
-        }
-
-        this.colors = device.createBuffer({
-            size: bufferSizeBytes,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-        });
-        device.queue.writeBuffer(
-            this.colors, 0,
-            colorsCPU.buffer, 0,
-            colorsCPU.buffer.byteLength,
-        );
-
-
         console.timeEnd('distanceMap::setPositions');
     }
 

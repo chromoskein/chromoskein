@@ -102,22 +102,22 @@ export function ChromatinViewport(props: {
     }, [props.graphicsLibrary, props.configurationID, canvasElement]);
 
     // Camera Update
-    useDeepCompareEffect(() => {
-        viewport.cameraConfiguration = configuration.camera;
-    }, [configuration.camera]);
+    // useDeepCompareEffect(() => {
+    //     viewport.cameraConfiguration = configuration.camera;
+    // }, [configuration.camera]);
 
-    useDeepCompareEffect(() => {
-        if (!viewport.camera || !viewport.canvas) return;
+    // useDeepCompareEffect(() => {
+    //     if (!viewport.camera || !viewport.canvas) return;
 
-        const timer = setTimeout(() => {
-            updateConfiguration({
-                ...configuration,
-                camera: viewport.cameraConfiguration
-            });
-        }, 500)
+    //     const timer = setTimeout(() => {
+    //         updateConfiguration({
+    //             ...configuration,
+    //             camera: viewport.cameraConfiguration
+    //         });
+    //     }, 500)
 
-        return () => clearTimeout(timer);
-    }, [viewport.cameraConfiguration]);
+    //     return () => clearTimeout(timer);
+    // }, [viewport.cameraConfiguration]);
 
     // Disable camera if control is pressed
     useEffect(() => {

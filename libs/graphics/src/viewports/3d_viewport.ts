@@ -526,6 +526,7 @@ export class Viewport3D {
       depthStencilAttachment: {
         view: this.depthTexture.createView(),
 
+        depthClearValue: 0.0,
         depthLoadOp: 'clear',
         depthStoreOp: 'store',
       }

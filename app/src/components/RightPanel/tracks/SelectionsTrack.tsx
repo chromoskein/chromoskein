@@ -87,7 +87,7 @@ export function SelectionsTrack(props: {
         onChange={addSelection}
     /><div className="treeViewList" style={{ marginTop: '16px' }}>
             {track.type == TrackType.Selections && (selections.map(selection => {
-                return <div className="treeViewListItem" key={isoSelectionID.unwrap(selection.id)} onClick={() => selectSelection(selection.id)}>
+                return <div className={`treeViewListItem ${selection.id === configuration.selectedSelectionID ? "selected" : ""}`} key={isoSelectionID.unwrap(selection.id).toString()} onClick={() => selectSelection(selection.id)}>
                     <DefaultButton id="selectionColorButton"
                         style={{
                             padding: 0,

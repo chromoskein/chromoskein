@@ -44,21 +44,21 @@ export class DebugViewport {
     }
 
     private reconfigureContext(width: number, height: number): void {
-        if (!this._context) return;
+        // if (!this._context) return;
 
-        if (width <= 0 || height <= 0) return;
+        // if (width <= 0 || height <= 0) return;
 
-        console.log("Reconfiguring context:" + width + " x " + height)
-        this._context.configure({
-            device: this.graphicsLibrary.device,
-            format: 'bgra8unorm',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT,
-            compositingAlphaMode: "opaque",
-            size: {
-                width: width,
-                height: height,
-            }
-        });
+        // console.log("Reconfiguring context:" + width + " x " + height)
+        // this._context.configure({
+        //     device: this.graphicsLibrary.device,
+        //     format: 'bgra8unorm',
+        //     usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        //     compositingAlphaMode: "opaque",
+        //     size: {
+        //         width: width,
+        //         height: height,
+        //     }
+        // });
     }
 
     async render(frametime: number): Promise<void> {
