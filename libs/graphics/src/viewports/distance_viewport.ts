@@ -444,6 +444,7 @@ export class DistanceViewport {
     public setPositions(positions: Array<vec4>): void {
         console.time('distanceMap::setPositions');
         const device = this.graphicsLibrary.device;
+        this.globals = globalsNew();
 
         const worker = new Worker(new URL('./maximum_distance.worker.ts', import.meta.url));
         worker.onmessage = (result) => {
@@ -484,8 +485,9 @@ export class DistanceViewport {
                 colorsCPU.buffer, 0,
                 colorsCPU.buffer.byteLength,
             );
+
+            this.recalculateLoD();
         };
-        this.globals = globalsNew();
         worker.postMessage({
             globals: this.globals,
             positions,

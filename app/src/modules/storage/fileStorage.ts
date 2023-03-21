@@ -16,6 +16,7 @@ export async function saveToFile(states: ApplicationState): Promise<void> {
 export type TextFile = { name: string, content: string };
 
 export function loadFromJson(json: string): ApplicationState {
+    console.time('loadFromJson');
     const parsed: ApplicationState = JSON.parse(json);
 
     // Fix TypedArray conversion to Object
@@ -24,6 +25,9 @@ export function loadFromJson(json: string): ApplicationState {
             selection.bins = new Uint16Array(Array.from(Object.values(selection.bins)));
         }       
     }
+
+    console.timeEnd('loadFromJson');
+
     return parsed;
 }
 

@@ -7,7 +7,7 @@ const PI = Math.PI;
 export class OrbitCamera extends Camera {
     private _rotX = 0.0;
     private _rotY = 0.0;
-    private _distance = 1.0;
+    private _distance = 1.5;
     private _lookAtPosition: vec3 = vec3.fromValues(0.0, 0.0, 0.0);
     private _upVector: vec3;
 

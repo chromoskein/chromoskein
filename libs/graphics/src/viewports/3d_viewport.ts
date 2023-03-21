@@ -109,8 +109,8 @@ export class Viewport3D {
     }
 
     if (this._canvas != null && this._context != null) {
-      // this._camera = camera ?? new OrbitCamera(this.graphicsLibrary.device, this.width, this.height);
-      this._camera = camera ?? new SmoothCamera(this.graphicsLibrary.device, this.width, this.height);
+      this._camera = camera ?? new OrbitCamera(this.graphicsLibrary.device, this.width, this.height);
+      // this._camera = camera ?? new SmoothCamera(this.graphicsLibrary.device, this.width, this.height);
       this._canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
       this._canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
       this._canvas.addEventListener('mousemove', this.onMouseMove.bind(this));

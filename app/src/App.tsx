@@ -131,6 +131,7 @@ function App(): JSX.Element {
       clearBrowser() //not awaiting on purpouse
       throw "The workspace you are trying to load was created in a version of ChromoSkein that is no longer supported. Your saved workspace has been deleted. Sorry, hopefully it was nothing important ^_^;)"
     }
+    console.time('Set STATE from file.');
     if (state.data)
       dispatchData({
         type: DataActionKind.SET,
@@ -151,6 +152,7 @@ function App(): JSX.Element {
         type: SelectionActionKind.SET,
         state: state.selections
       });
+      console.timeEnd('Set STATE from file.');
   }
 
   function getCurrentState(): ApplicationState {
