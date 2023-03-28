@@ -65,8 +65,12 @@ main(@builtin(global_invocation_id) GlobalInvocationID
   let bitangent = cross(viewSpaceNormal, tangent);
   let TBN = mat3x3<f32>(tangent, bitangent, viewSpaceNormal);
 
+  if (depth == 0.0) {
+    return;
+  }
+
   var occlusion = 0.0;
-  let numberOfSamples = 32;
+  let numberOfSamples = 8;
   for (var i = 0; i < numberOfSamples; i = i + 1) {
     // get sample position
     var samplePos = TBN * globals.noiseSamples[i].xyz; // from tangent to view-space

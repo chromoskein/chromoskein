@@ -100,11 +100,14 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
       }
 
       const newSelections = [...state.selections];
+      newSelections[selectionIndex] = {
+        ...state.selections[selectionIndex]
+      };
 
       if (action.name) newSelections[selectionIndex].name = action.name;
       if (action.color) newSelections[selectionIndex].color = action.color;
       if (action.bins) newSelections[selectionIndex].bins = action.bins;
-
+      
       return {
         ...state,
         selections: newSelections

@@ -63,6 +63,8 @@ export function ChromatinViewport(props: {
 
     const [isShiftPressed, setShiftPressed] = useState(false);
 
+    const [sasaGlobalValues, setSasaGlobalValues] = useState<number[][] | null>(null);
+
     //~ Labeling
     let labels: GraphicsModule.Label[] = [];
 
@@ -223,6 +225,45 @@ export function ChromatinViewport(props: {
         })
     }, [viewport, closestIntersection]);
 
+    // Compute SASA values
+    useEffect(() => {
+        if (!viewport || !configuration.data) {
+            return;
+        }
+
+        const newSasa: number[][] = [];
+        for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
+            const datum: Data | undefined = data.data.find(d => d.id === configurationDatum.id);
+
+            if (!datum) {
+                continue;
+            }
+            
+            const datumPositions = datum.values as Positions3D;
+            const chromatinPart = viewport.getChromatinPartByDataId(configurationDatumIndex);
+
+            if (!datumPositions || !chromatinPart) {
+                continue;
+            }
+
+            const positions = datumPositions.positions;
+
+            if (!positions) {
+                return;
+            }
+
+            const globalSasaValues = sasa(positions, {
+                method: "constant",
+                probe_size: configuration.sasa.probeSize,
+            }, configuration.sasa.accuracy);
+
+            newSasa.push(globalSasaValues);
+        }
+
+        setSasaGlobalValues(_ => newSasa);
+    }, [viewport, data.data, configuration.data, configuration.sasa.probeSize, configuration.sasa.accuracy]);
+
+
     // Calculate/Cache Colors (1D Data Mapping + Selections)
     useEffect(() => {
         if (!viewport || !configuration.data) {
@@ -296,19 +337,19 @@ export function ChromatinViewport(props: {
                     throw "Not implemented";
                 }
 
-                //TODO: per chromosome or whole chromosome
-                const globalSasaValues = sasa(positions, {
-                    method: configuration.sasa.method,
-                    probe_size: configuration.sasa.probeSize,
-                }, configuration.sasa.accuracy);
+                if (!sasaGlobalValues || !sasaGlobalValues[configurationDatumIndex]) {
+                    continue;
+                }
 
-                //TODO: fix underlying bug where the something sometimes don't contain last bin of the chromosome
-                // if (globalSasaValues.length < chromatinPart.values.length) {
-                // globalSasaValues.push(globalSasaValues.reduce((a, b) => a + b, 0) / globalSasaValues.length);
-                // }
+                //TODO: per chromosome or whole chromosome
+
+                // const globalSasaValues = sasa(positions, {
+                //     method: configuration.sasa.method,
+                //     probe_size: configuration.sasa.probeSize,
+                // }, configuration.sasa.accuracy);
 
                 const colorScale = chroma.scale(['#fcfdfd', '#010a4e']);
-                newColors[configurationDatumIndex] = chromatinPart.cacheColorArray(mapScaleToChromatin(chromatinPart, globalSasaValues, colorScale));
+                newColors[configurationDatumIndex] = chromatinPart.cacheColorArray(mapScaleToChromatin(chromatinPart, sasaGlobalValues[configurationDatumIndex], colorScale));
             } else if (configurationDatum.colorMappingMode == "1d-density") {
                 const data1d: Array<{ chromosome: string, from: number, to: number }> | null = data.data.find(d => d.id == isoDataID.wrap(configurationDatum.mapValues.id))?.values as Sparse1DTextData | Sparse1DNumericData | null;
 
@@ -360,14 +401,12 @@ export function ChromatinViewport(props: {
 
                 const numbers = [...Array(binsAmount).keys()];
 
-                console.log(numbers);
-
                 newColors[configurationDatumIndex] = chromatinPart.cacheColorArray(mapScaleToChromatin(chromatinPart, numbers, colorScale));
             }
         }
 
         setColors(() => newColors);
-    }, [viewport, globalSelections.selections, configuration.data, configuration.sasa, data.data, configuration.chromosomes, configuration.density]);
+    }, [viewport, globalSelections.selections, configuration.data, configuration.sasa, data.data, configuration.chromosomes, configuration.density, sasaGlobalValues]);
 
     // Calculate cullable bins
     useEffect(() => {
@@ -456,7 +495,6 @@ export function ChromatinViewport(props: {
         }
 
         if (tool.type == ChromatinViewportToolType.PointSelection) {
-            console.log('bin is: ', closestIntersection.binIndex);
             closestIntersection.chromatinPart.setBinColor(closestIntersection.binIndex, { r: selection.color.r, g: selection.color.g, b: selection.color.b, a: 1.0 });
         } else if (tool.type == ChromatinViewportToolType.SphereSelection && configuration.data[selectedDatum].selectedSelectionID) {
             // Only find position in space where the ray intersects
@@ -710,10 +748,10 @@ export function ChromatinViewport(props: {
 
         const selection = globalSelections.selections.find(s => s.id == selectionId);
         if (!selection) {
-            throw "No global selection found with local selection ID " + selectionId;
+            throw new Error("No global selection found with local selection ID " + selectionId);
         }
 
-        const binPositions = data.data.filter(d => d.id == datum.id)[0] as BinPositionsData;
+        // const binPositions = data.data.filter(d => d.id == datum.id)[0] as BinPositionsData;
 
         const newBins: Uint16Array = selection.bins.slice();
         if (tool.type == ChromatinViewportToolType.PointSelection) {

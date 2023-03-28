@@ -546,30 +546,30 @@ export class Viewport3D {
     gBufferRasterizeOpaquePass.end();
 
     // commandEncoder.writeTimestamp(this.timestampsQuerySet, 1);
-    // const gBufferRasterizeTransparentPass = commandEncoder.beginRenderPass({
-    //   label: "G-Buffer Rasterization Transparent Pass",
-    //   colorAttachments: [
-    //     {
-    //       view: this.gBuffer.colorsTransparent.createView(),
-    //       clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
-    //       loadOp: 'clear',
-    //       storeOp: 'store',
-    //     }
-    //   ]
-    // });
+    const gBufferRasterizeTransparentPass = commandEncoder.beginRenderPass({
+      label: "G-Buffer Rasterization Transparent Pass",
+      colorAttachments: [
+        {
+          view: this.gBuffer.colorsTransparent.createView(),
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        }
+      ]
+    });
 
-    // gBufferRasterizeTransparentPass.setBindGroup(0, device.createBindGroup({
-    //   label: "Camera BG",
-    //   layout: bindGroupLayouts.camera,
-    //   entries: [
-    //     {
-    //       binding: 0, resource: { buffer: this._camera.bufferGPU, offset: 0 }
-    //     },
-    //   ]
-    // }));
-    // gBufferRasterizeTransparentPass.setBindGroup(2, cullObjectsBindGroup);
-    // this.scene.renderRasterization(gBufferRasterizeTransparentPass, this._camera, RenderObjects.Transparent, this.depthTexture.createView());
-    // gBufferRasterizeTransparentPass.end();
+    gBufferRasterizeTransparentPass.setBindGroup(0, device.createBindGroup({
+      label: "Camera BG",
+      layout: bindGroupLayouts.camera,
+      entries: [
+        {
+          binding: 0, resource: { buffer: this._camera.bufferGPU, offset: 0 }
+        },
+      ]
+    }));
+    gBufferRasterizeTransparentPass.setBindGroup(2, cullObjectsBindGroup);
+    this.scene.renderRasterization(gBufferRasterizeTransparentPass, this._camera, RenderObjects.Transparent, this.depthTexture.createView());
+    gBufferRasterizeTransparentPass.end();
 
     //#endregion
 
