@@ -44,7 +44,7 @@
     "react-tooltip": "^4.2.21",
     "react-use": "^17.3.1",
     "reaviz": "^13.1.8",
-    "rooks": "^5.7.3",
+    "rooks": "^7",
     "sigma": "^2.2.0",
     "simple-statistics": "^7.7.0",
     "static-kdtree": "^1.0.2",

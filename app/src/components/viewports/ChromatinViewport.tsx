@@ -8,7 +8,7 @@ import { vec2, vec3, vec4 } from "gl-matrix";
 import { BEDAnnotations, BinPositionsData, Data, DataAction, DataState, isoDataID, Positions3D, Sparse1DNumericData, Sparse1DTextData, Position3D } from "../../modules/storage/models/data";
 import { SelectionAction, SelectionActionKind, SelectionState } from "../../modules/storage/models/selections";
 import { useConfiguration } from "../hooks";
-import { useKey } from "rooks";
+import { useKey, usePreviousImmediate  } from "rooks";
 import * as chroma from "chroma-js";
 import { CoordinatePreviewAction, CoordinatePreviewState } from "../../modules/storage/models/coordinatePreview";
 import { LabelingOverlay } from "./LabelingOverlay"
@@ -64,6 +64,8 @@ export function ChromatinViewport(props: {
     const [isShiftPressed, setShiftPressed] = useState(false);
 
     const [sasaGlobalValues, setSasaGlobalValues] = useState<number[][] | null>(null);
+    const [prevSasaPositions, setPrevSasaPositions] = useState<Position3D[][] | null>(null);
+    const prevSasaGlobalValues = usePreviousImmediate(sasaGlobalValues);
 
     //~ Labeling
     let labels: GraphicsModule.Label[] = [];
@@ -162,7 +164,7 @@ export function ChromatinViewport(props: {
                     const annotations = (primaryData.values as BEDAnnotations);
 
                     const interpolatedPositions: Position3D[] = [];
-                    for(const annotation of annotations) {
+                    for (const annotation of annotations) {
                         const startBin = Math.floor(annotation.from / resolution);
                         const endBin = Math.ceil(annotation.from / resolution);
 
@@ -232,13 +234,18 @@ export function ChromatinViewport(props: {
         }
 
         const newSasa: number[][] = [];
+        const sasaPositions: Position3D[][] = [];
         for (const [configurationDatumIndex, configurationDatum] of configuration.data.entries()) {
             const datum: Data | undefined = data.data.find(d => d.id === configurationDatum.id);
+
+            if (configurationDatum.colorMappingMode != "sasa") {
+                break;
+            }
 
             if (!datum) {
                 continue;
             }
-            
+
             const datumPositions = datum.values as Positions3D;
             const chromatinPart = viewport.getChromatinPartByDataId(configurationDatumIndex);
 
@@ -252,15 +259,21 @@ export function ChromatinViewport(props: {
                 return;
             }
 
-            const globalSasaValues = sasa(positions, {
-                method: "constant",
-                probe_size: configuration.sasa.probeSize,
-            }, configuration.sasa.accuracy);
+            if (prevSasaGlobalValues && prevSasaGlobalValues[configurationDatumIndex] && prevSasaPositions && positions == prevSasaPositions[configurationDatumIndex]) {
+                newSasa.push(prevSasaGlobalValues[configurationDatumIndex]);
+            } else {
+                const globalSasaValues = sasa(positions, {
+                    method: "constant",
+                    probe_size: configuration.sasa.probeSize,
+                }, configuration.sasa.accuracy);
 
-            newSasa.push(globalSasaValues);
+                newSasa.push(globalSasaValues);
+            }
+            sasaPositions.push(positions);
         }
 
         setSasaGlobalValues(_ => newSasa);
+        setPrevSasaPositions(_ => sasaPositions);
     }, [viewport, data.data, configuration.data, configuration.sasa.probeSize, configuration.sasa.accuracy]);
 
 
@@ -628,7 +641,7 @@ export function ChromatinViewport(props: {
                 const annotations = (primaryData.values as BEDAnnotations);
 
                 const interpolatedPositions: Position3D[] = [];
-                for(const annotation of annotations) {
+                for (const annotation of annotations) {
                     const startBin = Math.floor(annotation.from / resolution);
                     const endBin = Math.ceil(annotation.from / resolution);
 

@@ -166,32 +166,32 @@ const config: ResizeObserverOptions = {
 };
 
 
-function useResizeObserverRef(
-    callback: ResizeObserverCallback,
-    options: ResizeObserverOptions = config
-): [CallbackRef] {
-    const [node, setNode] = useState<HTMLElementOrNull>(null);
-    const freshCallback = useFreshTick(callback);
+// function useResizeObserverRef(
+//     callback: ResizeObserverCallback,
+//     options: ResizeObserverOptions = config
+// ): [CallbackRef] {
+//     const [node, setNode] = useState<HTMLElementOrNull>(null);
+//     const freshCallback = useFreshTick(callback);
 
-    useEffect(() => {
-        if (node) {
-            // Create an observer instance linked to the callback function
-            const observer = new ResizeObserver(callback);
+//     useEffect(() => {
+//         if (node) {
+//             // Create an observer instance linked to the callback function
+//             const observer = new ResizeObserver(callback);
 
-            // Start observing the target node for resizes
-            observer.observe(node, options);
+//             // Start observing the target node for resizes
+//             observer.observe(node, options);
 
-            return () => {
-                observer.disconnect();
-            };
-        }
-    }, [node, freshCallback, options]);
+//             return () => {
+//                 observer.disconnect();
+//             };
+//         }
+//     }, [node, freshCallback, options]);
 
-    const ref: CallbackRef = useCallback((node: HTMLElementOrNull) => {
-        setNode(node);
-    }, []);
+//     const ref: CallbackRef = useCallback((node: HTMLElementOrNull) => {
+//         setNode(node);
+//     }, []);
 
-    return [ref];
-}
+//     return [ref];
+// }
 
-export { useResizeObserverRef };
+// export { useResizeObserverRef };

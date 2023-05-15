@@ -1,4 +1,4 @@
-import { DistanceMapDataConfiguration, ChromatinViewportConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions } from "../../modules/storage/models/viewports";
+import { DistanceMapDataConfiguration, ChromatinViewportConfiguration, ViewportConfiguration, ViewportConfigurationType, ViewportSelectionOptions, IChromatinDataConfiguration } from "../../modules/storage/models/viewports";
 import { DataAction, DataID, DataState, Positions3D } from "../../modules/storage/models/data";
 import { isoSelectionID, SelectionAction, SelectionActionKind, SelectionID, Selection, SelectionState } from "../../modules/storage/models/selections";
 import { ConfigurationReducer, ConfigurationsWithSelections } from "../hooks";
@@ -8,6 +8,7 @@ import { Dispatch, useState } from "react";
 import { Text } from '@fluentui/react/lib/Text';
 import { Delete16Regular, EyeShow16Regular, EyeOff16Regular, Rename16Regular } from '@fluentui/react-icons';
 import { Callout, ColorPicker, DefaultButton, IColor, PrimaryButton, TextField } from "@fluentui/react";
+import { useBoolean, useId } from '@fluentui/react-hooks';
 
 export interface PropsSelectionsPart<T extends ViewportConfiguration> {
     selections: Array<[Selection, ViewportSelectionOptions]>,
@@ -35,8 +36,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
 
     const selections = props.selections;
     const [renaming, setRenaming] = useState<{ id: SelectionID, newName: string } | null>(null);
-    const [isColorCalloutVisible, setIsColorCalloutVisible] = useState<boolean>(false);
-
+    const [isCalloutVisible, { toggle: toggleIsCalloutVisible }] = useBoolean(false);
 
     if (!configuration.data) return <div></div>;
 
@@ -136,7 +136,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
         if (Array.isArray(configuration.data)) {
             const associatedSelectionIndex = configuration.data[props.selectedDataIndex].selections.findIndex(s => s.selectionID == selectionID);
 
-            const newData = [...configuration.data];
+            const newData: IChromatinDataConfiguration[] = [...configuration.data];
             newData[props.selectedDataIndex] = {
                 ...newData[props.selectedDataIndex],
                 selections: configuration.data[dataIndex].selections.map((s: ViewportSelectionOptions) => { return { selectionID: s.selectionID, visible: s.visible, cullable: s.cullable } }),
@@ -206,6 +206,8 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
         }
     }
 
+    const buttonId = useId('callout-button');    
+
     return <>
         <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="selections">
@@ -222,7 +224,7 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                                         {...provided.dragHandleProps}
                                         className={isSelected(selection.id) ? "treeViewListItem selected" : "treeViewListItem"}
                                         onClick={() => selectSelection(selection.id)}>
-                                        <DefaultButton id="selectionColorButton"
+                                        <DefaultButton id={buttonId}
                                             style={{
                                                 padding: 0,
                                                 minWidth: "0px",
@@ -236,17 +238,17 @@ export function SelectionsPart<T extends ConfigurationsWithSelections>(props: Pr
                                                 }}
                                                 key={`${isoSelectionID.unwrap(selection.id)}-color-button`}
                                             ></div>}
-                                            onClick={() => setIsColorCalloutVisible(true)}
+                                            onClick={toggleIsCalloutVisible}
                                         />
-                                        {isColorCalloutVisible && (
+                                        {isCalloutVisible && (
                                             <Callout
                                                 gapSpace={0}
-                                                target={'#selectionColorButton'}
-                                                onDismiss={() => setIsColorCalloutVisible(false)}
+                                                target={`#${buttonId}`}
                                                 setInitialFocus
+                                                onDismiss={toggleIsCalloutVisible}
                                             >
                                                 <ColorPicker
-                                                    color={configuration.backgroundColor}
+                                                    color={`rgb(${selection.color.r * 255}, ${selection.color.g * 255}, ${selection.color.b * 255})`}
                                                     onChange={(_, color) => changeSelectionColor(selection.id, color)}
                                                     alphaType={'none'}
                                                     showPreview={true}
